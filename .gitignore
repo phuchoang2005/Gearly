@@ -22,3 +22,52 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+#frontend (React + Vite)
+node_modules
+dist
+.vite
+.cache
+
+
+# === FRONTEND (React + Vite) ===
+dist/
+.env
+.vite/
+.cache/
+
+node_modules/
+dist/
+.env
+.vite/
+.cache/
+
+# === BACKEND (Spring Boot + Maven) ===
+target/
+.mvn/
+.env
+logs/
+*.log
+
+# === IDEs and Editors ===
+.idea/
+.vscode/
+*.iml
+
+# === OS / Misc ===
+.DS_Store
+Thumbs.db
+
+# === General ===
+*.log
+*.tmp
+*.swp
+.env
+.env.local
+*.bak
+
+# Scripts
+*.sh
+*.bat
+
+structure.txt
+.fuse_hidden*

@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: no
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+  spring-app:
+    image: maven:3.9.9-eclipse-temurin-21 # Sử dụng image maven để chạy lệnh run
+    container_name: spring-app
+    restart: no
+    working_dir: /app
+    depends_on:
+      - mongodb
+    volumes:
+      - .:/app # Mount toàn bộ project vào container
+      - ~/.m2:/root/.m2 # Cache Maven dependencies để khởi động nhanh hơn
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/bookify
+      SPRING_PROFILES_ACTIVE: docker
+      # Cho phép DevTools lắng nghe thay đổi
+      JAVA_OPTS: "-Dspring.devtools.restart.enabled=true"
+    ports:
+      - "8080:8080"
+      - "5005:5005" # (Tùy chọn) Mở port để Debug nếu cần
+    command: mvn spring-boot:run # Chạy trực tiếp qua maven thay vì java -jar
+volumes:
+  mongodb_data:

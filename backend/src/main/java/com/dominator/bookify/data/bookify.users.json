@@ -1,0 +1,220 @@
+[{
+  "_id": {
+    "$oid": "68201e5b4ff90d7e8d39395c"
+  },
+  "profileAvatar": "",
+  "firstName": "Nhan",
+  "lastName": "Nguyen",
+  "fullName": "Nhan Nguyen",
+  "email": "nhannhan121901@gmail.com",
+  "passwordHash": "$2a$10$CjMqfEaFkx5FcKgagoL.oOc4jNN9FrapCsLYRRU5ZuivxYwZ4lVqe",
+  "phone": "84936665674",
+  "address": {
+    "street": "212/32 14 street, 10 ward, Go Vap district",
+    "city": "Ho Chi Minh City",
+    "cityId": 130202,
+    "state": "Hồ Chí Minh",
+    "stateId": 3811,
+    "postalCode": "70000",
+    "country": "Vietnam",
+    "countryId": 240
+  },
+  "role": "ADMIN",
+  "verified": true,
+  "favorites": [],
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-05-11T03:49:47.933Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T08:09:39.510Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+},
+{
+  "_id": {
+    "$oid": "6845ef85f6159c1e348dcc64"
+  },
+  "firstName": "John",
+  "lastName": "Somehow",
+  "fullName": "John Somehow",
+  "email": "jonnn.how@gmail.com",
+  "passwordHash": "$2a$10$yhPVSmDaLpclwgNzwOWBOOHMTcHDATwHBusC4EY6StWMnSn5ASUfm",
+  "phone": "12312332123",
+  "address": {
+    "street": "170 Bleecker St",
+    "city": "Adams Center",
+    "cityId": 111016,
+    "state": "New York",
+    "stateId": 1452,
+    "postalCode": "10001",
+    "country": "United States",
+    "countryId": 233
+  },
+  "role": "CUSTOMER",
+  "verified": true,
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-06-08T20:16:05.173Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T20:26:00.953Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+},
+{
+  "_id": {
+    "$oid": "6845f24ef6159c1e348dcc6a"
+  },
+  "firstName": "Jane",
+  "lastName": "Loe",
+  "fullName": "Jane Loe",
+  "email": "janee@gmail.com",
+  "passwordHash": "$2a$10$5aCZv9n1mcpX4PXAiP7.B.2TiZyYysqJoNzc4wShghkMfe.QGm/Gq",
+  "phone": "18529501239",
+  "address": {
+    "street": "123 Atestoe St",
+    "city": "Anahola",
+    "cityId": 111300,
+    "state": "Hawaii",
+    "stateId": 1411,
+    "postalCode": "123123",
+    "country": "United States",
+    "countryId": 233
+  },
+  "role": "CUSTOMER",
+  "verified": true,
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-06-08T20:27:58.857Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T20:27:58.857Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+},
+{
+  "_id": {
+    "$oid": "6845f2a2f6159c1e348dcc6c"
+  },
+  "firstName": "Josh",
+  "lastName": "Danniel",
+  "fullName": "Josh Danniel",
+  "email": "josh@gmail.com",
+  "passwordHash": "$2a$10$09L80ZbpOEordJ4qO4x7HOJtxUPs0iDMb8gKzkOhA7dF6UEndruc2",
+  "phone": "18529501239",
+  "address": {
+    "street": "32 Amsterdam St",
+    "city": "Alameda County",
+    "cityId": 111089,
+    "state": "California",
+    "stateId": 1416,
+    "postalCode": "123123",
+    "country": "United States",
+    "countryId": 233
+  },
+  "role": "CUSTOMER",
+  "verified": true,
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-06-08T20:29:22.609Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T20:29:22.609Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+},
+{
+  "_id": {
+    "$oid": "6845f327f6159c1e348dcc6e"
+  },
+  "firstName": "Paul",
+  "lastName": "Howler",
+  "fullName": "Paul Howler",
+  "email": "paul@gmail.com",
+  "passwordHash": "$2a$10$m4BWz5zwZpDIepd3nJuSoeCH6ezW3TOPFYmBebJ2tN9Ij5.svlD.W",
+  "phone": "13424243243",
+  "address": {
+    "street": "632 Trester St",
+    "city": "Alameda County",
+    "cityId": 111089,
+    "state": "California",
+    "stateId": 1416,
+    "postalCode": "123123",
+    "country": "United States",
+    "countryId": 233
+  },
+  "role": "CUSTOMER",
+  "verified": true,
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-06-08T20:31:35.705Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T20:31:35.705Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+},
+{
+  "_id": {
+    "$oid": "6845f366f6159c1e348dcc70"
+  },
+  "firstName": "Dan",
+  "lastName": "Huer",
+  "fullName": "Dan Huer",
+  "email": "dan@gmail.com",
+  "passwordHash": "$2a$10$ELLM0qkn1eKFtKOnMSEtxOP6sBK3ESQXuYwVaZfRHcAMhJqAdwf6K",
+  "phone": "13424243243",
+  "address": {
+    "street": "37 Valley St",
+    "city": "Horizon West",
+    "cityId": 118665,
+    "state": "Florida",
+    "stateId": 1436,
+    "postalCode": "123123",
+    "country": "United States",
+    "countryId": 233
+  },
+  "role": "CUSTOMER",
+  "verified": true,
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-06-08T20:32:38.694Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T20:32:38.694Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+},
+{
+  "_id": {
+    "$oid": "6845f3caf6159c1e348dcc72"
+  },
+  "firstName": "Peter",
+  "lastName": "Poll",
+  "fullName": "Peter Poll",
+  "email": "peter@gmail.com",
+  "passwordHash": "$2a$10$1Nk6S6Nd9TUT/ghXOVZNiepAi8GeL9jehads8zXIRzwZ3pj/9xCT.",
+  "phone": "13484320342",
+  "address": {
+    "street": "866 Luis St",
+    "city": "North Arlington",
+    "cityId": 122965,
+    "state": "New Jersey",
+    "stateId": 1417,
+    "postalCode": "123123",
+    "country": "United States",
+    "countryId": 233
+  },
+  "role": "CUSTOMER",
+  "verified": true,
+  "favorites": [],
+  "status": "ACTIVE",
+  "createdAt": {
+    "$date": "2025-06-08T20:34:18.946Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T22:18:46.303Z"
+  },
+  "_class": "com.dominator.bookify.model.User"
+}]

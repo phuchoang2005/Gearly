@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: no
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+  spring-app:
+    build: .
+    container_name: spring-app
+    restart: no
+    depends_on:
+      - mongodb
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/bookify
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+    ports:
+      - "8080:8080"
+volumes:
+  mongodb_data:

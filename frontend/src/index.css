@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+@layer components {
+    .form-input {
+        @apply w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black;
+    }
+    .form-error {
+        @apply mt-1 text-sm text-red-500;
+    }
+}
+
+@layer utilities {
+  @keyframes extra-bounce {
+    0% { transform: translateY(0); }
+
+    20% { transform: translateY(-2px); }
+
+    40% { transform: translateY(1px); }
+
+    55% { transform: translateY(-1px); }
+
+    70% { transform: translateY(0); }
+
+    100% { transform: translateY(0); }
+  }
+
+  .animate-extra-bounce {
+    animation: extra-bounce 1s infinite ease-in-out;
+  }
+}
+
+
+button {
+    cursor: pointer;
+}
+
+.auth-link {
+    color: black;
+    text-decoration: underline;
+}
+
+.react-tel-input .form-control::placeholder {
+    color: #9ca3af !important; /* Tailwind's text-gray-400 */
+}
+
+input[type="radio"] {
+    accent-color: #1C387F;
+    cursor: pointer;
+}
+

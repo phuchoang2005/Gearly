@@ -1,0 +1,1581 @@
+[{
+  "_id": {
+    "$oid": "682023424a1ae581e0445357"
+  },
+  "title": "Intel Core i3-12100F",
+  "authors": [
+    "Intel"
+  ],
+  "description": "A high-performance entry-level processor featuring 4 cores and 8 threads, perfect for budget gaming builds and daily productivity tasks.",
+  "price": 109.99,
+  "originalPrice": 120.5,
+  "condition": "NEW",
+  "stock": 64,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/intel-core-i3-12100f.jpg",
+      "alt": "Intel Core i3-12100F"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 12,
+  "totalRating": 54,
+  "addedAt": "2025-12-10T08:30:00Z",
+  "modifiedAt": "2025-12-20T15:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445358"
+  },
+  "title": "Intel Core i5-12400F",
+  "authors": [
+    "Intel"
+  ],
+  "description": "The best value gaming CPU with 6 cores and 12 threads, offering exceptional performance for mid-range gaming rigs.",
+  "price": 179.99,
+  "originalPrice": 195,
+  "condition": "NEW",
+  "stock": 52,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/intel-core-i5-12400f.jpg",
+      "alt": "Intel Core i5-12400F"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 20,
+  "totalRating": 92,
+  "addedAt": "2025-12-12T10:20:00Z",
+  "modifiedAt": "2025-12-22T09:12:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044535b"
+  },
+  "title": "Intel Core i7-13700K",
+  "authors": [
+    "Intel"
+  ],
+  "description": "Unleash powerful performance with 16 cores (8P + 8E), ideal for content creation, heavy multitasking, and elite gaming.",
+  "price": 399.99,
+  "originalPrice": 429,
+  "condition": "NEW",
+  "stock": 21,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/intel-core-i7-13700k.jpg",
+      "alt": "Intel Core i7-13700K"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 15,
+  "totalRating": 72,
+  "addedAt": "2025-12-11T14:15:00Z",
+  "modifiedAt": "2025-12-23T11:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044535c"
+  },
+  "title": "AMD Ryzen 5 5600",
+  "authors": [
+    "AMD"
+  ],
+  "description": "Features 6 cores and 12 threads with Zen 3 architecture, delivering fast and efficient performance for mainstream users.",
+  "price": 139.99,
+  "originalPrice": 155,
+  "condition": "NEW",
+  "stock": 73,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/amd-ryzen-5-5600.jpg",
+      "alt": "AMD Ryzen 5 5600"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 18,
+  "totalRating": 84.6,
+  "addedAt": "2025-12-18T09:00:00Z",
+  "modifiedAt": "2025-12-24T16:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044535a"
+  },
+  "title": "AMD Ryzen 7 5800X",
+  "authors": [
+    "AMD"
+  ],
+  "description": "A top-tier 8-core processor that provides smooth frame rates in the most demanding titles and rapid rendering speeds.",
+  "price": 269.99,
+  "originalPrice": 299,
+  "condition": "NEW",
+  "stock": 34,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/amd-ryzen-7-5800x.jpg",
+      "alt": "AMD Ryzen 7 5800X"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 14,
+  "totalRating": 64.4,
+  "addedAt": "2025-12-14T20:10:00Z",
+  "modifiedAt": "2025-12-21T08:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044535d"
+  },
+  "title": "AMD Ryzen 9 7950X",
+  "authors": [
+    "AMD"
+  ],
+  "description": "The flagship 16-core CPU for the AM5 platform, designed for ultimate enthusiast performance and workstation-level workloads.",
+  "price": 579.99,
+  "originalPrice": 620,
+  "condition": "NEW",
+  "stock": 18,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/amd-ryzen-9-7950x.jpg",
+      "alt": "AMD Ryzen 9 7950X"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 10,
+  "totalRating": 48,
+  "addedAt": "2025-12-10T11:45:00Z",
+  "modifiedAt": "2025-12-22T14:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445359"
+  },
+  "title": "NVIDIA GeForce RTX 3060 12GB",
+  "authors": [
+    "NVIDIA"
+  ],
+  "description": "Built with the Ampere architecture, this GPU offers 12GB of VRAM and Ray Tracing capabilities for a stunning 1080p gaming experience.",
+  "price": 329.99,
+  "originalPrice": 350,
+  "condition": "NEW",
+  "stock": 41,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rtx-3060-12gb.jpg",
+      "alt": "NVIDIA GeForce RTX 3060 12GB"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 25,
+  "totalRating": 115,
+  "addedAt": "2025-12-16T15:00:00Z",
+  "modifiedAt": "2025-12-23T17:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044535e"
+  },
+  "title": "NVIDIA GeForce RTX 4070 12GB",
+  "authors": [
+    "NVIDIA"
+  ],
+  "description": "The latest Ada Lovelace architecture brings DLSS 3 support and extreme efficiency for high-refresh 1440p gaming.",
+  "price": 549.99,
+  "originalPrice": 599,
+  "condition": "NEW",
+  "stock": 27,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rtx-4070.jpg",
+      "alt": "NVIDIA GeForce RTX 4070 12GB"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 12,
+  "totalRating": 57.6,
+  "addedAt": "2025-12-19T10:00:00Z",
+  "modifiedAt": "2025-12-24T08:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445360"
+  },
+  "title": "NVIDIA GeForce RTX 4090 24GB",
+  "authors": [
+    "NVIDIA"
+  ],
+  "description": "The ultimate gaming GPU. With 24GB of G6X memory, it delivers unprecedented 4K performance and AI-accelerated graphics.",
+  "price": 1599.99,
+  "originalPrice": 1750,
+  "condition": "NEW",
+  "stock": 9,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rtx-4090.jpg",
+      "alt": "NVIDIA GeForce RTX 4090 24GB"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 30,
+  "totalRating": 147,
+  "addedAt": "2025-12-13T12:00:00Z",
+  "modifiedAt": "2025-12-24T12:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044535f"
+  },
+  "title": "AMD Radeon RX 6700 XT 12GB",
+  "authors": [
+    "AMD"
+  ],
+  "description": "Engineered for high-performance 1440p gaming, this card combines 12GB of VRAM with AMD Infinity Cache technology.",
+  "price": 329.99,
+  "originalPrice": 360,
+  "condition": "NEW",
+  "stock": 36,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rx-6700-xt.jpg",
+      "alt": "AMD Radeon RX 6700 XT 12GB"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 15,
+  "totalRating": 67.5,
+  "addedAt": "2025-12-17T08:45:00Z",
+  "modifiedAt": "2025-12-21T10:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445362"
+  },
+  "title": "AMD Radeon RX 7800 XT 16GB",
+  "authors": [
+    "AMD"
+  ],
+  "description": "Experience smooth visuals and high frame rates with RDNA 3 architecture, featuring advanced AI accelerators and 16GB memory.",
+  "price": 499.99,
+  "originalPrice": 530,
+  "condition": "NEW",
+  "stock": 22,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rx-7800-xt.jpg",
+      "alt": "AMD Radeon RX 7800 XT 16GB"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 10,
+  "totalRating": 47,
+  "addedAt": "2025-12-20T11:00:00Z",
+  "modifiedAt": "2025-12-24T09:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445363"
+  },
+  "title": "Corsair Vengeance LPX 16GB DDR4",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "Designed for high-performance overclocking. Each module is built with a pure aluminum heatspreader for faster heat dissipation.",
+  "price": 59.99,
+  "originalPrice": 70,
+  "condition": "NEW",
+  "stock": 88,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e8"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-vengeance-16gb-ddr4.jpg",
+      "alt": "Corsair Vengeance 16GB DDR4"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 45,
+  "totalRating": 202.5,
+  "addedAt": "2025-12-11T09:30:00Z",
+  "modifiedAt": "2025-12-22T14:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445364"
+  },
+  "title": "Corsair Vengeance 32GB DDR5 6000MHz",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "Next-generation DDR5 technology offering faster frequencies, greater capacities, and better power efficiency for modern systems.",
+  "price": 149.99,
+  "originalPrice": 165,
+  "condition": "NEW",
+  "stock": 47,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e8"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-vengeance-32gb-ddr5.jpg",
+      "alt": "Corsair Vengeance 32GB DDR5"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 25,
+  "totalRating": 115,
+  "addedAt": "2025-12-14T16:20:00Z",
+  "modifiedAt": "2025-12-23T11:15:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445365"
+  },
+  "title": "G.Skill Trident Z5 RGB 32GB DDR5",
+  "authors": [
+    "G.Skill"
+  ],
+  "description": "Flagship DDR5 memory designed for ultra-high performance on DDR5-enabled platforms. Features a sleek, streamlined RGB design.",
+  "price": 169.99,
+  "originalPrice": 189,
+  "condition": "NEW",
+  "stock": 29,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e8"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/gskill-trident-z5-32gb.jpg",
+      "alt": "G.Skill Trident Z5 RGB"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 18,
+  "totalRating": 84.6,
+  "addedAt": "2025-12-18T13:40:00Z",
+  "modifiedAt": "2025-12-24T10:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445366"
+  },
+  "title": "Kingston Fury Beast 64GB DDR5",
+  "authors": [
+    "Kingston"
+  ],
+  "description": "Provides a significant performance boost for gaming, video editing, and rendering with massive 64GB capacity and DDR5 speeds.",
+  "price": 289.99,
+  "originalPrice": 310,
+  "condition": "NEW",
+  "stock": 14,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e8"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/kingston-fury-64gb-ddr5.jpg",
+      "alt": "Kingston Fury Beast 64GB"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 10,
+  "totalRating": 46,
+  "addedAt": "2025-12-12T07:15:00Z",
+  "modifiedAt": "2025-12-21T09:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445369"
+  },
+  "title": "Samsung 970 EVO Plus 1TB NVMe",
+  "authors": [
+    "Samsung"
+  ],
+  "description": "Reliable NVMe SSD powered by the latest V-NAND technology, offering exceptional read/write speeds and enhanced endurance.",
+  "price": 89.99,
+  "originalPrice": 99,
+  "condition": "NEW",
+  "stock": 66,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500eb"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/samsung-970-evo-plus-1tb.jpg",
+      "alt": "Samsung 970 EVO Plus"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 55,
+  "totalRating": 258.5,
+  "addedAt": "2025-12-15T14:00:00Z",
+  "modifiedAt": "2025-12-23T16:15:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445367"
+  },
+  "title": "Samsung 990 Pro 2TB NVMe Gen4",
+  "authors": [
+    "Samsung"
+  ],
+  "description": "Reach maximum performance of PCIe 4.0. Experience long-lasting, industry-leading speed for gaming and creative work.",
+  "price": 189.99,
+  "originalPrice": 210,
+  "condition": "NEW",
+  "stock": 21,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500eb"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/samsung-990-pro-2tb.jpg",
+      "alt": "Samsung 990 Pro 2TB"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 42,
+  "totalRating": 205.8,
+  "addedAt": "2025-12-19T11:00:00Z",
+  "modifiedAt": "2025-12-24T12:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044536a"
+  },
+  "title": "WD Black SN850X 1TB NVMe",
+  "authors": [
+    "WD"
+  ],
+  "description": "A top-tier gaming drive designed to minimize load times and eliminate throttling for a smooth, fast gaming experience.",
+  "price": 109.99,
+  "originalPrice": 125,
+  "condition": "NEW",
+  "stock": 54,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500eb"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/wd-sn850x-1tb.jpg",
+      "alt": "WD Black SN850X"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 33,
+  "totalRating": 155.1,
+  "addedAt": "2025-12-20T08:00:00Z",
+  "modifiedAt": "2025-12-24T15:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445368"
+  },
+  "title": "Crucial P5 Plus 2TB NVMe",
+  "authors": [
+    "Crucial"
+  ],
+  "description": "Engineered for enthusiasts and professionals who demand high-speed data transfer and proven reliability.",
+  "price": 159.99,
+  "originalPrice": 175,
+  "condition": "NEW",
+  "stock": 32,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500eb"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/crucial-p5-plus-2tb.jpg",
+      "alt": "Crucial P5 Plus 2TB"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 18,
+  "totalRating": 82.8,
+  "addedAt": "2025-12-13T10:30:00Z",
+  "modifiedAt": "2025-12-22T17:10:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445361"
+  },
+  "title": "Seagate Barracuda 2TB 7200RPM",
+  "authors": [
+    "Seagate"
+  ],
+  "description": "Versatile and dependable high-capacity hard drive with 7200RPM spindle speed, suitable for mass storage of files and media.",
+  "price": 59.99,
+  "originalPrice": 65,
+  "condition": "NEW",
+  "stock": 71,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ec"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/seagate-barracuda-2tb.jpg",
+      "alt": "Seagate Barracuda 2TB"
+    }
+  ],
+  "averageRating": 4.4,
+  "ratingCount": 60,
+  "totalRating": 264,
+  "addedAt": "2025-12-10T09:00:00Z",
+  "modifiedAt": "2025-12-21T11:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445372"
+  },
+  "title": "WD Blue 4TB 5400RPM",
+  "authors": [
+    "WD"
+  ],
+  "description": "Boost your PC storage with WD Blue drives, designed for reliable storage of photos, videos, and large documents.",
+  "price": 94.99,
+  "originalPrice": 105,
+  "condition": "NEW",
+  "stock": 38,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ec"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/wd-blue-4tb.jpg",
+      "alt": "WD Blue 4TB"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 22,
+  "totalRating": 99,
+  "addedAt": "2025-12-14T14:10:00Z",
+  "modifiedAt": "2025-12-23T09:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044536f"
+  },
+  "title": "ASUS ROG STRIX B550-F Gaming",
+  "authors": [
+    "ASUS"
+  ],
+  "description": "High-performance motherboard for AMD Ryzen CPUs featuring robust power delivery, PCIe 4.0, and futuristic aesthetics.",
+  "price": 179.99,
+  "originalPrice": 195,
+  "condition": "NEW",
+  "stock": 24,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e9"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/asus-b550-f-gaming.jpg",
+      "alt": "ASUS ROG STRIX B550-F"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 14,
+  "totalRating": 64.4,
+  "addedAt": "2025-12-16T17:30:00Z",
+  "modifiedAt": "2025-12-24T14:40:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445375"
+  },
+  "title": "MSI MAG B660 Tomahawk WiFi",
+  "authors": [
+    "MSI"
+  ],
+  "description": "A solid choice for Intel 12th Gen processors with premium thermal solutions and high-speed WiFi 6 connectivity.",
+  "price": 189.99,
+  "originalPrice": 205,
+  "condition": "NEW",
+  "stock": 19,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e9"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/msi-b660-tomahawk.jpg",
+      "alt": "MSI MAG B660 Tomahawk"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 9,
+  "totalRating": 42.3,
+  "addedAt": "2025-12-11T12:00:00Z",
+  "modifiedAt": "2025-12-22T08:15:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445373"
+  },
+  "title": "Gigabyte Z790 AORUS Elite AX",
+  "authors": [
+    "Gigabyte"
+  ],
+  "description": "Premium Z790 motherboard designed for high-end gaming rigs, supporting DDR5 and PCIe 5.0 for future-proof performance.",
+  "price": 279.99,
+  "originalPrice": 310,
+  "condition": "NEW",
+  "stock": 15,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e9"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/gigabyte-z790-aorus-elite.jpg",
+      "alt": "Gigabyte Z790 AORUS Elite"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 7,
+  "totalRating": 33.6,
+  "addedAt": "2025-12-18T10:45:00Z",
+  "modifiedAt": "2025-12-24T16:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044536b"
+  },
+  "title": "Corsair RM650x 650W 80+ Gold",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "Fully modular power supply with 80 Plus Gold efficiency, ensuring quiet and stable power delivery to your components.",
+  "price": 99.99,
+  "originalPrice": 115,
+  "condition": "NEW",
+  "stock": 44,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ea"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-rm650x.jpg",
+      "alt": "Corsair RM650x 650W"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 28,
+  "totalRating": 131.6,
+  "addedAt": "2025-12-12T15:20:00Z",
+  "modifiedAt": "2025-12-21T13:10:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445377"
+  },
+  "title": "Corsair RM850x 850W 80+ Gold",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "High-wattage power supply unit with 105 degree C rated Japanese capacitors, perfect for high-performance GPUs.",
+  "price": 139.99,
+  "originalPrice": 155,
+  "condition": "NEW",
+  "stock": 31,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ea"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-rm850x.jpg",
+      "alt": "Corsair RM850x 850W"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 16,
+  "totalRating": 76.8,
+  "addedAt": "2025-12-17T11:00:00Z",
+  "modifiedAt": "2025-12-24T10:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445370"
+  },
+  "title": "Seasonic Focus GX-750 80+ Gold",
+  "authors": [
+    "Seasonic"
+  ],
+  "description": "Compact and highly efficient 750W PSU with a hybrid fan control for silent operation during low loads.",
+  "price": 129.99,
+  "originalPrice": 140,
+  "condition": "NEW",
+  "stock": 27,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ea"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/seasonic-focus-gx-750.jpg",
+      "alt": "Seasonic Focus GX-750"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 12,
+  "totalRating": 56.4,
+  "addedAt": "2025-12-13T08:30:00Z",
+  "modifiedAt": "2025-12-22T15:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445378"
+  },
+  "title": "NZXT H510 Flow",
+  "authors": [
+    "NZXT"
+  ],
+  "description": "Mid-tower case with a perforated front panel to maximize airflow and keep your high-end components cool.",
+  "price": 94.99,
+  "originalPrice": 105,
+  "condition": "NEW",
+  "stock": 58,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/nzxt-h510-flow.jpg",
+      "alt": "NZXT H510 Flow"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 40,
+  "totalRating": 184,
+  "addedAt": "2025-12-15T09:45:00Z",
+  "modifiedAt": "2025-12-24T13:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445379"
+  },
+  "title": "Lian Li Lancool 216",
+  "authors": [
+    "Lian Li"
+  ],
+  "description": "An airflow-optimized chassis designed with two large 160mm fans for extreme cooling performance and easy cable management.",
+  "price": 109.99,
+  "originalPrice": 120,
+  "condition": "NEW",
+  "stock": 33,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/lian-li-lancool-216.jpg",
+      "alt": "Lian Li Lancool 216"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 25,
+  "totalRating": 120,
+  "addedAt": "2025-12-19T14:30:00Z",
+  "modifiedAt": "2025-12-24T16:15:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044537a"
+  },
+  "title": "Corsair 4000D Airflow",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "Optimized high-airflow front panel and RapidRoute cable management system for a clean and cool build.",
+  "price": 104.99,
+  "originalPrice": 115,
+  "condition": "NEW",
+  "stock": 41,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-4000d-airflow.jpg",
+      "alt": "Corsair 4000D Airflow"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 35,
+  "totalRating": 164.5,
+  "addedAt": "2025-12-10T12:00:00Z",
+  "modifiedAt": "2025-12-20T17:40:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044537b"
+  },
+  "title": "Noctua NH-D15 Chromax Black",
+  "authors": [
+    "Noctua"
+  ],
+  "description": "Elite-class quiet CPU cooler with six heatpipes and dual fans, providing maximum cooling performance for enthusiasts.",
+  "price": 99.99,
+  "originalPrice": 110,
+  "condition": "NEW",
+  "stock": 17,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ee"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/noctua-nh-d15.jpg",
+      "alt": "Noctua NH-D15"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 50,
+  "totalRating": 245,
+  "addedAt": "2025-12-14T08:15:00Z",
+  "modifiedAt": "2025-12-22T10:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044537c"
+  },
+  "title": "DeepCool AK620",
+  "authors": [
+    "DeepCool"
+  ],
+  "description": "High-performance dual-tower CPU air cooler with six copper heatpipes and dense fin-stacks for high TDP processors.",
+  "price": 69.99,
+  "originalPrice": 78,
+  "condition": "NEW",
+  "stock": 49,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ee"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/deepcool-ak620.jpg",
+      "alt": "DeepCool AK620"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 20,
+  "totalRating": 92,
+  "addedAt": "2025-12-16T11:20:00Z",
+  "modifiedAt": "2025-12-24T09:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044537d"
+  },
+  "title": "Cooler Master ML240L V2",
+  "authors": [
+    "Cooler Master"
+  ],
+  "description": "Enhanced liquid cooling solution with a new dual-chamber pump and enlarged radiator surface for efficient heat exchange.",
+  "price": 84.99,
+  "originalPrice": 95,
+  "condition": "NEW",
+  "stock": 28,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ee"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/coolermaster-ml240l.jpg",
+      "alt": "Cooler Master ML240L"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 18,
+  "totalRating": 81,
+  "addedAt": "2025-12-20T16:00:00Z",
+  "modifiedAt": "2025-12-23T14:10:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044537e"
+  },
+  "title": "LG 27GP850-B QHD 165Hz IPS",
+  "authors": [
+    "LG"
+  ],
+  "description": "UltraGear gaming monitor with Nano IPS technology, 1ms response time, and QHD resolution for crisp visuals.",
+  "price": 349.99,
+  "originalPrice": 380,
+  "condition": "NEW",
+  "stock": 19,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ef"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/lg-27gp850-b.jpg",
+      "alt": "LG 27GP850-B"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 15,
+  "totalRating": 70.5,
+  "addedAt": "2025-12-12T13:40:00Z",
+  "modifiedAt": "2025-12-21T09:15:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445376"
+  },
+  "title": "ASUS TUF VG27AQ QHD 165Hz",
+  "authors": [
+    "ASUS"
+  ],
+  "description": "Features ELMB Sync technology and 165Hz refresh rate, providing smooth gameplay and HDR compatibility.",
+  "price": 329.99,
+  "originalPrice": 350,
+  "condition": "NEW",
+  "stock": 22,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ef"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/asus-vg27aq.jpg",
+      "alt": "ASUS TUF VG27AQ"
+    }
+  ],
+  "averageRating": 4.6,
+  "ratingCount": 12,
+  "totalRating": 55.2,
+  "addedAt": "2025-12-15T10:00:00Z",
+  "modifiedAt": "2025-12-24T11:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445380"
+  },
+  "title": "Samsung Odyssey G7 27 inch",
+  "authors": [
+    "Samsung"
+  ],
+  "description": "World's first 1000R curved gaming monitor with 240Hz refresh rate and G-Sync compatibility for ultimate immersion.",
+  "price": 499.99,
+  "originalPrice": 550,
+  "condition": "NEW",
+  "stock": 14,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ef"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/samsung-odyssey-g7.jpg",
+      "alt": "Samsung Odyssey G7"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 20,
+  "totalRating": 96,
+  "addedAt": "2025-12-18T15:20:00Z",
+  "modifiedAt": "2025-12-24T16:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445381"
+  },
+  "title": "Intel Core i9-13900K",
+  "authors": [
+    "Intel"
+  ],
+  "description": "Ultimate desktop processor with 24 cores (8P + 16E), pushing the boundaries of performance and speed.",
+  "price": 589.99,
+  "originalPrice": 620,
+  "condition": "NEW",
+  "stock": 12,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/intel-i9-13900k.jpg",
+      "alt": "Intel Core i9-13900K"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 10,
+  "totalRating": 49,
+  "addedAt": "2025-12-10T08:00:0Z",
+  "modifiedAt": "2025-12-22T14:10:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445382"
+  },
+  "title": "AMD Ryzen 7 7700X",
+  "authors": [
+    "AMD"
+  ],
+  "description": "High-speed 8-core CPU based on Zen 4 architecture, optimized for extreme gaming performance on the AM5 platform.",
+  "price": 329.99,
+  "originalPrice": 350,
+  "condition": "NEW",
+  "stock": 40,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e6"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/amd-ryzen-7-7700x.jpg",
+      "alt": "AMD Ryzen 7 7700X"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 15,
+  "totalRating": 70.5,
+  "addedAt": "2025-12-11T12:00:00Z",
+  "modifiedAt": "2025-12-23T09:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445383"
+  },
+  "title": "NVIDIA GeForce RTX 4060 Ti",
+  "authors": [
+    "NVIDIA"
+  ],
+  "description": "Exceptional efficiency and performance for 1080p gaming, featuring DLSS 3 and enhanced Ray Tracing cores.",
+  "price": 399.99,
+  "originalPrice": 430,
+  "condition": "NEW",
+  "stock": 45,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rtx-4060-ti.jpg",
+      "alt": "NVIDIA GeForce RTX 4060 Ti"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 20,
+  "totalRating": 90,
+  "addedAt": "2025-12-13T10:00:00Z",
+  "modifiedAt": "2025-12-22T16:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445386"
+  },
+  "title": "AMD Radeon RX 7900 XTX",
+  "authors": [
+    "AMD"
+  ],
+  "description": "The peak of AMD graphics performance, delivering ultra-high frame rates at 4K with 24GB of GDDR6 memory.",
+  "price": 949.99,
+  "originalPrice": 1050,
+  "condition": "NEW",
+  "stock": 10,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/rx-7900-xtx.jpg",
+      "alt": "AMD Radeon RX 7900 XTX"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 10,
+  "totalRating": 48,
+  "addedAt": "2025-12-14T09:30:00Z",
+  "modifiedAt": "2025-12-24T11:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445384"
+  },
+  "title": "ASUS ROG Maximus Z790 Hero",
+  "authors": [
+    "ASUS"
+  ],
+  "description": "Elite Z790 motherboard with massive power stages, advanced AI features, and comprehensive cooling options for overclockers.",
+  "price": 629.99,
+  "originalPrice": 650,
+  "condition": "NEW",
+  "stock": 8,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e9"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/asus-z790-hero.jpg",
+      "alt": "ASUS ROG Maximus Z790 Hero"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 5,
+  "totalRating": 24.5,
+  "addedAt": "2025-12-15T15:00:00Z",
+  "modifiedAt": "2025-12-23T10:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445385"
+  },
+  "title": "Corsair RM1000x 1000W 80+ Gold",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "High-performance power supply designed for extreme PC builds requiring 1000W of stable and clean power.",
+  "price": 189.99,
+  "originalPrice": 210,
+  "condition": "NEW",
+  "stock": 15,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ea"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-rm1000x.jpg",
+      "alt": "Corsair RM1000x"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 12,
+  "totalRating": 57.6,
+  "addedAt": "2025-12-16T11:00:00Z",
+  "modifiedAt": "2025-12-24T14:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445387"
+  },
+  "title": "NZXT H9 Elite Case",
+  "authors": [
+    "NZXT"
+  ],
+  "description": "Dual-chamber mid-tower chassis featuring panoramic glass and three RGB fans for a spectacular showcase build.",
+  "price": 239.99,
+  "originalPrice": 260,
+  "condition": "NEW",
+  "stock": 12,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/nzxt-h9-elite.jpg",
+      "alt": "NZXT H9 Elite"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 8,
+  "totalRating": 38.4,
+  "addedAt": "2025-12-17T09:00:00Z",
+  "modifiedAt": "2025-12-24T15:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044537f"
+  },
+  "title": "Arctic Liquid Freezer II 360",
+  "authors": [
+    "Arctic"
+  ],
+  "description": "Award-winning all-in-one liquid cooler with a massive 360mm radiator and dedicated VRM fan for exceptional thermals.",
+  "price": 139.99,
+  "originalPrice": 150,
+  "condition": "NEW",
+  "stock": 20,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ee"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/arctic-liquid-360.jpg",
+      "alt": "Arctic Liquid Freezer II 360"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 25,
+  "totalRating": 122.5,
+  "addedAt": "2025-12-18T10:20:00Z",
+  "modifiedAt": "2025-12-24T12:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044536d"
+  },
+  "title": "Logitech G502 X Plus Wireless",
+  "authors": [
+    "Logitech"
+  ],
+  "description": "Iconic gaming mouse reimagined with hybrid optical-mechanical switches and LIGHTSYNC RGB lighting.",
+  "price": 159.99,
+  "originalPrice": 170,
+  "condition": "NEW",
+  "stock": 50,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/logitech-g502x.jpg",
+      "alt": "Logitech G502 X"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 30,
+  "totalRating": 144,
+  "addedAt": "2025-12-19T14:45:00Z",
+  "modifiedAt": "2025-12-24T09:30:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445388"
+  },
+  "title": "Razer DeathAdder V3 Pro",
+  "authors": [
+    "Razer"
+  ],
+  "description": "Ultra-lightweight wireless gaming mouse with refined ergonomic shape for professional-grade performance.",
+  "price": 149.99,
+  "originalPrice": 160,
+  "condition": "NEW",
+  "stock": 35,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/razer-deathadder-v3.jpg",
+      "alt": "Razer DeathAdder V3 Pro"
+    }
+  ],
+  "averageRating": 4.7,
+  "ratingCount": 22,
+  "totalRating": 103.4,
+  "addedAt": "2025-12-11T08:00:00Z",
+  "modifiedAt": "2025-12-20T16:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044536e"
+  },
+  "title": "SteelSeries Apex Pro TKL",
+  "authors": [
+    "SteelSeries"
+  ],
+  "description": "Worlds fastest mechanical keyboard with OmniPoint 2.0 adjustable switches and OLED smart display.",
+  "price": 189.99,
+  "originalPrice": 200,
+  "condition": "NEW",
+  "stock": 18,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ed"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/steelseries-apex-pro.jpg",
+      "alt": "SteelSeries Apex Pro"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 15,
+  "totalRating": 73.5,
+  "addedAt": "2025-12-12T13:30:00Z",
+  "modifiedAt": "2025-12-21T11:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445374"
+  },
+  "title": "Kingston NV2 1TB Gen4 NVMe",
+  "authors": [
+    "Kingston"
+  ],
+  "description": "Substantial storage solution offering high speeds for thin laptops and small form factor systems.",
+  "price": 54.99,
+  "originalPrice": 65,
+  "condition": "NEW",
+  "stock": 100,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500eb"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/kingston-nv2-1tb.jpg",
+      "alt": "Kingston NV2 1TB"
+    }
+  ],
+  "averageRating": 4.5,
+  "ratingCount": 50,
+  "totalRating": 225,
+  "addedAt": "2025-12-13T10:15:00Z",
+  "modifiedAt": "2025-12-24T17:00:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445389"
+  },
+  "title": "MSI RTX 4080 Super Gaming X",
+  "authors": [
+    "MSI"
+  ],
+  "description": "High-end graphics card with TRI FROZR 3 cooling system, providing unmatched 4K gaming performance.",
+  "price": 1099.99,
+  "originalPrice": 1150,
+  "condition": "NEW",
+  "stock": 7,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e7"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/msi-rtx-4080-super.jpg",
+      "alt": "MSI RTX 4080 Super"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 5,
+  "totalRating": 24,
+  "addedAt": "2025-12-14T12:00:00Z",
+  "modifiedAt": "2025-12-23T15:20:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e044536c"
+  },
+  "title": "ASUS ROG Swift PG279QM",
+  "authors": [
+    "ASUS"
+  ],
+  "description": "Premier 27-inch gaming monitor with 240Hz refresh rate and Fast IPS technology for competitive gaming.",
+  "price": 699.99,
+  "originalPrice": 750,
+  "condition": "NEW",
+  "stock": 10,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500ef"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/asus-pg279qm.jpg",
+      "alt": "ASUS ROG Swift PG279QM"
+    }
+  ],
+  "averageRating": 4.9,
+  "ratingCount": 8,
+  "totalRating": 39.2,
+  "addedAt": "2025-12-15T09:00:00Z",
+  "modifiedAt": "2025-12-24T13:45:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+},
+{
+  "_id": {
+    "$oid": "682023424a1ae581e0445371"
+  },
+  "title": "Corsair Dominator Titanium 32GB",
+  "authors": [
+    "Corsair"
+  ],
+  "description": "The peak of DDR5 performance featuring premium craftsmanship and vibrant RGB lighting customization.",
+  "price": 199.99,
+  "originalPrice": 220,
+  "condition": "NEW",
+  "stock": 12,
+  "categoryIds": [
+    {
+      "$oid": "694ae1e055e2e3dc4b3500e8"
+    }
+  ],
+  "images": [
+    {
+      "url": "/data/imgs/corsair-dominator-32gb.jpg",
+      "alt": "Corsair Dominator Titanium"
+    }
+  ],
+  "averageRating": 4.8,
+  "ratingCount": 10,
+  "totalRating": 48,
+  "addedAt": "2025-12-16T11:30:00Z",
+  "modifiedAt": "2025-12-24T16:10:00Z",
+  "_class": "com.dominator.bookify.model.Book"
+}]

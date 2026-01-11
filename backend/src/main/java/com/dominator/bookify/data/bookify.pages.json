@@ -1,0 +1,44 @@
+[{
+  "_id": {
+    "$oid": "6845ea856ee1d342db30dffe"
+  },
+  "title": "About Us – Gearly",
+  "slug": "about-us",
+  "content": "Welcome to Gearly, your trusted destination for PCs, laptops, and computer components. We are passionate about technology and committed to delivering reliable products that meet the needs of gamers, professionals, students, and everyday users.\n\nAt Gearly, we carefully select and offer a wide range of technology solutions—from high-performance desktops and laptops to essential components and accessories. Our goal is to make quality technology accessible, transparent, and easy to purchase.\n\nWe believe great service matters as much as great hardware. Our team focuses on accurate product information, fair pricing, and responsive customer support to ensure a smooth and confident shopping experience. Whether you are building your first PC or upgrading your setup, Gearly is here to support you every step of the way.\n\nThank you for choosing Gearly. We look forward to powering your work, creativity, and play.",
+  "lastModified": {
+    "$date": "2025-06-08T19:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "694a4c6394300f0d650a4d34"
+  },
+  "title": "Return & Refund Policy - Gearly",
+  "slug": "return-policy",
+  "content": "At Gearly, we aim to ensure customer satisfaction with every purchase. This Return & Refund Policy explains the conditions under which products may be returned or refunded.\n\nCustomers may request a return or exchange within 7 days of receiving the product, provided the item is unused, in its original condition, and includes all original packaging, accessories, and documentation. Proof of purchase is required.\n\nReturns are accepted if the product is defective, damaged during shipping, incorrect, or not as described. For electronic components, signs of misuse, physical damage, or unauthorized modification may void return eligibility.\n\nTo initiate a return, customers must contact Gearly support before sending the product back. Unauthorized returns may be refused. Shipping costs for approved returns may be covered by Gearly in cases of error or defect.\n\nOnce the returned item is received and inspected, approved refunds will be processed to the original payment method within 7–14 business days. Processing times may vary depending on the payment provider.\n\nProducts purchased on promotion, clearance items, or customized orders may not be eligible for return unless required by law.\n\nGearly reserves the right to refuse returns that do not meet the conditions outlined in this policy.\n\nFor questions or assistance regarding returns or refunds, please contact Gearly support. Thank you for shopping with Gearly.",
+  "lastModified": {
+    "$date": "2025-06-08T19:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "694a4b0a94300f0d650a4d30"
+  },
+  "title": "Privacy Policy - Gearly",
+  "slug": "privacy",
+  "content": "Welcome to Gearly. We value your privacy and are committed to protecting your personal information when you visit or shop on our website.\n\nWe collect information you provide, such as your name, contact details, shipping address, and payment information, when you place an order, create an account, or contact support. We may also collect non-personal data like IP address, device information, and browsing activity to improve our website and services.\n\nYour information is used to process orders, deliver products, provide customer support, prevent fraud, and send important notifications. Gearly does not sell or share your personal data with third parties for marketing purposes.\n\nWe apply appropriate security measures to protect your data. Payments are processed through secure, encrypted gateways, and we do not store full payment details on our servers.\n\nOur website uses cookies to enhance functionality and analyze traffic. You may disable cookies in your browser, though some features may not work correctly.\n\nWe only share necessary information with trusted partners such as payment providers (e.g., MoMo, VNPay), shipping services (e.g., GiaoHangNhanh, J&T Express), and analytics tools to fulfill orders and improve services. These partners are required to protect your data.\n\nYou may access, update, or request deletion of your personal information at any time by contacting Gearly support.\n\nBy using our website, you agree to this Privacy Policy. We may update it periodically, and any changes will be posted on this page.\n\nThank you for choosing Gearly as your trusted store for PCs, laptops, and computer components.",
+  "lastModified": {
+    "$date": "2025-06-08T19:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "694a4c2894300f0d650a4d32"
+  },
+  "title": "User Terms & Conditions - Gearly",
+  "slug": "terms",
+  "content": "Welcome to Gearly. By accessing or using our website, you agree to comply with and be bound by the following Terms & Conditions. Please read them carefully before using our services.\n\nGearly provides an online platform for purchasing PCs, laptops, and computer components. You must be at least 18 years old or have legal guardian consent to place an order on our website.\n\nBy placing an order, you agree that all information provided is accurate and complete. Prices, product descriptions, and availability are subject to change without notice. Gearly reserves the right to cancel or refuse any order in cases of pricing errors, suspected fraud, or product unavailability.\n\nAll payments must be completed through our supported payment methods. Orders will only be processed and shipped after successful payment confirmation.\n\nAll content on this website, including text, images, logos, and designs, is the property of Gearly and may not be copied, modified, or used without prior written permission.\n\nGearly is not responsible for damages resulting from improper use of products, third-party services, or circumstances beyond our control. Our liability, if any, is limited to the value of the purchased product.\n\nWe reserve the right to suspend or terminate accounts that violate these Terms, misuse the website, or engage in fraudulent or harmful activities.\n\nThese Terms & Conditions may be updated from time to time. Continued use of the website after changes are posted constitutes acceptance of the revised terms.\n\nIf you have any questions regarding these Terms & Conditions, please contact Gearly support. Thank you for choosing Gearly as your trusted technology store.",
+  "lastModified": {
+    "$date": "2025-06-08T19:00:00.000Z"
+  }
+}]

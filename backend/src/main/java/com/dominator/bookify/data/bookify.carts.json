@@ -1,0 +1,105 @@
+[{
+  "_id": {
+    "$oid": "6845efcaf6159c1e348dcc66"
+  },
+  "userId": "6845ef85f6159c1e348dcc64",
+  "items": [],
+  "createdAt": {
+    "$date": "2025-06-08T20:17:14.541Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T20:37:12.168Z"
+  },
+  "_class": "com.dominator.bookify.model.Cart"
+},
+{
+  "_id": {
+    "$oid": "6845f72ff6159c1e348dcc7a"
+  },
+  "userId": "6845f24ef6159c1e348dcc6a",
+  "items": [],
+  "createdAt": {
+    "$date": "2025-06-08T20:48:47.361Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T21:07:37.647Z"
+  },
+  "_class": "com.dominator.bookify.model.Cart"
+},
+{
+  "_id": {
+    "$oid": "6845fd07f6159c1e348dcc85"
+  },
+  "userId": "6845f2a2f6159c1e348dcc6c",
+  "items": [],
+  "createdAt": {
+    "$date": "2025-06-08T21:13:43.347Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T21:20:07.985Z"
+  },
+  "_class": "com.dominator.bookify.model.Cart"
+},
+{
+  "_id": {
+    "$oid": "684600e0f6159c1e348dcc92"
+  },
+  "userId": "6845f327f6159c1e348dcc6e",
+  "items": [],
+  "createdAt": {
+    "$date": "2025-06-08T21:30:08.048Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T21:34:26.351Z"
+  },
+  "_class": "com.dominator.bookify.model.Cart"
+},
+{
+  "_id": {
+    "$oid": "68460302f6159c1e348dcc9e"
+  },
+  "userId": "6845f366f6159c1e348dcc70",
+  "items": [],
+  "createdAt": {
+    "$date": "2025-06-08T21:39:14.834Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T21:42:16.618Z"
+  },
+  "_class": "com.dominator.bookify.model.Cart"
+},
+{
+  "_id": {
+    "$oid": "684604faf6159c1e348dcca8"
+  },
+  "userId": "6845f3caf6159c1e348dcc72",
+  "items": [
+    {
+      "bookId": "682023424a1ae581e0445367",
+      "title": "GermLine",
+      "author": "Nelson Erlick",
+      "price": 2.65,
+      "quantity": 1,
+      "image": "/data/book-img/germline-1.jpg",
+      "condition": "ACCEPTABLE",
+      "stock": 61
+    },
+    {
+      "bookId": "682023424a1ae581e044536b",
+      "title": "Infinity Beach",
+      "author": "Jack McDevitt",
+      "price": 14.62,
+      "quantity": 1,
+      "image": "/data/book-img/infinity-beach-1.jpg",
+      "condition": "NEW",
+      "stock": 31
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-06-08T21:47:38.811Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T22:13:29.933Z"
+  },
+  "_class": "com.dominator.bookify.model.Cart"
+}]
