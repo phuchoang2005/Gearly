@@ -46,13 +46,15 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 **Goal:** Establish a safe, buildable baseline; get secrets out of source; make admin endpoints actually require an admin. *(Phases 0–2)*
 
 **Backlog**
-- [ ] **Baseline:** confirm `mvn -q compile` green; add empty defaults for the two undefined `github.models.token` / `github.models.secondToken` props so context loads.
-- [ ] **Housekeeping:** relocate `backend/src/main/java/com/dominator/bookify/data/*.json` (incl. the 37 MB `cities.json`) → `backend/data/seed/`; add to `.gitignore` if not needed in-repo. Delete dead `controller/admin/template.java`.
-- [ ] **Externalize secrets:** replace literals in `application.properties` + `application-docker.properties` with env placeholders (`${JWT_SECRET}`, `${MAIL_PASSWORD}`, `${MOMO_ACCESS_KEY}`, `${MOMO_SECRET_KEY}`, `${GOOGLE_CLIENT_ID}`, `${GITHUB_MODELS_TOKEN}`, …). Add `backend/.env.example` + README section; thread vars through `docker-compose*.yml` / `Dockerfile`.
-- [ ] **Config fixes:** `http://localhost:27017` → `mongodb://…`; consolidate CORS (one `cors.allowed-origins` property + one `CorsConfigurationSource`) removing duplication across `WebConfig`, `WebSocketCorsConfig`, `websocket/WebSocketConfig`; migrate `SecurityConfig` off deprecated `.cors().and()`.
-- [ ] **Lock admin surface:** remove `/api/admin/**` (and redundant siblings) from `permitAll()`; add `.requestMatchers("/api/admin/**").hasRole("ADMIN")`. Keep genuinely public routes public (auth, catalog reads, webhooks, `/ws-chat/**`).
-- [ ] **Wire authorities:** ensure `JwtAuthenticationFilter` maps `User.role` → `ROLE_ADMIN`/`ROLE_CUSTOMER`.
-- [ ] **Out-of-band:** rotate the now-exposed secrets (they remain in git history).
+- [x] **Baseline:** confirm `mvn -q compile` green; add empty defaults for the two undefined `github.models.token` / `github.models.secondToken` props so context loads.
+- [x] **Housekeeping:** relocate `backend/src/main/java/com/dominator/bookify/data/*.json` (incl. the 37 MB `cities.json`) → `backend/data/seed/`; add to `.gitignore` if not needed in-repo. Delete dead `controller/admin/template.java`.
+- [x] **Externalize secrets:** replace literals in `application.properties` + `application-docker.properties` with env placeholders (`${JWT_SECRET}`, `${MAIL_PASSWORD}`, `${MOMO_ACCESS_KEY}`, `${MOMO_SECRET_KEY}`, `${GOOGLE_CLIENT_ID}`, `${GITHUB_MODELS_TOKEN}`, …). Add `backend/.env.example` + README section; thread vars through `docker-compose*.yml` / `Dockerfile`.
+- [x] **Config fixes:** `http://localhost:27017` → `mongodb://…`; consolidate CORS (one `cors.allowed-origins` property + one `CorsConfigurationSource`) removing duplication across `WebConfig`, `WebSocketCorsConfig`, `websocket/WebSocketConfig`; migrate `SecurityConfig` off deprecated `.cors().and()`.
+- [x] **Lock admin surface:** remove `/api/admin/**` (and redundant siblings) from `permitAll()`; add `.requestMatchers("/api/admin/**").hasRole("ADMIN")`. Keep genuinely public routes public (auth, catalog reads, webhooks, `/ws-chat/**`).
+- [x] **Wire authorities:** ensure `JwtAuthenticationFilter` maps `User.role` → `ROLE_ADMIN`/`ROLE_CUSTOMER`.
+- [ ] **Out-of-band:** rotate the now-exposed secrets (they remain in git history). *(User action — cannot be done in-repo.)*
+
+> **S1 status:** ✅ complete. Merged to `main`, tagged `refactor/s1-foundation`. Pre-refactor baseline snapshotted on branch `old-project`.
 
 **Verify:** `/api/admin/orders` → 401/403 without an admin token, 200 with one; app boots only when env vars are set; no `http://…27017` remains.
 
@@ -64,14 +66,14 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 **Goal:** One global exception handler replaces ~30 copy-pasted try/catch blocks; controllers become thin and return validated DTOs, never entities. *(Phases 3–4)*
 
 **Backlog**
-- [ ] **`exception/` package:** `ApiException(HttpStatus,msg)` + `ResourceNotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`; `ErrorResponse` record; `GlobalExceptionHandler` (`@RestControllerAdvice`) handling `ApiException`, `ResponseStatusException`, `MethodArgumentNotValidException` (field errors), and a catch-all 500.
-- [ ] **Strip inline try/catch** from every controller (`AdminOrderController` ~13×, `CartController` 8×, `OrderController`, `UserController`, `BookController`, …); replace service-thrown `RuntimeException` (13× in `UserService`) and ad-hoc `ResponseStatusException` with the typed exceptions.
-- [ ] **DTO-only responses:** add response DTOs where controllers return `Order`/`Cart`/`Book`/`CartItem`; standardize handlers to `ResponseEntity<TypedDto>`.
-- [ ] **Validation:** replace raw `Map<String,String>` bodies (`UserController.resend/forgotPassword/changePassword`, `AdminOrderController` binding raw `Order`) with request DTOs; apply `@Valid` uniformly; add bean-validation annotations to DTOs missing them.
-- [ ] **De-leak controllers:** move Google-token verify + user upsert from `OAuthController` into an `OAuthService`; route `CartController.deleteGuestCart` through `CartService`.
-- [ ] **Collapse dashboard:** merge `AdminDashboardController` interface + `AdminDashboardControllerImplement` into one idiomatic controller returning `ResponseEntity`.
-- [ ] **Standardize:** `@RequiredArgsConstructor`; `@AuthenticationPrincipal AuthenticatedUser authUser` (single name); route pluralization (`/api/cart`→`/api/carts`, `/api/wishlist`→`/api/wishlists`, `/api/blogposts`→`/api/blog-posts`) — **note FE companion changes for S5**.
-- [ ] **Tests:** `@WebMvcTest` for `GlobalExceptionHandler` + one admin & one user controller (400 on bad input, 404 not-found, 403 admin-denied).
+- [x] **`exception/` package:** `ApiException(HttpStatus,msg)` + `ResourceNotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`; `ErrorResponse` record; `GlobalExceptionHandler` (`@RestControllerAdvice`) handling `ApiException`, `ResponseStatusException`, `MethodArgumentNotValidException` (field errors), `HttpMessageNotReadable` (400), and a catch-all 500. *(`ErrorResponse.error` intentionally carries the message key both frontends read.)*
+- [x] **Strip inline try/catch** from every controller (`AdminOrderController` ~13×, `CartController` 8×, `OrderController`, `UserController`, `BookController`, …); replace service-thrown `RuntimeException` (13× in `UserService`) and ad-hoc `ResponseStatusException` (admin + user services) with the typed exceptions. *(Only 2 `catch` blocks remain, both intentional: `UserController.verifyToken` browser redirect, `PaymentController.hmacSha256` crypto helper.)*
+- [x] **DTO-only responses:** typed `ResponseEntity<T>` everywhere (no `ResponseEntity<?>` left); `MessageResponse` for ack bodies. *(Deferred to S4 w/ mappers: `Order`/`Cart`/`Book`/`Review` **entity** responses → response DTOs — marked with `TODO(S4)`.)*
+- [x] **Validation:** raw `Map<String,String>` bodies replaced with `EmailRequestDTO` / `ChangePasswordRequestDTO`; `@Valid` applied on create/update bodies. *(Deferred to S3: `AdminOrderController` raw `@RequestBody Order` → request DTO, tied to the admin-order-service restructure — `TODO(S3)`.)*
+- [x] **De-leak controllers:** Google-token verify + user upsert moved from `OAuthController` into `OAuthService`; `CartController.deleteGuestCart` routed through `CartService` (no more direct `CartRepository`).
+- [x] **Collapse dashboard:** merged `AdminDashboardController` interface + `AdminDashboardControllerImplement` into one idiomatic controller returning `ResponseEntity`.
+- [x] **Standardize:** `@RequiredArgsConstructor`; single principal name `authUser`. *(Route pluralization **deferred to S5** to batch FE changes — user decision.)*
+- [x] **Tests:** `@WebMvcTest` — `UserControllerTest` (400 field errors / 401 / 404 via handler) + `AdminBookControllerTest` (404 + admin-denied 403). `mvn test` green (10 run, 1 skipped: `contextLoads`, re-enabled in S6).
 
 **Verify:** bad input → uniform `ErrorResponse` 400 with field errors; missing id → 404; no controller contains a `try/catch` returning `Map.of("error", …)`.
 
