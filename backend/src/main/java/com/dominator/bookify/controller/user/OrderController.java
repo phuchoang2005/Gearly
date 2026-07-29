@@ -59,19 +59,19 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<Order> createOrder(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @AuthenticationPrincipal AuthenticatedUser authUser,
             @Valid @RequestBody OrderCreationRequestDTO orderRequestDTO
     ) {
-        Order createdOrder = orderService.createOrder(authenticatedUser, orderRequestDTO);
+        Order createdOrder = orderService.createOrder(authUser, orderRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }
 
     @PostMapping("/momo")
     public ResponseEntity<CreateOrderResponse> createOrderWithMomo(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @AuthenticationPrincipal AuthenticatedUser authUser,
             @Valid @RequestBody OrderCreationRequestDTO orderRequestDTO
     ) {
-        CreateOrderResponse redirectRes = orderService.createOrderAndGetMomoUrl(authenticatedUser, orderRequestDTO);
+        CreateOrderResponse redirectRes = orderService.createOrderAndGetMomoUrl(authUser, orderRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(redirectRes);
     }
 }

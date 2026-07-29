@@ -18,53 +18,53 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping
-    public ResponseEntity<Cart> get(@AuthenticationPrincipal AuthenticatedUser u) {
-        return ResponseEntity.ok(cartService.getOrCreate(u.getUser().getId(), null));
+    public ResponseEntity<Cart> get(@AuthenticationPrincipal AuthenticatedUser authUser) {
+        return ResponseEntity.ok(cartService.getOrCreate(authUser.getUser().getId(), null));
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Cart> add(@AuthenticationPrincipal AuthenticatedUser u,
+    public ResponseEntity<Cart> add(@AuthenticationPrincipal AuthenticatedUser authUser,
                                     @RequestBody CartItem item) {
-        return ResponseEntity.ok(cartService.addItem(u.getUser().getId(), null, item));
+        return ResponseEntity.ok(cartService.addItem(authUser.getUser().getId(), null, item));
     }
 
     @PutMapping("/update")
-    public ResponseEntity<Cart> update(@AuthenticationPrincipal AuthenticatedUser u,
+    public ResponseEntity<Cart> update(@AuthenticationPrincipal AuthenticatedUser authUser,
                                        @RequestParam String bookId,
                                        @RequestParam int quantity) {
-        return ResponseEntity.ok(cartService.updateQuantity(u.getUser().getId(), null, bookId, quantity));
+        return ResponseEntity.ok(cartService.updateQuantity(authUser.getUser().getId(), null, bookId, quantity));
     }
 
     @DeleteMapping("/remove")
-    public ResponseEntity<Void> remove(@AuthenticationPrincipal AuthenticatedUser u,
+    public ResponseEntity<Void> remove(@AuthenticationPrincipal AuthenticatedUser authUser,
                                        @RequestParam String bookId) {
-        cartService.removeItem(u.getUser().getId(), null, bookId);
+        cartService.removeItem(authUser.getUser().getId(), null, bookId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/clear")
-    public ResponseEntity<Void> clear(@AuthenticationPrincipal AuthenticatedUser u) {
-        cartService.clearCart(u.getUser().getId(), null);
+    public ResponseEntity<Void> clear(@AuthenticationPrincipal AuthenticatedUser authUser) {
+        cartService.clearCart(authUser.getUser().getId(), null);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/merge")
-    public ResponseEntity<Cart> merge(@AuthenticationPrincipal AuthenticatedUser u,
+    public ResponseEntity<Cart> merge(@AuthenticationPrincipal AuthenticatedUser authUser,
                                       @RequestParam String guestId,
                                       @RequestBody List<CartItem> items) {
-        return ResponseEntity.ok(cartService.mergeCart(u.getUser().getId(), guestId, items));
+        return ResponseEntity.ok(cartService.mergeCart(authUser.getUser().getId(), guestId, items));
     }
 
     @DeleteMapping("/guest-cart")
-    public ResponseEntity<Void> deleteGuestCart(@AuthenticationPrincipal AuthenticatedUser u,
+    public ResponseEntity<Void> deleteGuestCart(@AuthenticationPrincipal AuthenticatedUser authUser,
                                                 @RequestParam String guestId) {
         cartService.deleteGuestCart(guestId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/bulk-add")
-    public ResponseEntity<Cart> bulkAdd(@AuthenticationPrincipal AuthenticatedUser u,
+    public ResponseEntity<Cart> bulkAdd(@AuthenticationPrincipal AuthenticatedUser authUser,
                                         @RequestBody List<String> items) {
-        return ResponseEntity.ok(cartService.addItems(u.getUser().getId(), null, items));
+        return ResponseEntity.ok(cartService.addItems(authUser.getUser().getId(), null, items));
     }
 }

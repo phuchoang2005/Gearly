@@ -23,35 +23,35 @@ public class WishlistController {
 
     @GetMapping
     public ResponseEntity<Page<BookSummaryDTO>> getWishlist(
-            @AuthenticationPrincipal AuthenticatedUser user, WishlistRequestDTO dto) {
-        return ResponseEntity.ok(wishlistService.getWishlist(user, dto));
+            @AuthenticationPrincipal AuthenticatedUser authUser, WishlistRequestDTO dto) {
+        return ResponseEntity.ok(wishlistService.getWishlist(authUser, dto));
     }
 
     @PostMapping("/{bookId}")
     public ResponseEntity<Void> addToWishlist(
-            @AuthenticationPrincipal AuthenticatedUser user, @PathVariable String bookId) {
-        wishlistService.addToWishlist(user, bookId);
+            @AuthenticationPrincipal AuthenticatedUser authUser, @PathVariable String bookId) {
+        wishlistService.addToWishlist(authUser, bookId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{bookId}")
     public ResponseEntity<Void> removeFromWishlist(
-            @AuthenticationPrincipal AuthenticatedUser user, @PathVariable String bookId) {
-        wishlistService.removeFromWishlist(user, bookId);
+            @AuthenticationPrincipal AuthenticatedUser authUser, @PathVariable String bookId) {
+        wishlistService.removeFromWishlist(authUser, bookId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/batch")
     public ResponseEntity<Map<String, Set<String>>> mergeWishlist(
-            @AuthenticationPrincipal AuthenticatedUser user, @RequestBody List<String> bookIds) {
-        Set<String> wishlist = wishlistService.mergeWishlist(user, bookIds);
+            @AuthenticationPrincipal AuthenticatedUser authUser, @RequestBody List<String> bookIds) {
+        Set<String> wishlist = wishlistService.mergeWishlist(authUser, bookIds);
         return ResponseEntity.ok(Map.of("wishlist", wishlist));
     }
 
     @PostMapping("/bulk_remove")
     public ResponseEntity<Void> bulkRemoveWishlist(
-            @AuthenticationPrincipal AuthenticatedUser user, @RequestBody List<String> bookIds) {
-        wishlistService.bulkRemoveFromWishlist(user, bookIds);
+            @AuthenticationPrincipal AuthenticatedUser authUser, @RequestBody List<String> bookIds) {
+        wishlistService.bulkRemoveFromWishlist(authUser, bookIds);
         return ResponseEntity.ok().build();
     }
 }
