@@ -1,73 +1,39 @@
 package com.dominator.bookify.controller.admin;
 
-import com.dominator.bookify.dto.*;
-import com.dominator.bookify.service.admin.AdminBookService;
+import com.dominator.bookify.dto.AdminUserDTO;
 import com.dominator.bookify.service.admin.AdminUserService;
-import com.dominator.bookify.service.user.BookService;
-import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping
-    public ResponseEntity<?> getAllUsers(
-            @RequestParam(value = "fullName_like", required = false)String fullNameLike,
-            @RequestParam(value = "email", required = false)String emailLike
-
-    ){
-        try {
-            return ResponseEntity.ok().body(adminUserService.getAllUsers(fullNameLike, emailLike));
-        }catch (ResponseStatusException e) {
-            return ResponseEntity
-                    .status(e.getStatusCode())
-                    .body(Map.of("error", e.getReason()));
-        }
+    public ResponseEntity<List<AdminUserDTO>> getAllUsers(
+            @RequestParam(value = "fullName_like", required = false) String fullNameLike,
+            @RequestParam(value = "email", required = false) String emailLike
+    ) {
+        return ResponseEntity.ok(adminUserService.getAllUsers(fullNameLike, emailLike));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable String id){
-        try {
-            return ResponseEntity.ok().body(adminUserService.getUserById(id));
-        }catch (ResponseStatusException e) {
-            return ResponseEntity
-                    .status(e.getStatusCode())
-                    .body(Map.of("error", e.getReason()));
-        }
+    public ResponseEntity<AdminUserDTO> getUserById(@PathVariable String id) {
+        return ResponseEntity.ok(adminUserService.getUserById(id));
     }
 
     @PostMapping("/{id}/activate")
-    public ResponseEntity<?> activateUser(@PathVariable String id){
-        try {
-            boolean result = adminUserService.activateUser(id);
-            return ResponseEntity.ok().body(result);
-        }catch (ResponseStatusException e) {
-            return ResponseEntity
-                   .status(e.getStatusCode())
-                   .body(Map.of("error", e.getReason()));
-        }
+    public ResponseEntity<Boolean> activateUser(@PathVariable String id) {
+        return ResponseEntity.ok(adminUserService.activateUser(id));
     }
 
     @PostMapping("/{id}/deactivate")
-    public ResponseEntity<?> deactivateUser(@PathVariable String id){
-        try {
-            var result = adminUserService.deactivateUser(id);
-            return ResponseEntity.ok().body(result);
-        }catch (ResponseStatusException e) {
-            return ResponseEntity
-                   .status(e.getStatusCode())
-                   .body(Map.of("error", e.getReason()));
-        }
+    public ResponseEntity<Boolean> deactivateUser(@PathVariable String id) {
+        return ResponseEntity.ok(adminUserService.deactivateUser(id));
     }
 }

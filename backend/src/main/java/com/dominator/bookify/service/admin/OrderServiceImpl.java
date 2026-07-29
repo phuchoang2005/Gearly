@@ -11,9 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.http.HttpStatus;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order getOrderById(String id) {
         return orderRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
     }
 
     @Override
@@ -108,7 +107,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order updateOrder(String id, Order order) {
         Order exitstingOrder = orderRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         BeanUtils.copyProperties(order, exitstingOrder, "_id", "addedAt", "modifiedAt");
         exitstingOrder.setModifiedAt(Instant.now());
@@ -142,7 +141,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order patchOrder(String id, OrderPatchDTO dto) {
         Order existing = orderRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (dto.getOrderStatus() != null) {
             existing.setOrderStatus(dto.getOrderStatus());
@@ -171,7 +170,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setCompleteOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (!order.getOrderStatus().equals(OrderStatus.DELIVERED)) {
             return false;
@@ -186,7 +185,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setCancelOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
 
         if (order.getOrderStatus().equals(OrderStatus.PENDING) || order.getOrderStatus().equals(OrderStatus.PROCESSING)) {
@@ -203,7 +202,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setProcessOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (!order.getOrderStatus().equals(OrderStatus.PENDING)) {
             return false;
@@ -218,7 +217,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setShipOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (!order.getOrderStatus().equals(OrderStatus.PROCESSING)) {
             return false;
@@ -232,7 +231,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setDeliveredOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (!order.getOrderStatus().equals(OrderStatus.SHIPPED)) {
             return false;
@@ -250,7 +249,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setPendingRefundOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (!order.getOrderStatus().equals(OrderStatus.DELIVERED)) {
             return false;
@@ -267,7 +266,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean setRefundedOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                new ResourceNotFoundException("Order not found"));
 
         if (!order.getOrderStatus().equals(OrderStatus.PENDING_REFUND)) {
             return false;

@@ -13,9 +13,8 @@ import com.dominator.bookify.repository.CategoryRepository;
 import com.dominator.bookify.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.http.HttpStatus;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -54,14 +53,14 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public AdminUserDTO getUserById(String id) {
         User user = userRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                new ResourceNotFoundException("User not found"));
         return toDto(user);
     }
 
     @Override
     public boolean activateUser(String id) {
         User user = userRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                new ResourceNotFoundException("User not found"));
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
         return true;
@@ -70,7 +69,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public boolean deactivateUser(String id) {
         User user = userRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                new ResourceNotFoundException("User not found"));
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
         return true;
