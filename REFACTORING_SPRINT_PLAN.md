@@ -124,6 +124,7 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 - [ ] **Apply deferred route renames** from S2 here to batch FE work.
 - [ ] **DB migration:** rename Mongo collections (`books`→`products`, …); re-seed from relocated dumps; commit a repeatable migration script. **Mutates the real DB — snapshot taken.**
 - [ ] **Frontends (companion):** update API paths + `book`→`product` in `frontend/src` and `frontend_admin/bookify/src` (~21 files); rename the `frontend_admin/bookify/` directory.
+- [ ] **Admin FE real auth (deferred from S1):** the admin app currently uses *fake* demo auth — `authProvider.login` stores `` `${email}-${password}` `` in `localStorage` (never calls the backend) and the stock `@refinedev/simple-rest` data provider sends **no `Authorization` header**. Since S1 locked `/api/admin/**` behind `ROLE_ADMIN`, the admin app now 403s on every call. Wire a real login against `/api/users/login`, persist the returned JWT, and attach `Authorization: Bearer <token>` to all `/api/admin/**` requests (custom data provider / fetch wrapper). Also review `useAutoLoginForDemo`.
 - [ ] **OpenAPI:** add `springdoc-openapi-starter-webmvc-ui` so the renamed surface is browsable/verifiable.
 
 **Verify:** `grep -ri "bookify" backend/src` and `grep -ri "\bBook\b" backend/src/main/java` return only intentional matches; `/api/products` responds; Swagger UI lists the new surface; both frontends load and browse catalog.
