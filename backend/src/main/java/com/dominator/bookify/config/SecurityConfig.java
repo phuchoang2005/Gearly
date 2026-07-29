@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
@@ -25,13 +26,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
-            .cors()
-            .and()
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth ->
                 auth
+                    // Uploaded static assets stay public (served for storefront/admin display).
+                    // Listed first so it wins over the /api/admin/** rule below.
+                    .requestMatchers("/api/admin/uploads/**")
+                    .permitAll()
+                    // Genuinely public routes: auth, catalog reads, reviews, guest cart,
+                    // payment webhooks, addresses, content pages, chat handshake.
                     .requestMatchers(
                         "/api/auth/google/**",
                         "/api/users/register",
@@ -43,10 +49,6 @@ public class SecurityConfig {
                         "/api/books/**",
                         "/api/categories",
                         "/api/reviews/**",
-                        "/api/admin/books/**",
-                        "/api/admin/users/**",
-                        "/api/admin/orders/**",
-                        "/api/admin/categories/**",
                         "/api/reviews",
                         "/api/reviews/distribution",
                         "/api/reviews/best-six",
@@ -55,12 +57,12 @@ public class SecurityConfig {
                         "/api/addresses/**",
                         "/api/blogposts/**",
                         "/api/pages/**",
-                        "/api/admin/media/**",
-                        "/api/admin/**",
-                        "/api/admin/uploads/**",
                         "/ws-chat/**"
                     )
                     .permitAll()
+                    // Everything else under /api/admin/** now requires the ADMIN role.
+                    .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
                     .anyRequest()
                     .authenticated()
             )
