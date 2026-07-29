@@ -2,28 +2,22 @@ package com.dominator.bookify.controller.user;
 
 import com.dominator.bookify.dto.CategoryBookCountDTO;
 import com.dominator.bookify.service.user.CategoryService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<?> findAll() {
-        try {
-            List<CategoryBookCountDTO> categories = categoryService.getCategoriesWithBookCount();
-            return ResponseEntity.ok(categories);
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<CategoryBookCountDTO>> findAll() {
+        return ResponseEntity.ok(categoryService.getCategoriesWithBookCount());
     }
 }

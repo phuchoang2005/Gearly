@@ -16,7 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import com.dominator.bookify.exception.ApiException;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -120,10 +121,10 @@ public class ReviewService {
     public void createReview(AuthenticatedUser authUser, CreateReviewsRequestDTO dto) {
         User user = authUser.getUser();
         Order order = orderRepository.findById(dto.getOrderId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Order not found, you cannot create review on this."));
         if (!order.getUserId().equals(user.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+            throw new ApiException(HttpStatus.FORBIDDEN,
                     "You are not allowed to review the items in this order");
         }
 
@@ -139,7 +140,7 @@ public class ReviewService {
         for (CreateReviewRequestDTO rdto : dto.getReviews()) {
             Book book = bookMap.get(rdto.getBookId());
             if (book == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                throw new ResourceNotFoundException(
                         "Book not found, you cannot create review for this book.");
             }
             int newCount = book.getRatingCount() + 1;
