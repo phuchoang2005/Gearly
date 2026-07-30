@@ -1,7 +1,7 @@
 package com.dominator.bookify.controller;
 
 import com.dominator.bookify.dto.AddressOptionDTO;
-import com.dominator.bookify.service.AddressService;
+import com.dominator.bookify.service.common.AddressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

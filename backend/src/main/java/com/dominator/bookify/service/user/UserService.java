@@ -13,7 +13,7 @@ import com.dominator.bookify.repository.UserRepository;
 import com.dominator.bookify.repository.VerificationTokenRepository;
 import com.dominator.bookify.security.AuthenticatedUser;
 import com.dominator.bookify.security.JwtUtil;
-import com.dominator.bookify.service.AddressService;
+import com.dominator.bookify.service.common.AddressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;

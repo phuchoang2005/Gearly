@@ -1,4 +1,4 @@
-package com.dominator.bookify.service;
+package com.dominator.bookify.service.common;
 
 import com.dominator.bookify.model.Country;
 import com.dominator.bookify.model.State;
