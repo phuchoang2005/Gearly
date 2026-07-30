@@ -85,14 +85,16 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 **Goal:** Break up god-services into single-responsibility collaborators and impose one naming convention. *(Phase 5)*
 
 **Backlog**
-- [ ] **One convention:** each service = interface `XxxService` + `impl/XxxServiceImpl` (or drop interfaces uniformly — pick one). Fix `...Imp`→`...Impl`, drop `...Interface` suffix, rename `AdminDashboardControllerImplement`, and resolve the `admin.OrderService` (interface) vs `user.OrderService` (class) collision → `AdminOrderService` / `CustomerOrderService`.
-- [ ] **Split `UserService`** (249 lines) → `UserService` (profile/account), `AuthService` (login/JWT/password), `VerificationTokenService` (token lifecycle + email trigger), `AvatarStorageService` (file IO → move writes from `frontend/public/...` to configured `uploads/`).
-- [ ] **Split admin `OrderServiceImpl`** (314 lines) → extract Mongo analytics to `OrderAnalyticsService`; collapse the 7 duplicate status-transition methods into one `transition(id, targetStatus)` guarded by an allowed-transition map; rename `test()` → `buildPayment(...)`, move payment/transaction assembly into a `PaymentFactory`/`TransactionService`.
-- [ ] **Shorten long methods:** `CustomerOrderService.createOrder`, `ReviewService.createReview`, `GithubModelsService.getAIResponse` → private step methods; remove `printStackTrace`.
-- [ ] **DI hygiene:** remove redundant `@Autowired` on `final` fields (dashboard trio); give `AdminReviewService`/`GithubModelsService` `@RequiredArgsConstructor`.
-- [ ] **Transactions:** add `@Transactional` to admin order status transitions and `UserService.register`.
-- [ ] **Repackage:** move `AddressService` → `service/common/`; keep AI under its own vertical.
-- [ ] **Tests:** unit tests for `AuthService` (login/register/verify/reset), `OrderAnalyticsService`/transition map.
+- [x] **One convention:** **dropped interfaces uniformly** (user decision) — every service is now a plain `@Service` class. Deleted the admin service interfaces and folded each single impl into the clean name; fixed `...Imp`/`...Impl` suffixes (`AdminDashboardServiceImp`→`AdminDashboardService`, `…GetBookImp`→`AdminDashboardGetBookService`, `…GetUserImp`→`AdminDashboardGetUserService`); resolved the `admin.OrderService` vs `user.OrderService` collision → `AdminOrderService` / `CustomerOrderService`. *(`AdminDashboardControllerImplement` was already collapsed in S2.)*
+- [x] **Split `UserService`** → `UserService` (profile/account), `AuthService` (login/JWT/password), `VerificationTokenService` (token lifecycle + email trigger), `AvatarStorageService` (file IO). Avatar writes now go to a configured `uploads/avatars` dir (served at `/uploads/**`) via `app.avatar.*` props. *(convertToUserDTO duplicated in UserService/AuthService — `TODO(S4)` to fold into `UserMapper`.)*
+- [x] **Split admin `OrderServiceImpl`** → analytics extracted to `OrderAnalyticsService`; the 7 duplicate status-transition methods collapsed into one `transition(id, targetStatus)` guarded by an allowed-source map (+ a small tx-effect map for money-affecting transitions); the misnamed `test()` and inline payment builds replaced by `PaymentFactory` (in `service/common/`).
+- [x] **Shorten long methods:** `CustomerOrderService.createOrder`, `ReviewService.createReview`, `GithubModelsService.getAIResponse` → private step methods; `printStackTrace` removed (AI service now uses `@Slf4j`).
+- [x] **DI hygiene:** dropped redundant `@Autowired` on `final` fields (dashboard trio); gave `AdminReviewService`/`GithubModelsService` `@RequiredArgsConstructor`.
+- [x] **Transactions:** `@Transactional` on `AdminOrderService.transition` and `AuthService.register`.
+- [x] **Repackage:** `AddressService` → `service/common/` (joined by `PaymentFactory`); AI kept in its own vertical.
+- [x] **Tests:** `AuthServiceTest` (login/register/reset/change-password) + `AdminOrderServiceTest` (transition map). `mvn test` green (22 run, 1 skipped). *(`OrderAnalyticsService` aggregation coverage left to S6 integration tests — needs Mongo.)*
+
+> **S3 status:** ✅ complete on branch `refactor/s3-service-layer` (not yet merged/tagged — commits only, per request). Build + `mvn test` green (22 run, 1 skipped). **Deferred to S5** (batched with the admin-FE rework): admin `@RequestBody Order` → request DTO on create/update; and the avatar public-URL switch to `/uploads/...` (FE must read it from the backend origin).
 
 **Verify:** each service class has a single clear responsibility; no method > ~40 lines in the touched files; auth + order flows still behave via smoke test.
 

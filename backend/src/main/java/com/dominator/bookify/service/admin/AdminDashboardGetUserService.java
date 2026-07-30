@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
@@ -23,11 +22,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class AdminDashboardGetUserImp implements AdminDashboardGetUserInterface {
-    @Autowired
+public class AdminDashboardGetUserService {
     private final MongoTemplate mongoTemplate;
 
-    @Override
     public List<LoyalCustomerDTO> getTop10LoyalCustomers() {
 
         /* B1: GROUP theo userId (String) */
@@ -83,7 +80,6 @@ public class AdminDashboardGetUserImp implements AdminDashboardGetUserInterface 
                 .getMappedResults();
     }
 
-    @Override
     public TopAvgOrderValueUserDTO findUserWithHighestAvgOrderValue() {
         /*
          * 1️⃣ GROUP theo userId (String) và tính giá trị trung bình, tổng đơn, tổng chi

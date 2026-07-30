@@ -7,7 +7,9 @@ import com.dominator.bookify.exception.UnauthorizedException;
 import com.dominator.bookify.repository.UserRepository;
 import com.dominator.bookify.security.JwtAuthenticationFilter;
 import com.dominator.bookify.security.JwtUtil;
+import com.dominator.bookify.service.user.AuthService;
 import com.dominator.bookify.service.user.UserService;
+import com.dominator.bookify.service.user.VerificationTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -39,6 +41,10 @@ class UserControllerTest {
 
     @MockBean
     private UserService userService;
+    @MockBean
+    private AuthService authService;
+    @MockBean
+    private VerificationTokenService verificationTokenService;
 
     // JwtAuthenticationFilter collaborators (filter is a no-op without a Bearer header).
     @MockBean
@@ -59,7 +65,7 @@ class UserControllerTest {
 
     @Test
     void login_badCredentials_returns401() throws Exception {
-        when(userService.login(any())).thenThrow(new UnauthorizedException("Invalid credentials"));
+        when(authService.login(any())).thenThrow(new UnauthorizedException("Invalid credentials"));
 
         mvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +78,7 @@ class UserControllerTest {
     @Test
     void forgotPassword_emailNotFound_returns404() throws Exception {
         doThrow(new ResourceNotFoundException("Email not registered."))
-                .when(userService).handleForgotPassword(any());
+                .when(authService).handleForgotPassword(any());
 
         mvc.perform(post("/api/users/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)

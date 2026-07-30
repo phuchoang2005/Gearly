@@ -3,7 +3,9 @@ package com.dominator.bookify.controller.user;
 import com.dominator.bookify.dto.*;
 import com.dominator.bookify.model.VerificationToken;
 import com.dominator.bookify.security.AuthenticatedUser;
+import com.dominator.bookify.service.user.AuthService;
 import com.dominator.bookify.service.user.UserService;
+import com.dominator.bookify.service.user.VerificationTokenService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
+    private final AuthService authService;
+    private final VerificationTokenService verificationTokenService;
 
     @PostMapping("/update")
     public ResponseEntity<LoginResponseDTO> updateProfile(
@@ -48,7 +52,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid UserLoginRequestDTO req) {
-        return ResponseEntity.ok(userService.login(req));
+        return ResponseEntity.ok(authService.login(req));
     }
 
     @PostMapping("/logout")
@@ -58,7 +62,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<MessageResponse> register(@RequestBody @Valid UserRegisterRequestDTO req) {
-        userService.register(req);
+        authService.register(req);
         return ResponseEntity.ok(new MessageResponse(
                 "Verification email sent, please check your email to verify your email address!"));
     }
@@ -75,7 +79,7 @@ public class UserController {
             HttpServletResponse response
     ) throws IOException {
         try {
-            userService.verifyToken(token, tokenType);
+            verificationTokenService.verifyToken(token, tokenType);
 
             if (tokenType == VerificationToken.TokenType.EMAIL_VERIFICATION) {
                 response.sendRedirect("http://localhost:5173/login?verified=1");
@@ -90,13 +94,13 @@ public class UserController {
 
     @PostMapping("/resend-verification")
     public ResponseEntity<MessageResponse> resend(@RequestBody @Valid EmailRequestDTO req) {
-        userService.resendVerification(req.getEmail());
+        verificationTokenService.resendVerification(req.getEmail());
         return ResponseEntity.ok(new MessageResponse("Verification email re-sent."));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<MessageResponse> forgotPassword(@RequestBody @Valid EmailRequestDTO req) {
-        userService.handleForgotPassword(req.getEmail());
+        authService.handleForgotPassword(req.getEmail());
         return ResponseEntity.ok(new MessageResponse("Password reset link sent."));
     }
 
@@ -105,13 +109,13 @@ public class UserController {
             @AuthenticationPrincipal AuthenticatedUser authUser,
             @RequestBody @Valid ChangePasswordRequestDTO req
     ) {
-        userService.changePassword(authUser, req.getOldPassword(), req.getNewPassword());
+        authService.changePassword(authUser, req.getOldPassword(), req.getNewPassword());
         return ResponseEntity.ok(new MessageResponse("Password change successful."));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<MessageResponse> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO req) {
-        userService.resetPassword(req);
+        authService.resetPassword(req);
         return ResponseEntity.ok(new MessageResponse("Password reset successful."));
     }
 }

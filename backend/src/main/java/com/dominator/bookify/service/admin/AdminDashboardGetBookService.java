@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AddFieldsOperation;
@@ -30,12 +29,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class AdminDashboardGetBookImp implements AdminDashboardGetBookInterface {
-    @Autowired
+public class AdminDashboardGetBookService {
     private final BooksInStockRepository booksInStock;
     private final MongoTemplate mongoTemplate;
 
-    @Override
     public List<BestSellerDTO> getTop10BestSellingBooks() {
         // 1) $unwind items
         AggregationOperation unwindItems = Aggregation.unwind("items");
@@ -61,7 +58,6 @@ public class AdminDashboardGetBookImp implements AdminDashboardGetBookInterface 
         return mongoTemplate.aggregate(agg, "orders", BestSellerDTO.class).getMappedResults();
     }
 
-    @Override
     public List<TopCategoryQuantityDTO> getTop10BooksPerCategory() {
         // Giai đoạn 1: Tách các mặt hàng trong mỗi đơn hàng ra thành các document riêng
         // biệt
@@ -122,7 +118,6 @@ public class AdminDashboardGetBookImp implements AdminDashboardGetBookInterface 
         return results.getMappedResults();
     }
 
-    @Override
     public List<BookInLowStockDTO> getBookWithLowStock() {
         return booksInStock.findBooksWithLowStock().stream().map(book -> {
             BookInLowStockDTO bookWithLowStockDTO = new BookInLowStockDTO();
