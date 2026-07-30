@@ -22,6 +22,21 @@ services:
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/bookify
       SPRING_PROFILES_ACTIVE: docker
+      # Secrets & config injected from backend/.env (see .env.example)
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
+      MOMO_RETURN_URL: ${MOMO_RETURN_URL:-http://localhost:5173/momo-return}
+      MOMO_NOTIFY_URL: ${MOMO_NOTIFY_URL:-}
+      GITHUB_MODELS_TOKEN: ${GITHUB_MODELS_TOKEN:-}
+      GITHUB_MODELS_SECOND_TOKEN: ${GITHUB_MODELS_SECOND_TOKEN:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
       # Cho phép DevTools lắng nghe thay đổi
       JAVA_OPTS: "-Dspring.devtools.restart.enabled=true"
     ports:

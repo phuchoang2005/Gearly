@@ -1,5 +1,6 @@
 package com.dominator.bookify.websocket;
 
+import com.dominator.bookify.config.CorsConfig;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -10,17 +11,24 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final CorsConfig corsConfig;
+
+    public WebSocketConfig(CorsConfig corsConfig) {
+        this.corsConfig = corsConfig;
+    }
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Kết nối từ React
+        // React client connects here; allowed origins come from the shared
+        // cors.allowed-origins property (no more wildcard).
         registry.addEndpoint("/ws-chat")
-                .setAllowedOriginPatterns("*") // cho phép mọi domain (dev)
-                .withSockJS(); // hỗ trợ fallback nếu WS bị chặn
+                .setAllowedOriginPatterns(corsConfig.getAllowedOrigins().toArray(new String[0]))
+                .withSockJS(); // SockJS fallback when raw WebSocket is blocked
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic"); // prefix nơi client nhận tin nhắn
-        config.setApplicationDestinationPrefixes("/app"); // prefix nơi client gửi tin nhắn
+        config.enableSimpleBroker("/topic"); // prefix clients subscribe to
+        config.setApplicationDestinationPrefixes("/app"); // prefix clients send to
     }
 }

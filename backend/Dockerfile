@@ -29,7 +29,9 @@ COPY uploads /app/uploads
 # Expose port 8080 (thay đổi nếu app bạn dùng port khác)
 EXPOSE 8080
 
-# Thiết lập biến môi trường MongoDB
+# Non-secret runtime defaults. Secrets (JWT_SECRET, MAIL_*, MOMO_*,
+# GOOGLE_CLIENT_ID, GITHUB_MODELS_*) are NOT baked into the image — they are
+# injected at run time via docker-compose `environment:` (from backend/.env).
 ENV SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/bookify
 ENV SPRING_PROFILES_ACTIVE=docker
 
