@@ -1,140 +1,79 @@
 package com.dominator.bookify.service.admin;
 
 import com.dominator.bookify.dto.OrderPatchDTO;
-import com.dominator.bookify.dto.QuantitySoldDTO;
-import com.dominator.bookify.dto.TopSellerDTO;
-import com.dominator.bookify.model.*;
-import com.dominator.bookify.repository.OrderRepository;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.BeanUtils;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.*;
-import org.springframework.data.mongodb.core.query.Criteria;
 import com.dominator.bookify.exception.ResourceNotFoundException;
+import com.dominator.bookify.model.Order;
+import com.dominator.bookify.model.OrderStatus;
+import com.dominator.bookify.model.TransactionStatus;
+import com.dominator.bookify.repository.OrderRepository;
+import com.dominator.bookify.service.common.PaymentFactory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import java.util.Set;
 
-import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
-
-
-@AllArgsConstructor
+/**
+ * Admin order CRUD and the status-transition workflow. Sales analytics live in
+ * {@link OrderAnalyticsService}; payment/transaction assembly in
+ * {@link PaymentFactory}.
+ */
+@RequiredArgsConstructor
 @Service
 public class AdminOrderService {
+
     private final OrderRepository orderRepository;
-    private final MongoTemplate mongoTemplate;
+    private final PaymentFactory paymentFactory;
+
+    /** Source statuses from which each target status may be reached. */
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_SOURCES = Map.of(
+            OrderStatus.PROCESSING,     EnumSet.of(OrderStatus.PENDING),
+            OrderStatus.SHIPPED,        EnumSet.of(OrderStatus.PROCESSING),
+            OrderStatus.DELIVERED,      EnumSet.of(OrderStatus.SHIPPED),
+            OrderStatus.COMPLETED,      EnumSet.of(OrderStatus.DELIVERED),
+            OrderStatus.CANCELLED,      EnumSet.of(OrderStatus.PENDING, OrderStatus.PROCESSING),
+            OrderStatus.PENDING_REFUND, EnumSet.of(OrderStatus.DELIVERED),
+            OrderStatus.REFUNDED,       EnumSet.of(OrderStatus.PENDING_REFUND)
+    );
+
+    /** Transitions that also record a payment transaction on the order. */
+    private static final Map<OrderStatus, TxEffect> TX_EFFECTS = Map.of(
+            OrderStatus.DELIVERED,      new TxEffect(TransactionStatus.SUCCESSFUL, "Payment successful"),
+            OrderStatus.PENDING_REFUND, new TxEffect(TransactionStatus.PENDING_REFUND, "Pending refund..."),
+            OrderStatus.REFUNDED,       new TxEffect(TransactionStatus.REFUNDED, "Refund...")
+    );
+
+    private record TxEffect(TransactionStatus status, String rawResponse) {}
 
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
 
     public Order getOrderById(String id) {
-        return orderRepository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-    }
-
-    public List<QuantitySoldDTO> getQuantitySold(TimeFrame timeFrame) {
-        // Build match on status and timeframe
-        MatchOperation match = buildMatch(timeFrame);
-
-        // unwind items, group by bookId
-        GroupOperation group = group("items.bookId")
-                .first("items.title")
-                .as("title")
-                .sum("items.quantity")
-                .as("totalSold");
-
-
-        ProjectionOperation project = Aggregation.project()
-                .and("_id").as("bookId")
-                .and("title").as("title")
-                .and("totalSold").as("totalSold")
-                .andExclude("_id");
-
-        Aggregation agg = newAggregation(
-                match,
-                unwind("items"),
-                group,
-                project,
-                sort(Sort.by(Sort.Direction.DESC, "totalSold"))
-        );
-        return mongoTemplate
-                .aggregate(agg, Order.class, QuantitySoldDTO.class)
-                .getMappedResults();
-    }
-
-    public List<TopSellerDTO> getTop5BestSelling(TimeFrame timeFrame) {
-        MatchOperation match = buildMatch(timeFrame);
-
-        UnwindOperation unwind = unwind("items");
-
-        GroupOperation group = group("items.bookId")
-                .sum("items.quantity").as("totalSold")
-                .first("items.title").as("title");
-
-
-        SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "totalSold"));
-        LimitOperation limit = limit(5);
-
-        ProjectionOperation project = project()
-                .and("_id").as("bookId")
-                .and("totalSold").as("totalSold")
-                .and("title").as("title")
-                .andExclude("_id");
-
-        Aggregation agg = newAggregation(
-                match,
-                unwind,
-                group,
-                sort,
-                limit,
-                project
-        );
-
-        return mongoTemplate
-                .aggregate(agg, Order.class, TopSellerDTO.class)
-                .getMappedResults();
+        return findOrThrow(id);
     }
 
     public Order updateOrder(String id, Order order) {
-        Order exitstingOrder = orderRepository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-        BeanUtils.copyProperties(order, exitstingOrder, "_id", "addedAt", "modifiedAt");
-        exitstingOrder.setModifiedAt(Instant.now());
-
-        return orderRepository.save(exitstingOrder);
+        Order existingOrder = findOrThrow(id);
+        BeanUtils.copyProperties(order, existingOrder, "_id", "addedAt", "modifiedAt");
+        existingOrder.setModifiedAt(Instant.now());
+        return orderRepository.save(existingOrder);
     }
 
     public Order createOrder(Order order) {
         order.setOrderStatus(OrderStatus.PENDING);
         order.setAddedAt(Instant.now());
         order.setModifiedAt(Instant.now());
-
-        Transaction tx = new Transaction();
-        tx.setTransactionId(UUID.randomUUID().toString());
-        tx.setStatus(TransactionStatus.PENDING);
-        tx.setAmount(order.getTotalAmount());
-        tx.setCreatedAt(Instant.now());
-
-        Payment payment = new Payment();
-        if (payment.getTransactions() == null) {
-            payment.setMethod("cod");
-            payment.setTransactions(new ArrayList<>());
-        }
-        payment.getTransactions().add(tx);
-
-        order.setPayment(payment);
+        paymentFactory.appendTransaction(order, TransactionStatus.PENDING, null);
         return orderRepository.save(order);
     }
 
     public Order patchOrder(String id, OrderPatchDTO dto) {
-        Order existing = orderRepository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
+        Order existing = findOrThrow(id);
 
         if (dto.getOrderStatus() != null) {
             existing.setOrderStatus(dto.getOrderStatus());
@@ -160,140 +99,33 @@ public class AdminOrderService {
         return orderRepository.save(existing);
     }
 
-    public boolean setCompleteOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
+    /**
+     * Move an order to {@code target} when its current status permits it, recording a
+     * payment transaction for money-affecting transitions. Returns {@code false} when
+     * the transition is not allowed from the order's current status.
+     */
+    public boolean transition(String id, OrderStatus target) {
+        Order order = findOrThrow(id);
 
-        if (!order.getOrderStatus().equals(OrderStatus.DELIVERED)) {
+        Set<OrderStatus> allowedSources = ALLOWED_SOURCES.get(target);
+        if (allowedSources == null || !allowedSources.contains(order.getOrderStatus())) {
             return false;
         }
-        order.setOrderStatus(OrderStatus.valueOf("COMPLETED"));
+
+        order.setOrderStatus(target);
         order.setModifiedAt(Instant.now());
-        orderRepository.save(order);
-        return true;
 
-    }
-
-    public boolean setCancelOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-
-        if (order.getOrderStatus().equals(OrderStatus.PENDING) || order.getOrderStatus().equals(OrderStatus.PROCESSING)) {
-
-            order.setOrderStatus(OrderStatus.valueOf("CANCELLED"));
-            order.setModifiedAt(Instant.now());
-            orderRepository.save(order);
-            return true;
+        TxEffect effect = TX_EFFECTS.get(target);
+        if (effect != null) {
+            paymentFactory.appendTransaction(order, effect.status(), effect.rawResponse());
         }
-        return false;
-
-    }
-
-    public boolean setProcessOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-        if (!order.getOrderStatus().equals(OrderStatus.PENDING)) {
-            return false;
-        }
-        order.setOrderStatus(OrderStatus.valueOf("PROCESSING"));
-        order.setModifiedAt(Instant.now());
 
         orderRepository.save(order);
         return true;
     }
 
-    public boolean setShipOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-        if (!order.getOrderStatus().equals(OrderStatus.PROCESSING)) {
-            return false;
-        }
-        order.setOrderStatus(OrderStatus.valueOf("SHIPPED"));
-        order.setModifiedAt(Instant.now());
-        orderRepository.save(order);
-        return true;
+    private Order findOrThrow(String id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
-
-    public boolean setDeliveredOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-        if (!order.getOrderStatus().equals(OrderStatus.SHIPPED)) {
-            return false;
-        }
-
-        order.setOrderStatus(OrderStatus.valueOf("DELIVERED"));
-        order.setModifiedAt(Instant.now());
-
-        Transaction tx = new Transaction();
-        tx.setStatus(TransactionStatus.SUCCESSFUL);
-        tx.setRawResponse("Payment successful");
-        return test(order, tx);
-    }
-
-    public boolean setPendingRefundOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-        if (!order.getOrderStatus().equals(OrderStatus.DELIVERED)) {
-            return false;
-        }
-        order.setOrderStatus(OrderStatus.valueOf("PENDING_REFUND"));
-        order.setModifiedAt(Instant.now());
-
-        Transaction tx = new Transaction();
-        tx.setStatus(TransactionStatus.PENDING_REFUND);
-        tx.setRawResponse("Pending refund...");
-        return test(order, tx);
-    }
-
-    public boolean setRefundedOrder(String orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                new ResourceNotFoundException("Order not found"));
-
-        if (!order.getOrderStatus().equals(OrderStatus.PENDING_REFUND)) {
-            return false;
-        }
-        order.setOrderStatus(OrderStatus.valueOf("REFUNDED"));
-        order.setModifiedAt(Instant.now());
-
-        Transaction tx = new Transaction();
-        tx.setStatus(TransactionStatus.REFUNDED);
-        tx.setRawResponse("Refund...");
-        return test(order, tx);
-    }
-
-    private boolean test(Order order, Transaction tx) {
-        tx.setTransactionId(UUID.randomUUID().toString());
-        tx.setAmount(order.getTotalAmount());
-        tx.setCreatedAt(Instant.now());
-
-        Payment payment = order.getPayment();
-        if (payment == null) {
-            payment = new Payment();
-            payment.setMethod("cod");
-            payment.setTransactions(new ArrayList<>());
-            order.setPayment(payment);
-        }
-        if (payment.getTransactions() == null) {
-            payment.setTransactions(new ArrayList<>());
-        }
-        payment.getTransactions().add(tx);
-
-        orderRepository.save(order);
-        return true;
-    }
-
-    private MatchOperation buildMatch(TimeFrame timeFrame) {
-        Criteria criteria = Criteria.where("orderstatus").is("COMPLETED");
-        Instant start = timeFrame.getStartInstant();
-        if (start != null) {
-            criteria = criteria.and("doneAt").gte(start);
-        }
-        return match(criteria);
-    }
-
 }
