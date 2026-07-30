@@ -134,21 +134,9 @@ public class CustomerOrderService {
     @Transactional
     public Order createOrder(AuthenticatedUser authenticatedUser, OrderCreationRequestDTO requestDTO) {
         String userId = authenticatedUser.getUser().getId();
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal itemsSubtotal = BigDecimal.ZERO;
+        List<OrderItem> orderItems = buildOrderItems(requestDTO.getItems());
 
-        for (OrderItemRequestDTO itemRequest : requestDTO.getItems()) {
-            Book book = bookService.getBookById(itemRequest.getBookId());
-            int requestedQty = itemRequest.getQuantity();
-            if (book.getStock() < requestedQty) {
-                throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
-            }
-            OrderItem orderItem = buildOrderItem(book, requestedQty);
-            orderItems.add(orderItem);
-            BigDecimal itemTotal = BigDecimal.valueOf(book.getPrice()).multiply(BigDecimal.valueOf(requestedQty));
-            itemsSubtotal = itemsSubtotal.add(itemTotal);
-        }
-
+        BigDecimal itemsSubtotal = itemsSubtotal(orderItems);
         BigDecimal shippingCost = calculateShippingCost(itemsSubtotal);
         BigDecimal taxes = itemsSubtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal grandTotalUsd = itemsSubtotal.add(taxes).add(shippingCost).setScale(2, RoundingMode.HALF_UP);
@@ -162,15 +150,36 @@ public class CustomerOrderService {
         order.setOrderStatus(OrderStatus.PENDING);
         Order savedOrder = orderRepository.save(order);
 
+        applyStockAndClearCart(userId, orderItems);
+        return savedOrder;
+    }
+
+    private List<OrderItem> buildOrderItems(List<OrderItemRequestDTO> itemRequests) {
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderItemRequestDTO itemRequest : itemRequests) {
+            Book book = bookService.getBookById(itemRequest.getBookId());
+            int requestedQty = itemRequest.getQuantity();
+            if (book.getStock() < requestedQty) {
+                throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
+            }
+            orderItems.add(buildOrderItem(book, requestedQty));
+        }
+        return orderItems;
+    }
+
+    private BigDecimal itemsSubtotal(List<OrderItem> orderItems) {
+        return orderItems.stream()
+                .map(i -> BigDecimal.valueOf(i.getPrice()).multiply(BigDecimal.valueOf(i.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void applyStockAndClearCart(String userId, List<OrderItem> orderItems) {
         for (OrderItem item : orderItems) {
             bookService.decreaseStock(item.getBookId(), item.getQuantity());
         }
-
         Map<String, Integer> qtyMap = orderItems.stream()
                 .collect(Collectors.toMap(OrderItem::getBookId, OrderItem::getQuantity));
         cartService.removeItems(userId, null, qtyMap);
-
-        return savedOrder;
     }
 
     @Transactional

@@ -120,19 +120,8 @@ public class ReviewService {
     @Transactional
     public void createReview(AuthenticatedUser authUser, CreateReviewsRequestDTO dto) {
         User user = authUser.getUser();
-        Order order = orderRepository.findById(dto.getOrderId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Order not found, you cannot create review on this."));
-        if (!order.getUserId().equals(user.getId())) {
-            throw new ApiException(HttpStatus.FORBIDDEN,
-                    "You are not allowed to review the items in this order");
-        }
-
-        List<String> bookIds = dto.getReviews().stream()
-                .map(CreateReviewRequestDTO::getBookId)
-                .collect(Collectors.toList());
-        Map<String, Book> bookMap = bookRepository.findAllById(bookIds).stream()
-                .collect(Collectors.toMap(Book::getId, Function.identity()));
+        Order order = requireOwnedOrder(user, dto.getOrderId());
+        Map<String, Book> bookMap = loadBooks(dto.getReviews());
 
         List<Book> booksToSave = new ArrayList<>();
         List<Review> reviewsToSave = new ArrayList<>();
@@ -143,27 +132,53 @@ public class ReviewService {
                 throw new ResourceNotFoundException(
                         "Book not found, you cannot create review for this book.");
             }
-            int newCount = book.getRatingCount() + 1;
-            int newTotal = book.getTotalRating() + rdto.getRating();
-            book.setRatingCount(newCount);
-            book.setTotalRating(newTotal);
-            double average = Math.round((double) newTotal / newCount * 100) / 100.0;
-            book.setAverageRating(average);
+            applyRating(book, rdto.getRating());
             booksToSave.add(book);
-
-            Review review = new Review();
-            review.setBookId(new ObjectId(rdto.getBookId()));
-            review.setOrderId(new ObjectId(dto.getOrderId()));
-            review.setUserId(new ObjectId(user.getId()));
-            review.setRating(rdto.getRating());
-            review.setSubject(rdto.getSubject());
-            review.setComment(rdto.getComment());
-            reviewsToSave.add(review);
+            reviewsToSave.add(buildReview(rdto, dto.getOrderId(), user.getId()));
         }
 
         bookRepository.saveAll(booksToSave);
         reviewRepository.saveAll(reviewsToSave);
         order.setReviewed(true);
         orderRepository.save(order);
+    }
+
+    private Order requireOwnedOrder(User user, String orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order not found, you cannot create review on this."));
+        if (!order.getUserId().equals(user.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "You are not allowed to review the items in this order");
+        }
+        return order;
+    }
+
+    private Map<String, Book> loadBooks(List<CreateReviewRequestDTO> reviews) {
+        List<String> bookIds = reviews.stream()
+                .map(CreateReviewRequestDTO::getBookId)
+                .collect(Collectors.toList());
+        return bookRepository.findAllById(bookIds).stream()
+                .collect(Collectors.toMap(Book::getId, Function.identity()));
+    }
+
+    private void applyRating(Book book, int rating) {
+        int newCount = book.getRatingCount() + 1;
+        int newTotal = book.getTotalRating() + rating;
+        book.setRatingCount(newCount);
+        book.setTotalRating(newTotal);
+        double average = Math.round((double) newTotal / newCount * 100) / 100.0;
+        book.setAverageRating(average);
+    }
+
+    private Review buildReview(CreateReviewRequestDTO rdto, String orderId, String userId) {
+        Review review = new Review();
+        review.setBookId(new ObjectId(rdto.getBookId()));
+        review.setOrderId(new ObjectId(orderId));
+        review.setUserId(new ObjectId(userId));
+        review.setRating(rdto.getRating());
+        review.setSubject(rdto.getSubject());
+        review.setComment(rdto.getComment());
+        return review;
     }
 }
