@@ -10,6 +10,7 @@ import com.dominator.bookify.service.common.PaymentFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.EnumSet;
@@ -104,6 +105,7 @@ public class AdminOrderService {
      * payment transaction for money-affecting transitions. Returns {@code false} when
      * the transition is not allowed from the order's current status.
      */
+    @Transactional
     public boolean transition(String id, OrderStatus target) {
         Order order = findOrThrow(id);
 

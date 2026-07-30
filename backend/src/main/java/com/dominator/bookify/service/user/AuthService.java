@@ -20,6 +20,7 @@ import com.dominator.bookify.service.common.AddressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Authentication and credential flows: login/JWT issuance, registration, and
@@ -56,6 +57,7 @@ public class AuthService {
         return new LoginResponseDTO(token, convertToUserDTO(user));
     }
 
+    @Transactional
     public void register(UserRegisterRequestDTO req) {
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
             throw new ConflictException("Email already registered.");
