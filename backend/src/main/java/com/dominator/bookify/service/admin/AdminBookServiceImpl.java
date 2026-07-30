@@ -11,9 +11,8 @@ import com.dominator.bookify.repository.CategoryRepository;
 import lombok.AllArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
-import org.springframework.http.HttpStatus;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -83,7 +82,7 @@ public class AdminBookServiceImpl implements AdminBookService {
     public AdminBookDTO updateBook(String id, BookUpdateDTO dto) {
         // 1. fetch existing book
         Book book = bookRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found")
+                new ResourceNotFoundException("Book not found")
         );
 
         // 2. Copy updatable properties

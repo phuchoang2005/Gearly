@@ -1,6 +1,10 @@
 package com.dominator.bookify.service.user;
 
 import com.dominator.bookify.dto.*;
+import com.dominator.bookify.exception.BadRequestException;
+import com.dominator.bookify.exception.ConflictException;
+import com.dominator.bookify.exception.ResourceNotFoundException;
+import com.dominator.bookify.exception.UnauthorizedException;
 import com.dominator.bookify.model.Address;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.model.UserStatus;
@@ -82,18 +86,18 @@ public class UserService {
 
     public LoginResponseDTO login(UserLoginRequestDTO req) {
         User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
         if (!user.isVerified()) {
-            throw new RuntimeException("Please verify your email before logging in.");
+            throw new UnauthorizedException("Please verify your email before logging in.");
         }
 
         if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new RuntimeException("This account had been set to inactive. \nPlease contact Bookify Support if you need to activate your account.");
+            throw new UnauthorizedException("This account had been set to inactive. \nPlease contact Bookify Support if you need to activate your account.");
         }
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new UnauthorizedException("Invalid credentials");
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
@@ -103,7 +107,7 @@ public class UserService {
 
     public void register(UserRegisterRequestDTO req) {
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already registered.");
+            throw new ConflictException("Email already registered.");
         }
 
         int countryId = addressService.getCountryIdByName(req.getCountry());
@@ -140,18 +144,18 @@ public class UserService {
     public void verifyToken(String token, VerificationToken.TokenType tokenType) {
         VerificationToken vt = verificationTokenRepo
                 .findByTokenAndType(token, tokenType)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
+                .orElseThrow(() -> new BadRequestException("Invalid or expired token"));
 
         if (vt.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expired!");
+            throw new BadRequestException("Token expired!");
         }
 
         User user = userRepository.findById(vt.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found!"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found!"));
 
         if (tokenType == VerificationToken.TokenType.EMAIL_VERIFICATION) {
             if (user.isVerified()) {
-                throw new RuntimeException("Account already verified.");
+                throw new ConflictException("Account already verified.");
             }
             user.setVerified(true);
             userRepository.save(user);
@@ -161,11 +165,11 @@ public class UserService {
 
     public void resendVerification(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Email not registered"));
+                .orElseThrow(() -> new ResourceNotFoundException("Email not registered"));
 
         if (user.isVerified()) {
             verificationTokenRepo.deleteByUserId(user.getId());
-            throw new RuntimeException("User already verified.");
+            throw new ConflictException("User already verified.");
         }
 
         verificationTokenRepo.deleteByUserId(user.getId());
@@ -191,10 +195,10 @@ public class UserService {
 
     public void handleForgotPassword(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Email not registered."));
+                .orElseThrow(() -> new ResourceNotFoundException("Email not registered."));
 
         if (!user.isVerified()) {
-            throw new RuntimeException("Please verify your email before resetting password.");
+            throw new BadRequestException("Please verify your email before resetting password.");
         }
 
         createAndSendToken(user, "PASSWORD_RESET");
@@ -203,14 +207,14 @@ public class UserService {
     public void resetPassword(ResetPasswordRequestDTO req) {
         VerificationToken vt = verificationTokenRepo
                 .findByTokenAndType(req.getToken(), VerificationToken.TokenType.PASSWORD_RESET)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired token."));
+                .orElseThrow(() -> new BadRequestException("Invalid or expired token."));
 
         if (vt.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token has expired.");
+            throw new BadRequestException("Token has expired.");
         }
 
         User user = userRepository.findById(vt.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
@@ -221,7 +225,7 @@ public class UserService {
     public void changePassword(AuthenticatedUser authUser, String oldPassword, String newPassword) {
         User user = authUser.getUser();
         if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
-            throw new RuntimeException("Old password does not match with your current password.");
+            throw new BadRequestException("Old password does not match with your current password.");
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));

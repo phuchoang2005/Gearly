@@ -5,8 +5,7 @@ import com.dominator.bookify.dto.BlogPostSummaryDTO;
 import com.dominator.bookify.model.BlogPost;
 import com.dominator.bookify.repository.BlogPostRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +27,7 @@ public class BlogPostService {
 
     public BlogPostDetailDTO getBlogPostDetails(String id) {
         BlogPost blogPost = blogPostRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Blog post not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Blog post not found with ID: " + id));
         return convertToDetailDto(blogPost);
     }
 

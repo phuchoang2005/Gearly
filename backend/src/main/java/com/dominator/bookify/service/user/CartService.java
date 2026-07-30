@@ -5,9 +5,9 @@ import com.dominator.bookify.model.Cart;
 import com.dominator.bookify.model.CartItem;
 import com.dominator.bookify.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import com.dominator.bookify.exception.BadRequestException;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -86,7 +86,7 @@ public class CartService {
             if (stock == 0) {
                 errorMsg = "This item is out of stock!";
             }
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new BadRequestException(
                     errorMsg);
         }
 
@@ -106,7 +106,7 @@ public class CartService {
             if (stock == 0) {
                 errorMsg = "This item is out of stock!";
             }
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new BadRequestException(
                     errorMsg);
         }
 
@@ -160,6 +160,10 @@ public class CartService {
         saveCart(cart);
     }
 
+    public void deleteGuestCart(String guestId) {
+        cartRepository.deleteByGuestId(guestId);
+    }
+
     public Cart mergeCart(String userId, String guestId, List<CartItem> localItems) {
         Cart userCart = getOrCreate(userId, null);
 
@@ -192,7 +196,7 @@ public class CartService {
 
             var book = bookService.getBookById(bookId);
             if (book == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found: " + bookId);
+                throw new ResourceNotFoundException("Book not found: " + bookId);
             }
 
             CartItem item = getCartItem(book);
@@ -206,7 +210,7 @@ public class CartService {
                 if (stock == 0) {
                     errorMsg = "\"" + book.getTitle() +  "\" is out of stock!";
                 }
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                throw new BadRequestException(
                         errorMsg);
             }
 

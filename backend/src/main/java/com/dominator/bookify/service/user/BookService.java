@@ -10,9 +10,8 @@ import com.dominator.bookify.repository.CategoryRepository;
 import lombok.AllArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
+import com.dominator.bookify.exception.BadRequestException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,7 +50,7 @@ public class BookService {
     public void decreaseStock(String bookId, int quantity) {
         Book book = getBookById(bookId);
         if (book.getStock() < quantity) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient stock for book: " + book.getTitle());
+            throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
         }
         book.setStock(book.getStock() - quantity);
         bookRepository.save(book);

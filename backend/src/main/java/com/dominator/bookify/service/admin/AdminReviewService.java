@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.dominator.bookify.dto.AdminReviewResponseDTO;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 import com.dominator.bookify.model.Book;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.repository.BookRepository;
@@ -83,14 +84,14 @@ public class AdminReviewService {
 
     public Review approveReview(String id) {
         Review review = reviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
         review.setStatus(ReviewStatus.APPROVED);
         return reviewRepo.save(review);
     }
 
     public Review rejectReview(String id) {
         Review review = reviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
         review.setStatus(ReviewStatus.REJECTED);
         return reviewRepo.save(review);
     }

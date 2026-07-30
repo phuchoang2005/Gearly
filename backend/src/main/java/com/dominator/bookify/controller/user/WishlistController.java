@@ -2,7 +2,6 @@ package com.dominator.bookify.controller.user;
 
 import com.dominator.bookify.dto.BookSummaryDTO;
 import com.dominator.bookify.dto.WishlistRequestDTO;
-import com.dominator.bookify.model.User;
 import com.dominator.bookify.security.AuthenticatedUser;
 import com.dominator.bookify.service.user.WishlistService;
 import lombok.RequiredArgsConstructor;
@@ -23,52 +22,36 @@ public class WishlistController {
     private final WishlistService wishlistService;
 
     @GetMapping
-    public ResponseEntity<?> getWishlist(@AuthenticationPrincipal AuthenticatedUser user, WishlistRequestDTO dto) {
-        try {
-            Page<BookSummaryDTO> result = wishlistService.getWishlist(user, dto);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Page<BookSummaryDTO>> getWishlist(
+            @AuthenticationPrincipal AuthenticatedUser authUser, WishlistRequestDTO dto) {
+        return ResponseEntity.ok(wishlistService.getWishlist(authUser, dto));
     }
 
     @PostMapping("/{bookId}")
-    public ResponseEntity<?> addToWishlist(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable String bookId) {
-        try {
-            wishlistService.addToWishlist(user, bookId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Void> addToWishlist(
+            @AuthenticationPrincipal AuthenticatedUser authUser, @PathVariable String bookId) {
+        wishlistService.addToWishlist(authUser, bookId);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{bookId}")
-    public ResponseEntity<?> removeFromWishlist(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable String bookId) {
-        try {
-            wishlistService.removeFromWishlist(user, bookId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Void> removeFromWishlist(
+            @AuthenticationPrincipal AuthenticatedUser authUser, @PathVariable String bookId) {
+        wishlistService.removeFromWishlist(authUser, bookId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/batch")
-    public ResponseEntity<?> mergeWishlist(@AuthenticationPrincipal AuthenticatedUser user, @RequestBody List<String> bookIds) {
-        try {
-            Set<String> wishlist = wishlistService.mergeWishlist(user, bookIds);
-            return ResponseEntity.ok(Map.of("wishlist", wishlist));
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Map<String, Set<String>>> mergeWishlist(
+            @AuthenticationPrincipal AuthenticatedUser authUser, @RequestBody List<String> bookIds) {
+        Set<String> wishlist = wishlistService.mergeWishlist(authUser, bookIds);
+        return ResponseEntity.ok(Map.of("wishlist", wishlist));
     }
 
     @PostMapping("/bulk_remove")
-    public ResponseEntity<?> bulkRemoveWishlist(@AuthenticationPrincipal AuthenticatedUser user, @RequestBody List<String> bookIds) {
-        try {
-            wishlistService.bulkRemoveFromWishlist(user, bookIds);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Void> bulkRemoveWishlist(
+            @AuthenticationPrincipal AuthenticatedUser authUser, @RequestBody List<String> bookIds) {
+        wishlistService.bulkRemoveFromWishlist(authUser, bookIds);
+        return ResponseEntity.ok().build();
     }
 }

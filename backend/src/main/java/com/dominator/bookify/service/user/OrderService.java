@@ -15,7 +15,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import com.dominator.bookify.exception.ApiException;
+import com.dominator.bookify.exception.BadRequestException;
+import com.dominator.bookify.exception.ConflictException;
+import com.dominator.bookify.exception.ResourceNotFoundException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -40,7 +43,7 @@ public class OrderService {
 
     public Order findById(String orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
     public Page<Order> searchOrders(AuthenticatedUser authUser,
@@ -91,14 +94,14 @@ public class OrderService {
         User user = authUser.getUser();
 
         Order order = orderRepository.findById(dto.getOrderId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (!order.getUserId().equals(user.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to cancel this order");
+            throw new ApiException(HttpStatus.FORBIDDEN, "You are not allowed to cancel this order");
         }
 
         if (order.getOrderStatus() != OrderStatus.PENDING && order.getOrderStatus() != OrderStatus.PROCESSING) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This order already has status that cannot be cancelled");
+            throw new ConflictException("This order already has status that cannot be cancelled");
         }
 
         Payment payment = order.getPayment();
@@ -138,7 +141,7 @@ public class OrderService {
             Book book = bookService.getBookById(itemRequest.getBookId());
             int requestedQty = itemRequest.getQuantity();
             if (book.getStock() < requestedQty) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient stock for book: " + book.getTitle());
+                throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
             }
             OrderItem orderItem = buildOrderItem(book, requestedQty);
             orderItems.add(orderItem);
@@ -213,7 +216,7 @@ public class OrderService {
                                           String rawResponse) {
         String ourOrderId = momoOrderId.replaceFirst("^Bookify-", "");
         Order order = orderRepository.findById(ourOrderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         Payment payment = order.getPayment();
         Transaction txn = new Transaction();
