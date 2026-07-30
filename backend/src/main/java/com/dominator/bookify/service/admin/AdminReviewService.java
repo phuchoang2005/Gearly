@@ -11,30 +11,20 @@ import com.dominator.bookify.model.Book;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.repository.BookRepository;
 import com.dominator.bookify.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 import com.dominator.bookify.model.Review;
 import com.dominator.bookify.model.ReviewStatus;
 import com.dominator.bookify.repository.ReviewRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AdminReviewService {
 
     private final ReviewRepository reviewRepo;
     private final BookRepository   bookRepo;
     private final UserRepository   userRepo;
-
-    @Autowired  // <— this tells Spring “use this constructor”
-    public AdminReviewService(
-            ReviewRepository reviewRepo,
-            BookRepository   bookRepo,
-            UserRepository   userRepo
-    ) {
-        this.reviewRepo = reviewRepo;
-        this.bookRepo   = bookRepo;
-        this.userRepo   = userRepo;
-    }
 
     public List<AdminReviewResponseDTO> getAllReviews() {
         List<Review> reviews = reviewRepo.findAll();

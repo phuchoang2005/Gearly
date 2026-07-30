@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AddFieldsOperation;
@@ -31,7 +30,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AdminDashboardGetBookService {
-    @Autowired
     private final BooksInStockRepository booksInStock;
     private final MongoTemplate mongoTemplate;
 

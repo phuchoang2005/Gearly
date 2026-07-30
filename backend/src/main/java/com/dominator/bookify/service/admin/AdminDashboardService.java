@@ -1,6 +1,5 @@
 package com.dominator.bookify.service.admin;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dominator.bookify.dto.BestSellerDTO;
@@ -15,7 +14,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AdminDashboardService {
-        @Autowired
         private final AdminDashboardGetBookService getBookImp;
         private final AdminDashboardGetUserService getUserImp;
 

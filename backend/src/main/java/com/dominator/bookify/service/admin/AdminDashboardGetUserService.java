@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
@@ -24,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AdminDashboardGetUserService {
-    @Autowired
     private final MongoTemplate mongoTemplate;
 
     public List<LoyalCustomerDTO> getTop10LoyalCustomers() {

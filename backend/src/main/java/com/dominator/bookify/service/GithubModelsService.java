@@ -11,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 //import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -18,13 +19,10 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.TextContent;
 
 @Service
+@RequiredArgsConstructor
 public class GithubModelsService {
 
     private final ChatMemoryService chatMemoryService;
-
-    public GithubModelsService(ChatMemoryService chatMemoryService) {
-        this.chatMemoryService = chatMemoryService;
-    }
 
     @Value("${github.models.token}") // from application.properties
     private String githubToken;
