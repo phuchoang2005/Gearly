@@ -1,7 +1,7 @@
 package com.dominator.bookify.controller.user;
 
 import com.dominator.bookify.config.MomoConfig;
-import com.dominator.bookify.service.user.OrderService;
+import com.dominator.bookify.service.user.CustomerOrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +19,12 @@ import java.util.Map;
 public class PaymentController {
 
     private static final String HMAC_SHA256 = "HmacSHA256";
-    private final OrderService orderService;
+    private final CustomerOrderService orderService;
     private final MomoConfig momoConfig;
     private final DateTimeFormatter RESPONSE_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public PaymentController(OrderService orderService, MomoConfig momoConfig) {
+    public PaymentController(CustomerOrderService orderService, MomoConfig momoConfig) {
         this.orderService = orderService;
         this.momoConfig = momoConfig;
     }

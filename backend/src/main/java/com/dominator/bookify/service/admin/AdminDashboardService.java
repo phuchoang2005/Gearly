@@ -1,17 +1,41 @@
 package com.dominator.bookify.service.admin;
 
-import com.dominator.bookify.dto.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import com.dominator.bookify.dto.BestSellerDTO;
+import com.dominator.bookify.dto.BookInLowStockDTO;
+import com.dominator.bookify.dto.LoyalCustomerDTO;
+import com.dominator.bookify.dto.TopAvgOrderValueUserDTO;
+import com.dominator.bookify.dto.TopCategoryQuantityDTO;
+
+import lombok.RequiredArgsConstructor;
 import java.util.List;
 
-public interface AdminDashboardService {
-    public List<BestSellerDTO> getTop10BestSellingBooks();
+@Service
+@RequiredArgsConstructor
+public class AdminDashboardService {
+        @Autowired
+        private final AdminDashboardGetBookService getBookImp;
+        private final AdminDashboardGetUserService getUserImp;
 
-    public List<TopCategoryQuantityDTO> getTop10BooksPerCategory();
+        public List<BestSellerDTO> getTop10BestSellingBooks() {
+                return getBookImp.getTop10BestSellingBooks();
+        }
 
-    public List<LoyalCustomerDTO> getTop10LoyalCustomers();
+        public List<TopCategoryQuantityDTO> getTop10BooksPerCategory() {
+                return getBookImp.getTop10BooksPerCategory();
+        }
 
-    public TopAvgOrderValueUserDTO findUserWithHighestAvgOrderValue();
+        public List<LoyalCustomerDTO> getTop10LoyalCustomers() {
+                return getUserImp.getTop10LoyalCustomers();
+        }
 
-    public List<BookInLowStockDTO> getBookWithLowStock();
+        public TopAvgOrderValueUserDTO findUserWithHighestAvgOrderValue() {
+                return getUserImp.findUserWithHighestAvgOrderValue();
+        }
+
+        public List<BookInLowStockDTO> getBookWithLowStock() {
+                return getBookImp.getBookWithLowStock();
+        }
 }

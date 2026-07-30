@@ -5,7 +5,7 @@ import com.dominator.bookify.dto.QuantitySoldDTO;
 import com.dominator.bookify.dto.TopSellerDTO;
 import com.dominator.bookify.model.Order;
 import com.dominator.bookify.model.TimeFrame;
-import com.dominator.bookify.service.admin.OrderService;
+import com.dominator.bookify.service.admin.AdminOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/orders")
 public class AdminOrderController {
-    private final OrderService orderService;
+    private final AdminOrderService orderService;
 
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {

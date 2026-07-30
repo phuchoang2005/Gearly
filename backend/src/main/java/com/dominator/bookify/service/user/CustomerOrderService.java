@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OrderService {
+public class CustomerOrderService {
 
     private final OrderRepository orderRepository;
     private final BookService bookService;

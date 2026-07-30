@@ -4,7 +4,7 @@ import com.dominator.bookify.config.CorsConfig;
 import com.dominator.bookify.config.SecurityConfig;
 import com.dominator.bookify.controller.admin.AdminOrderController;
 import com.dominator.bookify.repository.UserRepository;
-import com.dominator.bookify.service.admin.OrderService;
+import com.dominator.bookify.service.admin.AdminOrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,7 +34,7 @@ class AdminOrderSecurityTest {
     private MockMvc mvc;
 
     @MockBean
-    private OrderService orderService; // AdminOrderController's only collaborator
+    private AdminOrderService orderService; // AdminOrderController's only collaborator
 
     // Collaborators of the real JwtAuthenticationFilter (unused without a Bearer header).
     @MockBean

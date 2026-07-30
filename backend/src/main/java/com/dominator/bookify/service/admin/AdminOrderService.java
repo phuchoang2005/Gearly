@@ -24,22 +24,19 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
 @AllArgsConstructor
 @Service
-public class OrderServiceImpl implements OrderService {
+public class AdminOrderService {
     private final OrderRepository orderRepository;
     private final MongoTemplate mongoTemplate;
 
-    @Override
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
 
-    @Override
     public Order getOrderById(String id) {
         return orderRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
     }
 
-    @Override
     public List<QuantitySoldDTO> getQuantitySold(TimeFrame timeFrame) {
         // Build match on status and timeframe
         MatchOperation match = buildMatch(timeFrame);
@@ -70,7 +67,6 @@ public class OrderServiceImpl implements OrderService {
                 .getMappedResults();
     }
 
-    @Override
     public List<TopSellerDTO> getTop5BestSelling(TimeFrame timeFrame) {
         MatchOperation match = buildMatch(timeFrame);
 
@@ -104,7 +100,6 @@ public class OrderServiceImpl implements OrderService {
                 .getMappedResults();
     }
 
-    @Override
     public Order updateOrder(String id, Order order) {
         Order exitstingOrder = orderRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -115,7 +110,6 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(exitstingOrder);
     }
 
-    @Override
     public Order createOrder(Order order) {
         order.setOrderStatus(OrderStatus.PENDING);
         order.setAddedAt(Instant.now());
@@ -138,7 +132,6 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(order);
     }
 
-    @Override
     public Order patchOrder(String id, OrderPatchDTO dto) {
         Order existing = orderRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -167,7 +160,6 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(existing);
     }
 
-    @Override
     public boolean setCompleteOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -182,7 +174,6 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
-    @Override
     public boolean setCancelOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -199,7 +190,6 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
-    @Override
     public boolean setProcessOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -214,7 +204,6 @@ public class OrderServiceImpl implements OrderService {
         return true;
     }
 
-    @Override
     public boolean setShipOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -228,7 +217,6 @@ public class OrderServiceImpl implements OrderService {
         return true;
     }
 
-    @Override
     public boolean setDeliveredOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -246,7 +234,6 @@ public class OrderServiceImpl implements OrderService {
         return test(order, tx);
     }
 
-    @Override
     public boolean setPendingRefundOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));
@@ -263,7 +250,6 @@ public class OrderServiceImpl implements OrderService {
         return test(order, tx);
     }
 
-    @Override
     public boolean setRefundedOrder(String orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFoundException("Order not found"));

@@ -30,12 +30,11 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class AdminDashboardGetBookImp implements AdminDashboardGetBookInterface {
+public class AdminDashboardGetBookService {
     @Autowired
     private final BooksInStockRepository booksInStock;
     private final MongoTemplate mongoTemplate;
 
-    @Override
     public List<BestSellerDTO> getTop10BestSellingBooks() {
         // 1) $unwind items
         AggregationOperation unwindItems = Aggregation.unwind("items");
@@ -61,7 +60,6 @@ public class AdminDashboardGetBookImp implements AdminDashboardGetBookInterface 
         return mongoTemplate.aggregate(agg, "orders", BestSellerDTO.class).getMappedResults();
     }
 
-    @Override
     public List<TopCategoryQuantityDTO> getTop10BooksPerCategory() {
         // Giai đoạn 1: Tách các mặt hàng trong mỗi đơn hàng ra thành các document riêng
         // biệt
@@ -122,7 +120,6 @@ public class AdminDashboardGetBookImp implements AdminDashboardGetBookInterface 
         return results.getMappedResults();
     }
 
-    @Override
     public List<BookInLowStockDTO> getBookWithLowStock() {
         return booksInStock.findBooksWithLowStock().stream().map(book -> {
             BookInLowStockDTO bookWithLowStockDTO = new BookInLowStockDTO();

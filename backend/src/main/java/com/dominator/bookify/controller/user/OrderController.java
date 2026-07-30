@@ -6,7 +6,7 @@ import com.dominator.bookify.dto.MessageResponse;
 import com.dominator.bookify.dto.OrderCreationRequestDTO;
 import com.dominator.bookify.model.Order;
 import com.dominator.bookify.security.AuthenticatedUser;
-import com.dominator.bookify.service.user.OrderService;
+import com.dominator.bookify.service.user.CustomerOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +24,7 @@ import java.util.Map;
 @Validated
 public class OrderController {
 
-    private final OrderService orderService;
+    private final CustomerOrderService orderService;
 
     @GetMapping
     public ResponseEntity<Page<Order>> getOrders(
