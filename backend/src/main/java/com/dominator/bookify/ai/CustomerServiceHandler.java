@@ -1,71 +1,57 @@
-//
 package com.dominator.bookify.ai;
 
 import com.dominator.bookify.model.Book;
 import com.dominator.bookify.service.GithubModelsService;
 import com.dominator.bookify.service.user.BookService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerServiceHandler {
 
-    private final BookService bookService; 
+    private final BookService bookService;
     private final GithubModelsService mainBot;
-
-    public CustomerServiceHandler(BookService bookService, GithubModelsService mainBot) {
-        this.bookService = bookService;
-        this.mainBot = mainBot;
-    }
+    private final AiPrompts prompts;
 
     public BackendResponse handle(String sessionId, AiDecision decision) {
 
-        // Use extracted query if available, otherwise fallback to full message
+        // Use the extracted query if available, otherwise fall back to the full message
         String searchTerm = (decision.getSearchQuery() != null && !decision.getSearchQuery().isBlank())
             ? decision.getSearchQuery()
             : decision.getOriginalUserMessage();
 
-        // 1. Search DB for products (Books)
+        // 1. Search the catalog for matching products
         List<Book> products = bookService.getBooksByTitle(searchTerm);
 
         if (!products.isEmpty()) {
-            // 2. Prepare context for the Main Bot
+            // 2. Build the product context for the main bot
             String productContext = products.stream()
-                .map(p -> String.format("- %s (ID: %s): Price %s, Rating %s", 
+                .map(p -> String.format("- %s (ID: %s): Price %s, Rating %s",
                     p.getTitle(), p.getId(), p.getPrice(), p.getAverageRating()))
                 .collect(Collectors.joining("\n"));
 
-            String prompt = """
-                User asked: "%s"
-                
-                I found these products in the database:
-                %s
-                
-                Task:
-                1. Summarize these options for the user.
-                2. Recommend the best one based on rating or relevance.
-                3. Tell the user you are taking them to the product page if there is a clear best match.
-                """.formatted(decision.getOriginalUserMessage(), productContext);
+            String prompt = prompts.getProductRecommendation()
+                .formatted(decision.getOriginalUserMessage(), productContext);
 
-            // 3. Get AI Explanation
+            // 3. Ask the AI to explain/recommend
             String explanation = mainBot.getAIResponse(sessionId, prompt);
 
-            // 4. Decision: Navigate or just Text?
-            // If we found exactly one, or a very clear top result, we navigate.
+            // 4. Navigate on a single clear match, otherwise just return text
             if (products.size() == 1) {
                 return BackendResponse.withNavigation(
                     explanation,
-                    "/book/" + products.get(0).getId() // Changes to /product/id in frontend if needed
+                    "/book/" + products.get(0).getId() // becomes /product/<id> in the frontend if needed
                 );
             }
-            
-            // If multiple, just show text (user can ask to narrow down)
+
             return BackendResponse.text(explanation);
         }
 
-        // Fallback: No products found, just chat
+        // Fallback: no products found, just chat
         String reply = mainBot.getAIResponse(sessionId, decision.getOriginalUserMessage());
         return BackendResponse.text(reply);
     }

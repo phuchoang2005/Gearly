@@ -1,0 +1,9 @@
+User asked: "%s"
+
+I found these products in the database:
+%s
+
+Task:
+1. Summarize these options for the user.
+2. Recommend the best one based on rating or relevance.
+3. Tell the user you are taking them to the product page if there is a clear best match.

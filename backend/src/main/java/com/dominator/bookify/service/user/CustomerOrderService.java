@@ -4,6 +4,7 @@ import com.dominator.bookify.dto.CancelOrderRequestDTO;
 import com.dominator.bookify.dto.CreateOrderResponse;
 import com.dominator.bookify.dto.OrderCreationRequestDTO;
 import com.dominator.bookify.dto.OrderItemRequestDTO;
+import com.dominator.bookify.mapper.OrderMapper;
 import com.dominator.bookify.model.*;
 import com.dominator.bookify.repository.OrderRepository;
 import com.dominator.bookify.security.AuthenticatedUser;
@@ -35,6 +36,7 @@ public class CustomerOrderService {
     private final BookService bookService;
     private final CartService cartService;
     private final MomoService momoService;
+    private final OrderMapper orderMapper;
 
     private static final BigDecimal TAX_RATE = new BigDecimal("0.08");
     private static final BigDecimal SHIPPING_COST_THRESHOLD = new BigDecimal("30.00");
@@ -162,7 +164,7 @@ public class CustomerOrderService {
             if (book.getStock() < requestedQty) {
                 throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
             }
-            orderItems.add(buildOrderItem(book, requestedQty));
+            orderItems.add(orderMapper.toOrderItem(book, requestedQty));
         }
         return orderItems;
     }
@@ -188,16 +190,6 @@ public class CustomerOrderService {
         BigDecimal amountUsd = BigDecimal.valueOf(order.getTotalAmount());
         String paymentUrl = momoService.createPaymentUrl(amountUsd, order.getId());
         return new CreateOrderResponse(order.getId(), paymentUrl);
-    }
-
-    private OrderItem buildOrderItem(Book book, int quantity) {
-        OrderItem item = new OrderItem();
-        item.setBookId(book.getId());
-        item.setImageUrl(book.getImages().getFirst().getUrl());
-        item.setTitle(book.getTitle());
-        item.setPrice(book.getPrice());
-        item.setQuantity(quantity);
-        return item;
     }
 
     private BigDecimal calculateShippingCost(BigDecimal subtotal) {

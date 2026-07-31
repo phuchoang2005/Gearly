@@ -15,22 +15,22 @@ public class AiRouter {
 
         return switch (decision.getIntent()) {
 
-            case "NAVIGATION" ->
+            case NAVIGATION ->
                 BackendResponse.withNavigation(
                     decision.getContent(),
                     mapNavigation(decision.getTarget())
                 );
 
-            case "STATIC_PAGE" ->
+            case STATIC_PAGE ->
                 BackendResponse.withNavigation(
                     decision.getContent(),
                     mapStatic(decision.getTarget())
                 );
 
-            case "CUSTOMER_SERVICE" ->
+            case CUSTOMER_SERVICE ->
                 customerServiceHandler.handle(sessionId, decision);
 
-            default ->
+            case UNRELATED ->
                 BackendResponse.text(
                     "Sorry, I currently can't help you with that."
                 );

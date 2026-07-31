@@ -7,6 +7,7 @@ import com.dominator.bookify.dto.UserRegisterRequestDTO;
 import com.dominator.bookify.exception.BadRequestException;
 import com.dominator.bookify.exception.ConflictException;
 import com.dominator.bookify.exception.UnauthorizedException;
+import com.dominator.bookify.mapper.UserMapper;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.model.UserStatus;
 import com.dominator.bookify.model.VerificationToken;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -40,6 +42,7 @@ class AuthServiceTest {
     @Mock private BCryptPasswordEncoder passwordEncoder;
     @Mock private AddressService addressService;
     @Mock private VerificationTokenService verificationTokenService;
+    @Spy private UserMapper userMapper = new UserMapper();
 
     @InjectMocks private AuthService authService;
 

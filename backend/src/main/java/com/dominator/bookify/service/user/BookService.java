@@ -3,11 +3,12 @@ package com.dominator.bookify.service.user;
 import com.dominator.bookify.dto.BookSearchDTO;
 import com.dominator.bookify.dto.BookSummaryDTO;
 import com.dominator.bookify.dto.WishlistRequestDTO;
+import com.dominator.bookify.mapper.BookMapper;
 import com.dominator.bookify.model.Book;
 import com.dominator.bookify.model.Category;
 import com.dominator.bookify.repository.BookRepository;
 import com.dominator.bookify.repository.CategoryRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.*;
 import com.dominator.bookify.exception.BadRequestException;
@@ -16,11 +17,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 public class BookService {
     private final BookRepository bookRepository;
     private final CategoryRepository categoryRepository;
+    private final BookMapper bookMapper;
 
     public Book getBookById(String id) {
         return bookRepository.findById(id).map(book -> {
@@ -69,18 +71,7 @@ public class BookService {
                 .toList();
 
         List<BookSummaryDTO> summaries = filtered.stream()
-                .map(book -> new BookSummaryDTO(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getAuthors(),
-                        book.getPrice(),
-                        book.getStock(),
-                        book.getCondition(),
-                        book.getAverageRating(),
-                        book.getRatingCount(),
-                        book.getTotalRating(),
-                        book.getImages()
-                ))
+                .map(bookMapper::toSummaryDto)
                 .collect(Collectors.toList());
 
         int start = Math.min(dto.getPageIndex() * dto.getPageSize(), summaries.size());

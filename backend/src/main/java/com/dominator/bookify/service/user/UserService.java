@@ -1,8 +1,8 @@
 package com.dominator.bookify.service.user;
 
 import com.dominator.bookify.dto.LoginResponseDTO;
-import com.dominator.bookify.dto.UserResponseDTO;
 import com.dominator.bookify.dto.UserUpdateRequestDTO;
+import com.dominator.bookify.mapper.UserMapper;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.model.UserStatus;
 import com.dominator.bookify.repository.UserRepository;
@@ -26,6 +26,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final AvatarStorageService avatarStorageService;
+    private final UserMapper userMapper;
 
     public LoginResponseDTO updateProfile(AuthenticatedUser authenticatedUser, UserUpdateRequestDTO req) {
         User user = authenticatedUser.getUser();
@@ -38,7 +39,7 @@ public class UserService {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getEmail());
-        return new LoginResponseDTO(token, convertToUserDTO(user));
+        return new LoginResponseDTO(token, userMapper.toResponseDto(user));
     }
 
     public void uploadAvatar(AuthenticatedUser authenticatedUser, MultipartFile file) throws IOException {
@@ -52,22 +53,5 @@ public class UserService {
         User user = authenticatedUser.getUser();
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
-    }
-
-    // TODO(S4): replace with UserMapper (also duplicated in AuthService).
-    private UserResponseDTO convertToUserDTO(User user) {
-        UserResponseDTO dto = new UserResponseDTO();
-        dto.setId(user.getId());
-        dto.setProfileAvatar(user.getProfileAvatar());
-        dto.setFullName(user.getFullName());
-        dto.setFirstName(user.getFirstName());
-        dto.setLastName(user.getLastName());
-        dto.setFavorites(user.getFavorites());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setVerified(user.isVerified());
-        dto.setStatus(user.getStatus());
-        dto.setAddress(user.getAddress());
-        return dto;
     }
 }

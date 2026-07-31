@@ -2,6 +2,7 @@ package com.dominator.bookify.service.user;
 
 import com.dominator.bookify.dto.BookSummaryDTO;
 import com.dominator.bookify.dto.WishlistRequestDTO;
+import com.dominator.bookify.mapper.BookMapper;
 import com.dominator.bookify.model.Book;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.repository.BookRepository;
@@ -19,6 +20,7 @@ public class WishlistService {
 
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
+    private final BookMapper bookMapper;
 
     public Page<BookSummaryDTO> getWishlist(AuthenticatedUser authUser, WishlistRequestDTO dto) {
         User user = authUser.getUser();
@@ -34,18 +36,7 @@ public class WishlistService {
                         book.getTitle().toLowerCase().contains(keyword) ||
                         book.getAuthors().stream().anyMatch(a -> a.toLowerCase().contains(keyword)))
                 .sorted(Comparator.comparing(Book::getTitle))
-                .map(book -> new BookSummaryDTO(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getAuthors(),
-                        book.getPrice(),
-                        book.getStock(),
-                        book.getCondition(),
-                        book.getAverageRating(),
-                        book.getRatingCount(),
-                        book.getTotalRating(),
-                        book.getImages()
-                ))
+                .map(bookMapper::toSummaryDto)
                 .toList();
 
         int start = dto.getPageIndex() * dto.getPageSize();

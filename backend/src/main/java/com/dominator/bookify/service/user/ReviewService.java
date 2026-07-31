@@ -1,6 +1,7 @@
 package com.dominator.bookify.service.user;
 
 import com.dominator.bookify.dto.*;
+import com.dominator.bookify.mapper.ReviewMapper;
 import com.dominator.bookify.model.*;
 import com.dominator.bookify.repository.BookRepository;
 import com.dominator.bookify.repository.OrderRepository;
@@ -34,6 +35,7 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final BookRepository bookRepository;
+    private final ReviewMapper reviewMapper;
 
     public Page<ReviewResponseDTO> getApprovedReviews(BookReviewsDTO dto) {
         Pageable pageable = PageRequest.of(dto.getPageIndex(), dto.getPageSize(),
@@ -50,13 +52,7 @@ public class ReviewService {
                     .map(User::getFullName)
                     .orElse("Unknown User");
 
-            return new ReviewResponseDTO(
-                    review.getId(),
-                    review.getRating(),
-                    review.getSubject(),
-                    review.getComment(),
-                    review.getAddedAt(),
-                    userName);
+            return reviewMapper.toResponseDto(review, userName);
         });
     }
 
@@ -79,13 +75,7 @@ public class ReviewService {
                     .map(User::getFullName)
                     .orElse("Unknown User");
 
-            return new ReviewResponseDTO(
-                    review.getId(),
-                    review.getRating(),
-                    review.getSubject(),
-                    review.getComment(),
-                    review.getAddedAt(),
-                    userName);
+            return reviewMapper.toResponseDto(review, userName);
         }).collect(Collectors.toList());
     }
 
@@ -134,7 +124,7 @@ public class ReviewService {
             }
             applyRating(book, rdto.getRating());
             booksToSave.add(book);
-            reviewsToSave.add(buildReview(rdto, dto.getOrderId(), user.getId()));
+            reviewsToSave.add(reviewMapper.toEntity(rdto, dto.getOrderId(), user.getId()));
         }
 
         bookRepository.saveAll(booksToSave);
@@ -169,16 +159,5 @@ public class ReviewService {
         book.setTotalRating(newTotal);
         double average = Math.round((double) newTotal / newCount * 100) / 100.0;
         book.setAverageRating(average);
-    }
-
-    private Review buildReview(CreateReviewRequestDTO rdto, String orderId, String userId) {
-        Review review = new Review();
-        review.setBookId(new ObjectId(rdto.getBookId()));
-        review.setOrderId(new ObjectId(orderId));
-        review.setUserId(new ObjectId(userId));
-        review.setRating(rdto.getRating());
-        review.setSubject(rdto.getSubject());
-        review.setComment(rdto.getComment());
-        return review;
     }
 }
