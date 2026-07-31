@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Repository
-public class OrderRepositoryImpl implements OrderRepositoryCustom {
+public class OrderRepositoryCustomImpl implements OrderRepositoryCustom {
     private final MongoTemplate mongoTemplate;
 
     @Override

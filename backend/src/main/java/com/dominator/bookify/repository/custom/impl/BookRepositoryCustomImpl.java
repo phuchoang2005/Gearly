@@ -2,6 +2,7 @@ package com.dominator.bookify.repository.custom.impl;
 
 import com.dominator.bookify.dto.BookSummaryDTO;
 import com.dominator.bookify.repository.custom.BookRepositoryCustom;
+import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -14,14 +15,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Repository
 public class BookRepositoryCustomImpl implements BookRepositoryCustom {
 
     private final MongoTemplate mongoTemplate;
-
-    public BookRepositoryCustomImpl(MongoTemplate mongoTemplate) {
-        this.mongoTemplate = mongoTemplate;
-    }
 
     @Override
     public Page<BookSummaryDTO> findBooks(String condition, double minPrice, double maxPrice,
