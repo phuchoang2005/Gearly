@@ -106,16 +106,18 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 **Goal:** Centralize entity↔DTO mapping and clean up remaining repository/AI rough edges. *(Phases 6–7)*
 
 **Backlog**
-- [ ] **`mapper/` package:** plain `@Component` mappers (`UserMapper`, `ProductMapper`*, `OrderMapper`, `ReviewMapper`, `CartMapper`, …) with `toDto`/`toEntity`/`updateEntity`. *(named `Book…` until S5)*
-- [ ] **Remove inline mapping** from services/controllers (`UserService.convertToUserDTO`, `CartService.getCartItem`, `OrderService.buildOrderItem`, `ReviewService`, `BookService.getBooksByIds`, dashboard DTO builds, `BeanUtils.copyProperties`). Aggregation→DTO Mongo projections stay in repositories.
-- [ ] **Repo naming:** `OrderRepositoryImpl` → `OrderRepositoryCustomImpl` (match `BookRepositoryCustomImpl`); standardize injection.
-- [ ] **AI tidy:** replace intent magic strings with the existing `NavigationTarget`/intent enum; extract duplicated raw-`HttpClient` GitHub-Models logic into one `GithubModelsClient`; externalize hardcoded prompts; drop `ChatController`'s unused `GithubModelsService` dep; translate Vietnamese comments.
-- [ ] **Model consistency:** unify audit timestamps on `Instant` across `Book/Order/User`; fix `idx_items_bookdId` typo.
-- [ ] **Tests:** mapper unit tests (round-trip a couple of entities).
+- [x] **`mapper/` package:** plain `@Component` mappers (`UserMapper`, `BookMapper`*, `OrderMapper`, `ReviewMapper`, `CartMapper`, `BlogPostMapper`, `StaticPageMapper`) with `toDto`/`toEntity`/`updateEntity`. Category-name and display-name lookups stay in services and are passed in. *(named `Book…` until S5)*
+- [x] **Remove inline mapping** from services/controllers (`UserService`/`AuthService`/`OAuthService.convertToUserDTO`, `CartService.getCartItem`, `CustomerOrderService.buildOrderItem`, `ReviewService`/`AdminReviewService`, `BookService.getBooksByIds`/`WishlistService`, dashboard low-stock build, `AdminBookService`/`AdminUserService` `BeanUtils.copyProperties`). Aggregation→DTO Mongo projections stay in the dashboard services. *(Two intentional leftovers: `AdminOrderService`'s entity←`@RequestBody Order` `copyProperties` — tied to the admin request-DTO work **deferred to S5**; and `AddressController`'s trivial `AddressOptionDTO` projection — out of scope.)*
+- [x] **Repo naming:** `OrderRepositoryImpl` → `OrderRepositoryCustomImpl` (match `BookRepositoryCustomImpl`); both custom impls standardized on `@RequiredArgsConstructor`.
+- [x] **AI tidy:** added `Intent` enum (replaces free-form intent strings; `AiDecision` carries it, `AiRouter` switches on it); extracted the duplicated raw-`HttpClient` GitHub-Models logic into one `GithubModelsClient`; externalized the three prompts to `classpath:prompts/*.txt` (loaded by `AiPrompts`); dropped `ChatController`'s unused `GithubModelsService` dep; translated the Vietnamese dashboard-aggregation comments.
+- [x] **Model consistency (partial):** `User.createdAt/updatedAt` (+ `AdminUserDTO`) `LocalDateTime` → `Instant` (Order already `Instant`). **Deferred to S5:** `Book.addedAt/modifiedAt` `String` → `Instant` and the `idx_items_bookdId` → `idx_items_bookId` rename — both need coordinated DB changes (mixed String/Date data would corrupt the "newest" sort; the index rename conflicts under `auto-index-creation=true` against a DB holding the old index) that the S5 migration + re-seed does atomically.
+- [x] **Tests:** `UserMapperTest` + `BookMapperTest` (round-trip, image re-wrap, rating/id preservation, String→ObjectId category conversion). `mvn test` green (27 run, 1 skipped).
 
-**Verify:** grep shows no `new …DTO(` / `copyProperties` mapping left in services; AI intents reference enum constants; app boots.
+> **S4 status:** ✅ complete on branch `refactor/s4-mappers` (commits only, not merged/tagged — per request). Build + `mvn test` green (27 run, 1 skipped: `contextLoads`). **Deferred to S5:** Book timestamps → `Instant`; `idx_items_bookdId` index rename; admin `@RequestBody Order` → request DTO (already an S5 item). The S2-deferred "raw entity responses → response DTOs" (`Order`/`Cart`/`Book`/`Review`) remains open — not part of the S4 checkboxes and FE-contract-adjacent, so it stays batched with S5/S6. `BookController.getBook` still returns a raw `Book`.
 
-**Risks:** low — mostly mechanical extraction. Changing timestamp types touches serialization; verify JSON output shape unchanged for FE.
+**Verify:** grep shows no entity↔DTO `new …DTO(` / `copyProperties` mapping left in services (only the deferred `AdminOrderService` entity copy remains); AI intents reference `Intent`/`NavigationTarget` enum constants; compiles green.
+
+**Risks:** low — mostly mechanical extraction. Timestamp-type change touches serialization: `User` audit fields now serialize as UTC ISO-8601 (`…Z`) instead of a zoneless local ISO string — verify the admin FE's date rendering.
 
 ---
 
@@ -127,6 +129,7 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 - [ ] **Domain:** `Book`→`Product`, `BookRepository`→`ProductRepository`, `BookService`→`ProductService`, `Book*DTO`→`Product*DTO`, routes `/api/books`→`/api/products`, `@Document(collection="books")`→`"products"`, all identifiers (51 backend files reference `Book`).
 - [ ] **Apply deferred route renames** from S2 here to batch FE work.
 - [ ] **DB migration:** rename Mongo collections (`books`→`products`, …); re-seed from relocated dumps; commit a repeatable migration script. **Mutates the real DB — snapshot taken.**
+- [ ] **Deferred model consistency (from S4):** as part of the migration/re-seed, change `Book.addedAt/modifiedAt` `String` → `Instant` (update `AdminBookService`'s manual `Instant.now().toString()` sets) and rename the `Order` index `idx_items_bookdId` → `idx_items_bookId`. Doing both here avoids a mixed String/Date `addedAt` window and an index-conflict at boot (`auto-index-creation=true`): drop the old index, then let the corrected one create against the re-seeded data.
 - [ ] **Frontends (companion):** update API paths + `book`→`product` in `frontend/src` and `frontend_admin/bookify/src` (~21 files); rename the `frontend_admin/bookify/` directory.
 - [ ] **Admin FE real auth (deferred from S1):** the admin app currently uses *fake* demo auth — `authProvider.login` stores `` `${email}-${password}` `` in `localStorage` (never calls the backend) and the stock `@refinedev/simple-rest` data provider sends **no `Authorization` header**. Since S1 locked `/api/admin/**` behind `ROLE_ADMIN`, the admin app now 403s on every call. Wire a real login against `/api/users/login`, persist the returned JWT, and attach `Authorization: Bearer <token>` to all `/api/admin/**` requests (custom data provider / fetch wrapper). Also review `useAutoLoginForDemo`.
 - [ ] **OpenAPI:** add `springdoc-openapi-starter-webmvc-ui` so the renamed surface is browsable/verifiable.
