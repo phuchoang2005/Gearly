@@ -27,27 +27,27 @@ public class AdminDashboardGetUserService {
 
     public List<LoyalCustomerDTO> getTop10LoyalCustomers() {
 
-        /* B1: GROUP theo userId (String) */
+        /* Step 1: GROUP by userId (String) */
         GroupOperation groupByUser = Aggregation.group("userId")
                 .count().as("totalOrders")
                 .sum("totalAmount").as("totalSpending")
                 .min("addedAt").as("firstOrder")
                 .max("addedAt").as("lastOrder");
 
-        /* B2: SORT theo tổng chi tiêu & LIMIT 10 */
+        /* Step 2: SORT by total spending & LIMIT 10 */
         SortOperation sortBySpending = Aggregation.sort(Sort.Direction.DESC, "totalSpending");
         LimitOperation limit10 = Aggregation.limit(10);
 
-        /* B3: LOOKUP sang users, chuyển _id -> String để so sánh */
-        // Dùng $lookup dạng pipeline vì cần $toString
+        /* Step 3: LOOKUP into users, converting _id -> String to compare */
+        // Use a pipeline-form $lookup because we need $toString
         AggregationOperation lookupUsers = ctx -> new Document("$lookup",
                 new Document("from", "users")
-                        .append("let", Map.of("uid", "$_id")) // userId dạng String
+                        .append("let", Map.of("uid", "$_id")) // userId is a String
                         .append("pipeline", List.of(
                                 new Document("$match",
                                         new Document("$expr",
                                                 new Document("$eq", List.of(
-                                                        new Document("$toString", "$_id"), // chuyển ObjectId -> String
+                                                        new Document("$toString", "$_id"), // convert ObjectId -> String
                                                         "$$uid")))),
                                 new Document("$project",
                                         new Document("_id", 0)
@@ -56,7 +56,7 @@ public class AdminDashboardGetUserService {
                                                 .append("phone", 1))))
                         .append("as", "user"));
 
-        /* B4: UNWIND & PROJECT */
+        /* Step 4: UNWIND & PROJECT */
         UnwindOperation unwindUser = Aggregation.unwind("user");
 
         ProjectionOperation project = Aggregation.project()
@@ -82,22 +82,22 @@ public class AdminDashboardGetUserService {
 
     public TopAvgOrderValueUserDTO findUserWithHighestAvgOrderValue() {
         /*
-         * 1️⃣ GROUP theo userId (String) và tính giá trị trung bình, tổng đơn, tổng chi
+         * Step 1: GROUP by userId (String) and compute the average value, order count, and total spend
          */
         GroupOperation groupByUser = Aggregation.group("userId")
                 .avg("totalAmount").as("avgOrderValue")
                 .sum("totalAmount").as("totalSpent")
                 .count().as("totalOrders");
 
-        /* 2️⃣ SORT giảm dần theo avgOrderValue và LIMIT 1 */
+        /* Step 2: SORT by avgOrderValue descending and LIMIT 1 */
         SortOperation sortDesc = Aggregation.sort(
                 Sort.Direction.DESC, "avgOrderValue");
         LimitOperation limit1 = Aggregation.limit(1);
 
-        /* 3️⃣ LOOKUP sang users bằng cách ép _id -> String rồi so sánh với userId */
+        /* Step 3: LOOKUP into users by casting _id -> String and comparing with userId */
         AggregationOperation lookupUser = ctx -> new Document("$lookup",
                 new Document("from", "users")
-                        .append("let", Map.of("uid", "$_id")) // _id ở đây là userId (string)
+                        .append("let", Map.of("uid", "$_id")) // _id here is the userId (String)
                         .append("pipeline", List.of(
                                 new Document("$match",
                                         new Document("$expr",
@@ -113,7 +113,7 @@ public class AdminDashboardGetUserService {
 
         UnwindOperation unwindUser = Aggregation.unwind("user");
 
-        /* 4️⃣ PROJECT thành định dạng DTO */
+        /* Step 4: PROJECT into the DTO shape */
         ProjectionOperation project = Aggregation.project()
                 .and("_id").as("userId")
                 .and("user.fullName").as("fullName")
@@ -129,10 +129,10 @@ public class AdminDashboardGetUserService {
                 unwindUser,
                 project);
 
-        /* Thực thi và map kết quả */
+        /* Execute and map the result */
         AggregationResults<TopAvgOrderValueUserDTO> results = mongoTemplate.aggregate(pipeline, "orders",
                 TopAvgOrderValueUserDTO.class);
 
-        return results.getUniqueMappedResult(); // có thể trả null nếu không có đơn nào
+        return results.getUniqueMappedResult(); // may return null if there are no orders
     }
 }

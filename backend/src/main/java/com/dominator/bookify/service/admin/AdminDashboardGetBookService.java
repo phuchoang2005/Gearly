@@ -46,75 +46,68 @@ public class AdminDashboardGetBookService {
         AggregationOperation sort = Aggregation.sort(Sort.Direction.DESC, "totalSold");
         AggregationOperation limit = Aggregation.limit(10);
 
-        /* 4) $lookup (pipeline) – vì bookId (String) cần ép sang ObjectId để so sánh */
+        /* 4) $lookup (pipeline) - bookId (String) must be cast to ObjectId to compare */
         Document lookupStage = new Document("$lookup", new Document("from", "books").append("let", Map.of("bookIdStr", "$_id")).append("pipeline", List.of(new Document("$match", new Document("$expr", new Document("$eq", List.of("$_id", new Document("$toObjectId", "$$bookIdStr"))))), new Document("$project", new Document("title", 1).append("authors", 1).append("price", 1)))).append("as", "book"));
         AggregationOperation lookup = context -> lookupStage;
 
-        // 5) $unwind book & $project kết quả
+        // 5) $unwind book & $project the result
         AggregationOperation unwindBook = Aggregation.unwind("book");
         AggregationOperation project = Aggregation.project().and("book._id").as("bookId").and("book.title").as("title").and("book.authors").as("authors").and("book.price").as("price").andInclude("totalSold");
 
-        // Gộp pipeline
+        // Assemble the pipeline
         Aggregation agg = Aggregation.newAggregation(unwindItems, groupByBook, sort, limit, lookup, unwindBook, project);
 
         return mongoTemplate.aggregate(agg, "orders", BestSellerDTO.class).getMappedResults();
     }
 
     public List<TopCategoryQuantityDTO> getTop10BooksPerCategory() {
-        // Giai đoạn 1: Tách các mặt hàng trong mỗi đơn hàng ra thành các document riêng
-        // biệt
+        // Stage 1: Unwind each order's items into separate documents
         UnwindOperation unwindItems = Aggregation.unwind("items");
 
-        // Giai đoạn 2: Nhóm theo mã sách (bookId) để tính tổng số lượng đã bán của mỗi
-        // cuốn sách
+        // Stage 2: Group by bookId to sum the total quantity sold per book
         GroupOperation groupBooks = Aggregation.group("items.bookId").sum("items.quantity").as("totalQuantitySold");
 
-        // Giai đoạn 3: Chuyển đổi _id (hiện là chuỗi) sang ObjectId để có thể join với
-        // collection 'books'
+        // Stage 3: Convert _id (currently a string) to ObjectId so it can join the 'books' collection
         AddFieldsOperation addConvertId = Aggregation.addFields().addField("bookObjectId").withValueOf(ConvertOperators.ToObjectId.toObjectId("$_id")).build();
 
-        // Giai đoạn 4: Join với collection 'books' để lấy thông tin chi tiết của sách,
-        // bao gồm cả categoryIds
+        // Stage 4: Join the 'books' collection to fetch book details, including categoryIds
         LookupOperation lookupBooks = Aggregation.lookup("books", "bookObjectId", "_id", "bookDetails");
 
-        // Giai đoạn 5: Tách mảng bookDetails ra, vì mỗi sách chỉ có một chi tiết
+        // Stage 5: Unwind the bookDetails array, since each book has exactly one detail
         UnwindOperation unwindBookDetails = Aggregation.unwind("bookDetails");
 
-        // Giai đoạn 6: Tách mảng categoryIds ra, vì một cuốn sách có thể thuộc nhiều
-        // danh mục
+        // Stage 6: Unwind the categoryIds array, since a book can belong to multiple categories
         UnwindOperation unwindCategoryIds = Aggregation.unwind("bookDetails.categoryIds");
 
-        // Giai đoạn 7: Join với collection 'categories' để lấy tên của danh mục
+        // Stage 7: Join the 'categories' collection to fetch category names
         LookupOperation lookupCategories = Aggregation.lookup("categories", "bookDetails.categoryIds", "_id", "categoryDetails");
 
-        // Giai đoạn 8: Tách mảng categoryDetails
+        // Stage 8: Unwind the categoryDetails array
         UnwindOperation unwindCategoryDetails = Aggregation.unwind("categoryDetails");
 
-        // Giai đoạn 9: Sắp xếp các sản phẩm theo số lượng bán giảm dần cho mỗi danh mục
-        SortOperation sortOperation = Aggregation.sort(Sort.by(Sort.Direction.ASC, "categoryDetails.name")).and( // Vẫn sắp xếp theo tên để đảm
-                // bảo
-                // thứ tự tốt
+        // Stage 9: Sort products by quantity sold (desc) within each category
+        SortOperation sortOperation = Aggregation.sort(Sort.by(Sort.Direction.ASC, "categoryDetails.name")).and( // still sort by name
+                // to keep a
+                // stable order
                 Sort.by(Sort.Direction.DESC, "totalQuantitySold"));
 
-        // Giai đoạn 10: Nhóm các sách lại theo ID danh mục và đẩy thông tin sách vào
-        // một mảng
-        GroupOperation groupByCategory = Aggregation.group("bookDetails.categoryIds") // Thay đổi từ
+        // Stage 10: Group books by category id and push book info into an array
+        GroupOperation groupByCategory = Aggregation.group("bookDetails.categoryIds") // changed from
                 // categoryDetails.name
-                // sang
+                // to
                 // bookDetails.categoryIds
-                .first("categoryDetails.name").as("categoryName") // Lấy tên danh mục đầu tiên
+                .first("categoryDetails.name").as("categoryName") // take the first category name
                 .push(new Document("bookId", "$_id").append("title", "$bookDetails.title").append("totalQuantitySold", "$totalQuantitySold")).as("books");
 
-        // Giai đoạn 11: Định dạng lại output, lấy 10 sản phẩm đầu tiên trong mỗi mảng
-        // 'books'
-        ProjectionOperation projectOutput = Aggregation.project().andExclude("_id").and("$_id").as("categoryId") // Đổi tên _id thành categoryId cho DTO
-                .and("categoryName").as("categoryName") // Giữ lại categoryName
+        // Stage 11: Reshape the output, taking the first 10 products in each 'books' array
+        ProjectionOperation projectOutput = Aggregation.project().andExclude("_id").and("$_id").as("categoryId") // rename _id to categoryId for the DTO
+                .and("categoryName").as("categoryName") // keep categoryName
                 .and(ArrayOperators.Slice.sliceArrayOf("$books").offset(0).itemCount(10)).as("top10Books");
 
-        // Tập hợp tất cả các giai đoạn aggregation
+        // Assemble all aggregation stages
         Aggregation aggregation = Aggregation.newAggregation(unwindItems, groupBooks, addConvertId, lookupBooks, unwindBookDetails, unwindCategoryIds, lookupCategories, unwindCategoryDetails, sortOperation, groupByCategory, projectOutput);
 
-        // Thực thi aggregation và ánh xạ kết quả vào DTO
+        // Execute the aggregation and map results into the DTO
         AggregationResults<TopCategoryQuantityDTO> results = mongoTemplate.aggregate(aggregation, "orders", TopCategoryQuantityDTO.class);
 
         return results.getMappedResults();
