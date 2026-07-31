@@ -1,16 +1,14 @@
 package com.dominator.bookify.service;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.dominator.bookify.ai.AiPrompts;
+import com.dominator.bookify.ai.GithubModelsClient;
 
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.message.AiMessage;
@@ -23,32 +21,25 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GithubModelsService {
 
+    private static final String MODEL = "meta/meta-llama-3.1-8b-instruct";
+
     private final ChatMemoryService chatMemoryService;
+    private final GithubModelsClient githubModelsClient;
+    private final AiPrompts prompts;
 
     @Value("${github.models.token}") // from application.properties
     private String githubToken;
-
-    private static final String API_URL = "https://models.github.ai/inference/chat/completions";
-
-    private static final String SYSTEM_PROMPT = """
-            You are an expert AI assistant for a Computer & PC Component Store.
-
-            Your goals:
-            - Help users choose between CPUs, GPUs, Laptops, etc.
-            - Use the provided database context to give accurate prices and specs.
-            - Be concise and professional.
-            """;
 
     public String getAIResponse(String sessionId, String userMessage) {
         try {
             chatMemoryService.addUserMessage(sessionId, userMessage);
 
             JSONObject payload = new JSONObject()
-                    .put("model", "meta/meta-llama-3.1-8b-instruct")
+                    .put("model", MODEL)
                     .put("messages", buildMessages(sessionId))
                     .put("max_tokens", 256);
 
-            String aiReply = parseReply(callModel(payload));
+            String aiReply = parseReply(githubModelsClient.postChatCompletion(githubToken, payload));
             if (aiReply == null) {
                 return "(no response)";
             }
@@ -66,7 +57,7 @@ public class GithubModelsService {
         JSONArray messagesArray = new JSONArray();
         messagesArray.put(new JSONObject()
                 .put("role", "system")
-                .put("content", SYSTEM_PROMPT));
+                .put("content", prompts.getSystemAssistant()));
 
         chatMemoryService.getMemory(sessionId).messages().forEach(msg -> {
             if (msg instanceof UserMessage user) {
@@ -84,19 +75,6 @@ public class GithubModelsService {
             }
         });
         return messagesArray;
-    }
-
-    private String callModel(JSONObject payload) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
-                .header("Authorization", "Bearer " + githubToken)
-                .header("Accept", "application/vnd.github+json")
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(payload.toString(), StandardCharsets.UTF_8))
-                .build();
-
-        HttpClient client = HttpClient.newHttpClient();
-        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
     }
 
     /** Extract the assistant reply, or null when the response carries no choice/message. */

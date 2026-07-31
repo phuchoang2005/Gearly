@@ -2,17 +2,17 @@ package com.dominator.bookify.ai;
 
 public class AiDecision {
 
-    private String intent;
+    private Intent intent;
     private NavigationTarget target;
     private String content;
     private String originalUserMessage;
     private String searchQuery;
 
-    public String getIntent() {
+    public Intent getIntent() {
         return intent;
     }
 
-    public void setIntent(String intent) {
+    public void setIntent(Intent intent) {
         this.intent = intent;
     }
 
