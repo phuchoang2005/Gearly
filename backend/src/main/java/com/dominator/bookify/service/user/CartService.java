@@ -1,5 +1,6 @@
 package com.dominator.bookify.service.user;
 
+import com.dominator.bookify.mapper.CartMapper;
 import com.dominator.bookify.model.Book;
 import com.dominator.bookify.model.Cart;
 import com.dominator.bookify.model.CartItem;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 public class CartService {
     private final CartRepository cartRepository;
     private final BookService bookService;
+    private final CartMapper cartMapper;
 
     public Cart getOrCreate(String userId, String guestId) {
         Cart cart = (userId != null
@@ -199,7 +201,7 @@ public class CartService {
                 throw new ResourceNotFoundException("Book not found: " + bookId);
             }
 
-            CartItem item = getCartItem(book);
+            CartItem item = cartMapper.toCartItem(book);
 
             CartItem existing = findItemInCart(cart, item.getBookId());
             int newQty = (existing != null ? existing.getQuantity() : 0) + 1;
@@ -223,20 +225,6 @@ public class CartService {
 
         return saveCart(cart);
     }
-
-    private static CartItem getCartItem(Book book) {
-        CartItem item = new CartItem();
-        item.setBookId(book.getId());
-        item.setTitle(book.getTitle());
-        item.setAuthor(book.getAuthors() != null && !book.getAuthors().isEmpty() ? book.getAuthors().getFirst() : "Unknown");
-        item.setPrice(book.getPrice());
-        item.setQuantity(1);
-        item.setImage((book.getImages() != null && !book.getImages().isEmpty()) ? book.getImages().get(0).getUrl() : null);
-        item.setCondition(book.getCondition());
-        item.setStock(book.getStock());
-        return item;
-    }
-
 
     // Utility
     private CartItem findItemInCart(Cart cart, String bookId) {

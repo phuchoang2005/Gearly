@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import com.dominator.bookify.dto.BestSellerDTO;
 import com.dominator.bookify.dto.BookInLowStockDTO;
 import com.dominator.bookify.dto.TopCategoryQuantityDTO;
+import com.dominator.bookify.mapper.BookMapper;
 import com.dominator.bookify.repository.BooksInStockRepository;
 
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -32,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminDashboardGetBookService {
     private final BooksInStockRepository booksInStock;
     private final MongoTemplate mongoTemplate;
+    private final BookMapper bookMapper;
 
     public List<BestSellerDTO> getTop10BestSellingBooks() {
         // 1) $unwind items
@@ -119,12 +121,8 @@ public class AdminDashboardGetBookService {
     }
 
     public List<BookInLowStockDTO> getBookWithLowStock() {
-        return booksInStock.findBooksWithLowStock().stream().map(book -> {
-            BookInLowStockDTO bookWithLowStockDTO = new BookInLowStockDTO();
-            bookWithLowStockDTO.setTitle(book.getTitle());
-            bookWithLowStockDTO.setId(book.getId());
-            bookWithLowStockDTO.setStock(book.getStock());
-            return bookWithLowStockDTO;
-        }).collect(Collectors.toList());
+        return booksInStock.findBooksWithLowStock().stream()
+                .map(bookMapper::toLowStockDto)
+                .collect(Collectors.toList());
     }
 }

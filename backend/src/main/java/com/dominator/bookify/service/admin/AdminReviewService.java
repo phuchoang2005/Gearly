@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.dominator.bookify.dto.AdminReviewResponseDTO;
 import com.dominator.bookify.exception.ResourceNotFoundException;
+import com.dominator.bookify.mapper.ReviewMapper;
 import com.dominator.bookify.model.Book;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.repository.BookRepository;
@@ -25,6 +26,7 @@ public class AdminReviewService {
     private final ReviewRepository reviewRepo;
     private final BookRepository   bookRepo;
     private final UserRepository   userRepo;
+    private final ReviewMapper     reviewMapper;
 
     public List<AdminReviewResponseDTO> getAllReviews() {
         List<Review> reviews = reviewRepo.findAll();
@@ -53,17 +55,9 @@ public class AdminReviewService {
                     Book book = bookMap.get(bId);
                     User user = userMap.get(uId);
 
-                    return new AdminReviewResponseDTO(
-                            r.getId(),
-                            book != null ? book.getTitle() : "—",
-                            user != null ? user.getFullName() : "—",
-                            r.getRating(),
-                            r.getSubject(),
-                            r.getComment(),
-                            r.getStatus(),
-                            r.getAddedAt(),
-                            r.getModifiedAt()
-                    );
+                    String bookTitle = book != null ? book.getTitle() : "—";
+                    String userName = user != null ? user.getFullName() : "—";
+                    return reviewMapper.toAdminDto(r, bookTitle, userName);
                 })
                 .collect(Collectors.toList());
     }

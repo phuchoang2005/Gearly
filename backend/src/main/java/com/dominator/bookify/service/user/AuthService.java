@@ -4,11 +4,11 @@ import com.dominator.bookify.dto.LoginResponseDTO;
 import com.dominator.bookify.dto.ResetPasswordRequestDTO;
 import com.dominator.bookify.dto.UserLoginRequestDTO;
 import com.dominator.bookify.dto.UserRegisterRequestDTO;
-import com.dominator.bookify.dto.UserResponseDTO;
 import com.dominator.bookify.exception.BadRequestException;
 import com.dominator.bookify.exception.ConflictException;
 import com.dominator.bookify.exception.ResourceNotFoundException;
 import com.dominator.bookify.exception.UnauthorizedException;
+import com.dominator.bookify.mapper.UserMapper;
 import com.dominator.bookify.model.Address;
 import com.dominator.bookify.model.User;
 import com.dominator.bookify.model.UserStatus;
@@ -36,6 +36,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final AddressService addressService;
     private final VerificationTokenService verificationTokenService;
+    private final UserMapper userMapper;
 
     public LoginResponseDTO login(UserLoginRequestDTO req) {
         User user = userRepository.findByEmail(req.getEmail())
@@ -54,7 +55,7 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
-        return new LoginResponseDTO(token, convertToUserDTO(user));
+        return new LoginResponseDTO(token, userMapper.toResponseDto(user));
     }
 
     @Transactional
@@ -125,22 +126,5 @@ public class AuthService {
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-    }
-
-    // TODO(S4): replace with UserMapper (also duplicated in UserService).
-    private UserResponseDTO convertToUserDTO(User user) {
-        UserResponseDTO dto = new UserResponseDTO();
-        dto.setId(user.getId());
-        dto.setProfileAvatar(user.getProfileAvatar());
-        dto.setFullName(user.getFullName());
-        dto.setFirstName(user.getFirstName());
-        dto.setLastName(user.getLastName());
-        dto.setFavorites(user.getFavorites());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setVerified(user.isVerified());
-        dto.setStatus(user.getStatus());
-        dto.setAddress(user.getAddress());
-        return dto;
     }
 }
