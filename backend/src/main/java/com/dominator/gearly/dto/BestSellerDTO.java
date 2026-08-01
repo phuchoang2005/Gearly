@@ -5,7 +5,7 @@ import java.util.List;
 
 @Data
 public class BestSellerDTO {
-    private String bookId;
+    private String productId;
     private String title;
     private List<String> authors;
     private double price;

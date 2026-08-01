@@ -12,16 +12,15 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookSummaryDTO {
-    private String id;
+public class ProductUpdateDTO {
     private String title;
     private List<String> authors;
+    private String description;
     private double price;
-    private int stock;
+    private double originalPrice;
     private String condition;
-    private double averageRating;
-    private int ratingCount;
-    private int totalRating;
+    private int stock;
+    private List<String> categoryIds;
     private List<Image> images;
 }
 

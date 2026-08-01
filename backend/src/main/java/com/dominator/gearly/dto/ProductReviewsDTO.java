@@ -10,8 +10,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class BookReviewsDTO {
-    String bookId;
+public class ProductReviewsDTO {
+    String productId;
     int pageSize;
     int pageIndex;
     int rating = 0;

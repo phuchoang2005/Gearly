@@ -15,15 +15,15 @@ import java.util.Map;
 
 @Repository
 public interface ReviewRepository extends MongoRepository<Review, String> {
-    Page<Review> findByBookIdAndStatus(ObjectId bookId, ReviewStatus status, Pageable pageable);
+    Page<Review> findByProductIdAndStatus(ObjectId productId, ReviewStatus status, Pageable pageable);
 
-    Page<Review> findByBookIdAndStatusAndRating(ObjectId bookId, ReviewStatus status, int rating, Pageable pageable);
+    Page<Review> findByProductIdAndStatusAndRating(ObjectId productId, ReviewStatus status, int rating, Pageable pageable);
 
     @Aggregation(pipeline = {
-            "{ $match: { bookId: ?0, status: 'APPROVED' } }",
+            "{ $match: { productId: ?0, status: 'APPROVED' } }",
             "{ $group: { _id: '$rating' , count: { $sum: 1 } } }"
     })
-    List<Map<String, Object>> getRatingDistribution(ObjectId bookId);
+    List<Map<String, Object>> getRatingDistribution(ObjectId productId);
 
     List<Review> findReviewByStatus(ReviewStatus status);
 

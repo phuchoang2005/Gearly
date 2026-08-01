@@ -43,7 +43,7 @@ public class User {
 
     private boolean verified = false;
 
-    private List<String> favorites; // Book IDs
+    private List<String> favorites; // Product IDs
 
     private UserStatus status = UserStatus.ACTIVE;
 

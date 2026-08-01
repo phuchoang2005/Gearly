@@ -1,8 +1,8 @@
 package com.dominator.gearly.ai;
 
-import com.dominator.gearly.model.Book;
+import com.dominator.gearly.model.Product;
 import com.dominator.gearly.service.GithubModelsService;
-import com.dominator.gearly.service.user.BookService;
+import com.dominator.gearly.service.user.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomerServiceHandler {
 
-    private final BookService bookService;
+    private final ProductService productService;
     private final GithubModelsService mainBot;
     private final AiPrompts prompts;
 
@@ -25,7 +25,7 @@ public class CustomerServiceHandler {
             : decision.getOriginalUserMessage();
 
         // 1. Search the catalog for matching products
-        List<Book> products = bookService.getBooksByTitle(searchTerm);
+        List<Product> products = productService.getProductsByTitle(searchTerm);
 
         if (!products.isEmpty()) {
             // 2. Build the product context for the main bot
@@ -44,7 +44,7 @@ public class CustomerServiceHandler {
             if (products.size() == 1) {
                 return BackendResponse.withNavigation(
                     explanation,
-                    "/book/" + products.get(0).getId() // becomes /product/<id> in the frontend if needed
+                    "/product/" + products.get(0).getId() // becomes /product/<id> in the frontend if needed
                 );
             }
 

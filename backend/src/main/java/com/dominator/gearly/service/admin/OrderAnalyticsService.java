@@ -42,12 +42,12 @@ public class OrderAnalyticsService {
     public List<QuantitySoldDTO> getQuantitySold(TimeFrame timeFrame) {
         MatchOperation match = buildMatch(timeFrame);
 
-        GroupOperation group = group("items.bookId")
+        GroupOperation group = group("items.productId")
                 .first("items.title").as("title")
                 .sum("items.quantity").as("totalSold");
 
         ProjectionOperation project = Aggregation.project()
-                .and("_id").as("bookId")
+                .and("_id").as("productId")
                 .and("title").as("title")
                 .and("totalSold").as("totalSold")
                 .andExclude("_id");
@@ -68,7 +68,7 @@ public class OrderAnalyticsService {
         MatchOperation match = buildMatch(timeFrame);
         UnwindOperation unwind = unwind("items");
 
-        GroupOperation group = group("items.bookId")
+        GroupOperation group = group("items.productId")
                 .sum("items.quantity").as("totalSold")
                 .first("items.title").as("title");
 
@@ -76,7 +76,7 @@ public class OrderAnalyticsService {
         LimitOperation limit = limit(5);
 
         ProjectionOperation project = project()
-                .and("_id").as("bookId")
+                .and("_id").as("productId")
                 .and("totalSold").as("totalSold")
                 .and("title").as("title")
                 .andExclude("_id");

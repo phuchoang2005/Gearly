@@ -22,7 +22,7 @@ public class Order {
     @Id
     private String id;
     private String userId;
-    @Indexed(name = "idx_items_bookdId")
+    @Indexed(name = "idx_items_productId")
     private List<OrderItem> items;
     private double totalAmount;
     private Payment payment;

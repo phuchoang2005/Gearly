@@ -10,8 +10,8 @@ import lombok.Data;
 public class AdminReviewResponseDTO {
     private String id;
 
-    // instead of raw ObjectId, expose bookTitle
-    private String bookTitle;
+    // instead of raw ObjectId, expose productTitle
+    private String productTitle;
 
     // instead of raw ObjectId, expose userName
     private String userName;

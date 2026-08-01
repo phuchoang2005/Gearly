@@ -13,7 +13,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminBookDTO {
+public class AdminProductDTO {
     private String id;
     private String title;
     private List<String> authors;

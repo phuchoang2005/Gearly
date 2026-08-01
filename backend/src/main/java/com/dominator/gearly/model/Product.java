@@ -17,8 +17,8 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-@Document(collection = "books")
-public class Book {
+@Document(collection = "products")
+public class Product {
     @Id
     private String id;
     private String title;

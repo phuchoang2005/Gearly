@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TopSellerDTO {
-    private String bookId;
+    private String productId;
     private String title;
     private long totalSold;
 }

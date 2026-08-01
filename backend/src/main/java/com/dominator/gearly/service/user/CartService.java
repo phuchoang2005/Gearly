@@ -1,7 +1,7 @@
 package com.dominator.gearly.service.user;
 
 import com.dominator.gearly.mapper.CartMapper;
-import com.dominator.gearly.model.Book;
+import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.repository.CartRepository;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CartService {
     private final CartRepository cartRepository;
-    private final BookService bookService;
+    private final ProductService productService;
     private final CartMapper cartMapper;
 
     public Cart getOrCreate(String userId, String guestId) {
@@ -34,14 +34,14 @@ public class CartService {
 
         for (Iterator<CartItem> it = cart.getItems().iterator(); it.hasNext();) {
             CartItem item = it.next();
-            Optional<Book> optBook = Optional.ofNullable(bookService.getBookById(item.getBookId()));
-            if (optBook.isEmpty()) {
+            Optional<Product> optProduct = Optional.ofNullable(productService.getProductById(item.getProductId()));
+            if (optProduct.isEmpty()) {
                 it.remove();
                 modified = true;
                 continue;
             }
-            Book book = optBook.get();
-            int currentStock = book.getStock();
+            Product product = optProduct.get();
+            int currentStock = product.getStock();
             if (currentStock  <= 0) {
                 it.remove();
                 modified = true;
@@ -77,9 +77,9 @@ public class CartService {
         if (item == null) throw new IllegalArgumentException("CartItem must not be null");
 
         Cart cart = getOrCreate(userId, guestId);
-        CartItem existing = findItemInCart(cart, item.getBookId());
+        CartItem existing = findItemInCart(cart, item.getProductId());
 
-        int stock = bookService.getStock(item.getBookId());
+        int stock = productService.getStock(item.getProductId());
         int addedQty = item.getQuantity();
         int newQty = (existing != null ? existing.getQuantity() : 0) + addedQty;
 
@@ -101,8 +101,8 @@ public class CartService {
         return saveCart(cart);
     }
 
-    public Cart updateQuantity(String userId, String guestId, String bookId, int qty) {
-        int stock = bookService.getStock(bookId);
+    public Cart updateQuantity(String userId, String guestId, String productId, int qty) {
+        int stock = productService.getStock(productId);
         if (qty > stock) {
             String errorMsg = "Only " + stock + " Left!";
             if (stock == 0) {
@@ -113,7 +113,7 @@ public class CartService {
         }
 
         Cart cart = getOrCreate(userId, guestId);
-        CartItem existing = findItemInCart(cart, bookId);
+        CartItem existing = findItemInCart(cart, productId);
         if (existing != null) {
             existing.setQuantity(qty);
         }
@@ -121,10 +121,10 @@ public class CartService {
         return saveCart(cart);
     }
 
-    public void removeItem(String userId, String guestId, String bookId) {
+    public void removeItem(String userId, String guestId, String productId) {
         Cart cart = getOrCreate(userId, guestId);
         cart.setItems(cart.getItems().stream()
-                .filter(i -> !i.getBookId().equals(bookId))
+                .filter(i -> !i.getProductId().equals(productId))
                 .collect(Collectors.toList()));
         saveCart(cart);
     }
@@ -136,8 +136,8 @@ public class CartService {
         List<CartItem> updatedItems = new ArrayList<>();
 
         for (CartItem item : cart.getItems()) {
-            String bookId = item.getBookId();
-            Integer qtyToRemove = removeQuantities.get(bookId);
+            String productId = item.getProductId();
+            Integer qtyToRemove = removeQuantities.get(productId);
 
             if (qtyToRemove != null && qtyToRemove > 0) {
                 int existingQty = item.getQuantity();
@@ -172,10 +172,10 @@ public class CartService {
         for (CartItem incoming : localItems) {
             if (incoming == null) continue;
 
-            int stock = bookService.getStock(incoming.getBookId());
+            int stock = productService.getStock(incoming.getProductId());
             int qty = Math.min(incoming.getQuantity(), stock);
 
-            CartItem existing = findItemInCart(userCart, incoming.getBookId());
+            CartItem existing = findItemInCart(userCart, incoming.getProductId());
             if (existing != null) {
                 int totalQty = Math.min(existing.getQuantity() + qty, stock);
                 existing.setQuantity(totalQty);
@@ -193,24 +193,24 @@ public class CartService {
     public Cart addItems(String userId, String guestId, List<String> itemIds) {
         Cart cart = getOrCreate(userId, guestId);
 
-        for (String bookId : itemIds) {
-            if (bookId == null) continue;
+        for (String productId : itemIds) {
+            if (productId == null) continue;
 
-            var book = bookService.getBookById(bookId);
-            if (book == null) {
-                throw new ResourceNotFoundException("Book not found: " + bookId);
+            var product = productService.getProductById(productId);
+            if (product == null) {
+                throw new ResourceNotFoundException("Product not found: " + productId);
             }
 
-            CartItem item = cartMapper.toCartItem(book);
+            CartItem item = cartMapper.toCartItem(product);
 
-            CartItem existing = findItemInCart(cart, item.getBookId());
+            CartItem existing = findItemInCart(cart, item.getProductId());
             int newQty = (existing != null ? existing.getQuantity() : 0) + 1;
 
-            int stock = book.getStock();
+            int stock = product.getStock();
             if (newQty > stock) {
                 String errorMsg = "Only " + stock + " Left for ";
                 if (stock == 0) {
-                    errorMsg = "\"" + book.getTitle() +  "\" is out of stock!";
+                    errorMsg = "\"" + product.getTitle() +  "\" is out of stock!";
                 }
                 throw new BadRequestException(
                         errorMsg);
@@ -227,9 +227,9 @@ public class CartService {
     }
 
     // Utility
-    private CartItem findItemInCart(Cart cart, String bookId) {
+    private CartItem findItemInCart(Cart cart, String productId) {
         return cart.getItems().stream()
-                .filter(i -> i.getBookId().equals(bookId))
+                .filter(i -> i.getProductId().equals(productId))
                 .findFirst()
                 .orElse(null);
     }

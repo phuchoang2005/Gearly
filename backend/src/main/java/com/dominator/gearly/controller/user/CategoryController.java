@@ -1,6 +1,6 @@
 package com.dominator.gearly.controller.user;
 
-import com.dominator.gearly.dto.CategoryBookCountDTO;
+import com.dominator.gearly.dto.CategoryProductCountDTO;
 import com.dominator.gearly.service.user.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<CategoryBookCountDTO>> findAll() {
-        return ResponseEntity.ok(categoryService.getCategoriesWithBookCount());
+    public ResponseEntity<List<CategoryProductCountDTO>> findAll() {
+        return ResponseEntity.ok(categoryService.getCategoriesWithProductCount());
     }
 }

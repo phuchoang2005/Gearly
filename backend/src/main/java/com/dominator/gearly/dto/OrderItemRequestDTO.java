@@ -8,8 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 @Getter
 @Setter
 public class OrderItemRequestDTO {
-    @NotBlank(message = "Book ID cannot be blank.")
-    private String bookId;
+    @NotBlank(message = "Product ID cannot be blank.")
+    private String productId;
 
     @Min(value = 1, message = "Quantity must be at least 1.")
     private int quantity;

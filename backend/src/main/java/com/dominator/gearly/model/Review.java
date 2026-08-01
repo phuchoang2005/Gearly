@@ -18,7 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Review {
     @Id
     private String id;
-    private ObjectId bookId;
+    private ObjectId productId;
     private ObjectId orderId;
     private ObjectId userId;
     private int rating;

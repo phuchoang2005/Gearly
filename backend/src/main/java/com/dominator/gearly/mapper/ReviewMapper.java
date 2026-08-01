@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Maps {@link Review} entities to public and admin DTOs and builds review
- * entities from create requests. The book title and user name are resolved by
+ * entities from create requests. The product title and user name are resolved by
  * the caller (batched lookups) and passed in.
  */
 @Component
@@ -26,11 +26,11 @@ public class ReviewMapper {
                 userName);
     }
 
-    /** Admin moderation view with resolved book title and user name. */
-    public AdminReviewResponseDTO toAdminDto(Review review, String bookTitle, String userName) {
+    /** Admin moderation view with resolved product title and user name. */
+    public AdminReviewResponseDTO toAdminDto(Review review, String productTitle, String userName) {
         return new AdminReviewResponseDTO(
                 review.getId(),
-                bookTitle,
+                productTitle,
                 userName,
                 review.getRating(),
                 review.getSubject(),
@@ -42,7 +42,7 @@ public class ReviewMapper {
 
     public Review toEntity(CreateReviewRequestDTO dto, String orderId, String userId) {
         Review review = new Review();
-        review.setBookId(new ObjectId(dto.getBookId()));
+        review.setProductId(new ObjectId(dto.getProductId()));
         review.setOrderId(new ObjectId(orderId));
         review.setUserId(new ObjectId(userId));
         review.setRating(dto.getRating());

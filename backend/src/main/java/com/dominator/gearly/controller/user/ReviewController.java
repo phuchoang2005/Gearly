@@ -1,6 +1,6 @@
 package com.dominator.gearly.controller.user;
 
-import com.dominator.gearly.dto.BookReviewsDTO;
+import com.dominator.gearly.dto.ProductReviewsDTO;
 import com.dominator.gearly.dto.CreateReviewsRequestDTO;
 import com.dominator.gearly.dto.MessageResponse;
 import com.dominator.gearly.dto.ReviewRatingDTO;
@@ -23,7 +23,7 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping
-    public ResponseEntity<Page<ReviewResponseDTO>> getReviewsByBookId(BookReviewsDTO dto) {
+    public ResponseEntity<Page<ReviewResponseDTO>> getReviewsByProductId(ProductReviewsDTO dto) {
         return ResponseEntity.ok(reviewService.getApprovedReviews(dto));
     }
 
@@ -33,8 +33,8 @@ public class ReviewController {
     }
 
     @GetMapping("/distribution")
-    public ResponseEntity<List<ReviewRatingDTO>> getRatingDistribution(@RequestParam String bookId) {
-        return ResponseEntity.ok(reviewService.getRatingDistribution(bookId));
+    public ResponseEntity<List<ReviewRatingDTO>> getRatingDistribution(@RequestParam String productId) {
+        return ResponseEntity.ok(reviewService.getRatingDistribution(productId));
     }
 
     @PostMapping("/submit-review")

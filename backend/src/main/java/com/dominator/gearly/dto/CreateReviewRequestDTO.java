@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class CreateReviewRequestDTO {
-    private String bookId;
+    private String productId;
     private String subject;
     private String comment;
     private int rating;

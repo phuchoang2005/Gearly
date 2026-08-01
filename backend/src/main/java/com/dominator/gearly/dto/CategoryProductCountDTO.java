@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CategoryBookCountDTO {
+public class CategoryProductCountDTO {
     private String id;
     private String name;
-    private int bookCount;
+    private int productCount;
 }

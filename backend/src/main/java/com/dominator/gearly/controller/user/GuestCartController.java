@@ -36,15 +36,15 @@ public class GuestCartController {
 
     @PutMapping("/update")
     public ResponseEntity<Cart> update(@RequestParam String guestId,
-                                       @RequestParam String bookId,
+                                       @RequestParam String productId,
                                        @RequestParam int quantity) {
-        return ResponseEntity.ok(cartService.updateQuantity(null, guestId, bookId, quantity));
+        return ResponseEntity.ok(cartService.updateQuantity(null, guestId, productId, quantity));
     }
 
     @DeleteMapping("/remove")
     public ResponseEntity<Void> remove(@RequestParam String guestId,
-                                       @RequestParam String bookId) {
-        cartService.removeItem(null, guestId, bookId);
+                                       @RequestParam String productId) {
+        cartService.removeItem(null, guestId, productId);
         return ResponseEntity.ok().build();
     }
 

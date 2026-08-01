@@ -19,12 +19,12 @@ public class AdminDashboardController {
 
     @GetMapping("/top-by-category")
     public ResponseEntity<List<TopCategoryQuantityDTO>> getTopQuantityPerCategory() {
-        return ResponseEntity.ok(dashboardService.getTop10BooksPerCategory());
+        return ResponseEntity.ok(dashboardService.getTop10ProductsPerCategory());
     }
 
-    @GetMapping("/top-books")
-    public ResponseEntity<List<BestSellerDTO>> getTopBooks() {
-        return ResponseEntity.ok(dashboardService.getTop10BestSellingBooks());
+    @GetMapping("/top-products")
+    public ResponseEntity<List<BestSellerDTO>> getTopProducts() {
+        return ResponseEntity.ok(dashboardService.getTop10BestSellingProducts());
     }
 
     @GetMapping("/loyal-customers")
@@ -37,9 +37,9 @@ public class AdminDashboardController {
         return ResponseEntity.ok(dashboardService.findUserWithHighestAvgOrderValue());
     }
 
-    // books with stock less than 10
-    @GetMapping("/book-in-low-stock")
-    public ResponseEntity<List<BookInLowStockDTO>> getTopBooksInLowStock() {
-        return ResponseEntity.ok(dashboardService.getBookWithLowStock());
+    // products with stock less than 10
+    @GetMapping("/product-in-low-stock")
+    public ResponseEntity<List<ProductInLowStockDTO>> getTopProductsInLowStock() {
+        return ResponseEntity.ok(dashboardService.getProductWithLowStock());
     }
 }

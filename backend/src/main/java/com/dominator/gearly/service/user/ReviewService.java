@@ -3,7 +3,7 @@ package com.dominator.gearly.service.user;
 import com.dominator.gearly.dto.*;
 import com.dominator.gearly.mapper.ReviewMapper;
 import com.dominator.gearly.model.*;
-import com.dominator.gearly.repository.BookRepository;
+import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
@@ -34,17 +34,17 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
-    private final BookRepository bookRepository;
+    private final ProductRepository productRepository;
     private final ReviewMapper reviewMapper;
 
-    public Page<ReviewResponseDTO> getApprovedReviews(BookReviewsDTO dto) {
+    public Page<ReviewResponseDTO> getApprovedReviews(ProductReviewsDTO dto) {
         Pageable pageable = PageRequest.of(dto.getPageIndex(), dto.getPageSize(),
                 Sort.by(Sort.Direction.DESC, dto.getSortBy()));
-        ObjectId bookObjectId = new ObjectId(dto.getBookId());
+        ObjectId productObjectId = new ObjectId(dto.getProductId());
 
         Page<Review> reviewPage = dto.getRating() == 0
-                ? reviewRepository.findByBookIdAndStatus(bookObjectId, ReviewStatus.APPROVED, pageable)
-                : reviewRepository.findByBookIdAndStatusAndRating(bookObjectId, ReviewStatus.APPROVED, dto.getRating(),
+                ? reviewRepository.findByProductIdAndStatus(productObjectId, ReviewStatus.APPROVED, pageable)
+                : reviewRepository.findByProductIdAndStatusAndRating(productObjectId, ReviewStatus.APPROVED, dto.getRating(),
                         pageable);
 
         return reviewPage.map(review -> {
@@ -79,8 +79,8 @@ public class ReviewService {
         }).collect(Collectors.toList());
     }
 
-    public List<ReviewRatingDTO> getRatingDistribution(String bookId) {
-        ObjectId objectId = new ObjectId(bookId);
+    public List<ReviewRatingDTO> getRatingDistribution(String productId) {
+        ObjectId objectId = new ObjectId(productId);
         List<Map<String, Object>> results = reviewRepository.getRatingDistribution(objectId);
 
         Map<Integer, Long> counts = new LinkedHashMap<>();
@@ -111,23 +111,23 @@ public class ReviewService {
     public void createReview(AuthenticatedUser authUser, CreateReviewsRequestDTO dto) {
         User user = authUser.getUser();
         Order order = requireOwnedOrder(user, dto.getOrderId());
-        Map<String, Book> bookMap = loadBooks(dto.getReviews());
+        Map<String, Product> productMap = loadProducts(dto.getReviews());
 
-        List<Book> booksToSave = new ArrayList<>();
+        List<Product> productsToSave = new ArrayList<>();
         List<Review> reviewsToSave = new ArrayList<>();
 
         for (CreateReviewRequestDTO rdto : dto.getReviews()) {
-            Book book = bookMap.get(rdto.getBookId());
-            if (book == null) {
+            Product product = productMap.get(rdto.getProductId());
+            if (product == null) {
                 throw new ResourceNotFoundException(
-                        "Book not found, you cannot create review for this book.");
+                        "Product not found, you cannot create review for this product.");
             }
-            applyRating(book, rdto.getRating());
-            booksToSave.add(book);
+            applyRating(product, rdto.getRating());
+            productsToSave.add(product);
             reviewsToSave.add(reviewMapper.toEntity(rdto, dto.getOrderId(), user.getId()));
         }
 
-        bookRepository.saveAll(booksToSave);
+        productRepository.saveAll(productsToSave);
         reviewRepository.saveAll(reviewsToSave);
         order.setReviewed(true);
         orderRepository.save(order);
@@ -144,20 +144,20 @@ public class ReviewService {
         return order;
     }
 
-    private Map<String, Book> loadBooks(List<CreateReviewRequestDTO> reviews) {
-        List<String> bookIds = reviews.stream()
-                .map(CreateReviewRequestDTO::getBookId)
+    private Map<String, Product> loadProducts(List<CreateReviewRequestDTO> reviews) {
+        List<String> productIds = reviews.stream()
+                .map(CreateReviewRequestDTO::getProductId)
                 .collect(Collectors.toList());
-        return bookRepository.findAllById(bookIds).stream()
-                .collect(Collectors.toMap(Book::getId, Function.identity()));
+        return productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 
-    private void applyRating(Book book, int rating) {
-        int newCount = book.getRatingCount() + 1;
-        int newTotal = book.getTotalRating() + rating;
-        book.setRatingCount(newCount);
-        book.setTotalRating(newTotal);
+    private void applyRating(Product product, int rating) {
+        int newCount = product.getRatingCount() + 1;
+        int newTotal = product.getTotalRating() + rating;
+        product.setRatingCount(newCount);
+        product.setTotalRating(newTotal);
         double average = Math.round((double) newTotal / newCount * 100) / 100.0;
-        book.setAverageRating(average);
+        product.setAverageRating(average);
     }
 }

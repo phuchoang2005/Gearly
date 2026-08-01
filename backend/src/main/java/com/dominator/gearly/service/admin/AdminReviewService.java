@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 import com.dominator.gearly.dto.AdminReviewResponseDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.ReviewMapper;
-import com.dominator.gearly.model.Book;
+import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.User;
-import com.dominator.gearly.repository.BookRepository;
+import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -24,25 +24,25 @@ import com.dominator.gearly.repository.ReviewRepository;
 public class AdminReviewService {
 
     private final ReviewRepository reviewRepo;
-    private final BookRepository   bookRepo;
+    private final ProductRepository   productRepo;
     private final UserRepository   userRepo;
     private final ReviewMapper     reviewMapper;
 
     public List<AdminReviewResponseDTO> getAllReviews() {
         List<Review> reviews = reviewRepo.findAll();
 
-        // collect unique book/user IDs
-        Set<String> bookIds = reviews.stream()
-                .map(r -> r.getBookId().toHexString())
+        // collect unique product/user IDs
+        Set<String> productIds = reviews.stream()
+                .map(r -> r.getProductId().toHexString())
                 .collect(Collectors.toSet());
         Set<String> userIds = reviews.stream()
                 .map(r -> r.getUserId().toHexString())
                 .collect(Collectors.toSet());
 
-        // batch‐fetch books and users
-        Map<String, Book> bookMap = bookRepo.findAllById(bookIds)
+        // batch‐fetch products and users
+        Map<String, Product> productMap = productRepo.findAllById(productIds)
                 .stream()
-                .collect(Collectors.toMap(Book::getId, b -> b));
+                .collect(Collectors.toMap(Product::getId, b -> b));
         Map<String, User> userMap = userRepo.findAllById(userIds)
                 .stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
@@ -50,14 +50,14 @@ public class AdminReviewService {
         // map each review into the DTO
         return reviews.stream()
                 .map(r -> {
-                    String bId = r.getBookId().toHexString();
+                    String bId = r.getProductId().toHexString();
                     String uId = r.getUserId().toHexString();
-                    Book book = bookMap.get(bId);
+                    Product product = productMap.get(bId);
                     User user = userMap.get(uId);
 
-                    String bookTitle = book != null ? book.getTitle() : "—";
+                    String productTitle = product != null ? product.getTitle() : "—";
                     String userName = user != null ? user.getFullName() : "—";
-                    return reviewMapper.toAdminDto(r, bookTitle, userName);
+                    return reviewMapper.toAdminDto(r, productTitle, userName);
                 })
                 .collect(Collectors.toList());
     }

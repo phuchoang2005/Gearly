@@ -35,7 +35,7 @@ public class AdminOrderController {
     }
 
     @GetMapping("/quantity-sold")
-    public ResponseEntity<List<QuantitySoldDTO>> getQuantitySoldByBook(
+    public ResponseEntity<List<QuantitySoldDTO>> getQuantitySoldByProduct(
             @RequestParam(defaultValue = "ALL") TimeFrame period
     ) {
         return ResponseEntity.ok(orderAnalyticsService.getQuantitySold(period));

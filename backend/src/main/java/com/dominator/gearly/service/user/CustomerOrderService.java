@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class CustomerOrderService {
 
     private final OrderRepository orderRepository;
-    private final BookService bookService;
+    private final ProductService productService;
     private final CartService cartService;
     private final MomoService momoService;
     private final OrderMapper orderMapper;
@@ -159,12 +159,12 @@ public class CustomerOrderService {
     private List<OrderItem> buildOrderItems(List<OrderItemRequestDTO> itemRequests) {
         List<OrderItem> orderItems = new ArrayList<>();
         for (OrderItemRequestDTO itemRequest : itemRequests) {
-            Book book = bookService.getBookById(itemRequest.getBookId());
+            Product product = productService.getProductById(itemRequest.getProductId());
             int requestedQty = itemRequest.getQuantity();
-            if (book.getStock() < requestedQty) {
-                throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
+            if (product.getStock() < requestedQty) {
+                throw new BadRequestException("Insufficient stock for product: " + product.getTitle());
             }
-            orderItems.add(orderMapper.toOrderItem(book, requestedQty));
+            orderItems.add(orderMapper.toOrderItem(product, requestedQty));
         }
         return orderItems;
     }
@@ -177,10 +177,10 @@ public class CustomerOrderService {
 
     private void applyStockAndClearCart(String userId, List<OrderItem> orderItems) {
         for (OrderItem item : orderItems) {
-            bookService.decreaseStock(item.getBookId(), item.getQuantity());
+            productService.decreaseStock(item.getProductId(), item.getQuantity());
         }
         Map<String, Integer> qtyMap = orderItems.stream()
-                .collect(Collectors.toMap(OrderItem::getBookId, OrderItem::getQuantity));
+                .collect(Collectors.toMap(OrderItem::getProductId, OrderItem::getQuantity));
         cartService.removeItems(userId, null, qtyMap);
     }
 

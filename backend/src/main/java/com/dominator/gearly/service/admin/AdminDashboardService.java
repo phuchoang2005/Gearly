@@ -3,7 +3,7 @@ package com.dominator.gearly.service.admin;
 import org.springframework.stereotype.Service;
 
 import com.dominator.gearly.dto.BestSellerDTO;
-import com.dominator.gearly.dto.BookInLowStockDTO;
+import com.dominator.gearly.dto.ProductInLowStockDTO;
 import com.dominator.gearly.dto.LoyalCustomerDTO;
 import com.dominator.gearly.dto.TopAvgOrderValueUserDTO;
 import com.dominator.gearly.dto.TopCategoryQuantityDTO;
@@ -14,15 +14,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AdminDashboardService {
-        private final AdminDashboardGetBookService getBookImp;
+        private final AdminDashboardGetProductService getProductImp;
         private final AdminDashboardGetUserService getUserImp;
 
-        public List<BestSellerDTO> getTop10BestSellingBooks() {
-                return getBookImp.getTop10BestSellingBooks();
+        public List<BestSellerDTO> getTop10BestSellingProducts() {
+                return getProductImp.getTop10BestSellingProducts();
         }
 
-        public List<TopCategoryQuantityDTO> getTop10BooksPerCategory() {
-                return getBookImp.getTop10BooksPerCategory();
+        public List<TopCategoryQuantityDTO> getTop10ProductsPerCategory() {
+                return getProductImp.getTop10ProductsPerCategory();
         }
 
         public List<LoyalCustomerDTO> getTop10LoyalCustomers() {
@@ -33,7 +33,7 @@ public class AdminDashboardService {
                 return getUserImp.findUserWithHighestAvgOrderValue();
         }
 
-        public List<BookInLowStockDTO> getBookWithLowStock() {
-                return getBookImp.getBookWithLowStock();
+        public List<ProductInLowStockDTO> getProductWithLowStock() {
+                return getProductImp.getProductWithLowStock();
         }
 }

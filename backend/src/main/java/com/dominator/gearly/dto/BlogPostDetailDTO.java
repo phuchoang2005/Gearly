@@ -17,7 +17,7 @@ public class BlogPostDetailDTO {
     private String title;
     private String author;
     private Instant publishDate;
-    private String bookId;
+    private String productId;
     private List<String> tags;
     private String content;
 }

@@ -15,7 +15,7 @@ import lombok.Setter;
 @Setter
 public class HandleReviewStatusDTO {
     private String id;
-    private ObjectId bookId;
+    private ObjectId productId;
     private ObjectId userId;
     private int rating;
     private String subject;

@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookSearchDTO {
+public class ProductSearchDTO {
     private String condition;
     private double minPrice = 0.0;
     private double maxPrice = 200.0;

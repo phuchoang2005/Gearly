@@ -1,12 +1,12 @@
 package com.dominator.gearly.service.user;
 
-import com.dominator.gearly.dto.BookSearchDTO;
-import com.dominator.gearly.dto.BookSummaryDTO;
+import com.dominator.gearly.dto.ProductSearchDTO;
+import com.dominator.gearly.dto.ProductSummaryDTO;
 import com.dominator.gearly.dto.WishlistRequestDTO;
-import com.dominator.gearly.mapper.BookMapper;
-import com.dominator.gearly.model.Book;
+import com.dominator.gearly.mapper.ProductMapper;
+import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Category;
-import com.dominator.gearly.repository.BookRepository;
+import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
@@ -19,14 +19,14 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-public class BookService {
-    private final BookRepository bookRepository;
+public class ProductService {
+    private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final BookMapper bookMapper;
+    private final ProductMapper productMapper;
 
-    public Book getBookById(String id) {
-        return bookRepository.findById(id).map(book -> {
-            List<ObjectId> categoryIds = book.getCategoryIds();
+    public Product getProductById(String id) {
+        return productRepository.findById(id).map(product -> {
+            List<ObjectId> categoryIds = product.getCategoryIds();
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 List<String> categoryIdStrings = categoryIds.stream()
                         .map(ObjectId::toHexString)
@@ -37,41 +37,41 @@ public class BookService {
                         .map(Category::getName)
                         .toList();
 
-                book.setCategoryNames(names);
+                product.setCategoryNames(names);
             }
-            return book;
+            return product;
         }).orElse(null);
     }
 
 
-    public int getStock(String bookId) {
-        Book book = getBookById(bookId);
-        return book.getStock();
+    public int getStock(String productId) {
+        Product product = getProductById(productId);
+        return product.getStock();
     }
 
-    public void decreaseStock(String bookId, int quantity) {
-        Book book = getBookById(bookId);
-        if (book.getStock() < quantity) {
-            throw new BadRequestException("Insufficient stock for book: " + book.getTitle());
+    public void decreaseStock(String productId, int quantity) {
+        Product product = getProductById(productId);
+        if (product.getStock() < quantity) {
+            throw new BadRequestException("Insufficient stock for product: " + product.getTitle());
         }
-        book.setStock(book.getStock() - quantity);
-        bookRepository.save(book);
+        product.setStock(product.getStock() - quantity);
+        productRepository.save(product);
     }
 
-    public Page<BookSummaryDTO> getBooksByIds(WishlistRequestDTO dto) {
-        List<Book> books = bookRepository.findAllById(dto.getIds());
+    public Page<ProductSummaryDTO> getProductsByIds(WishlistRequestDTO dto) {
+        List<Product> products = productRepository.findAllById(dto.getIds());
 
         String searchLower = dto.getSearchTxt().toLowerCase().trim();
-        List<Book> filtered = books.stream()
-                .filter(book ->
-                        book.getTitle().toLowerCase().contains(searchLower) ||
-                                (book.getAuthors() != null && book.getAuthors().stream()
+        List<Product> filtered = products.stream()
+                .filter(product ->
+                        product.getTitle().toLowerCase().contains(searchLower) ||
+                                (product.getAuthors() != null && product.getAuthors().stream()
                                         .anyMatch(author -> author.toLowerCase().contains(searchLower)))
                 )
                 .toList();
 
-        List<BookSummaryDTO> summaries = filtered.stream()
-                .map(bookMapper::toSummaryDto)
+        List<ProductSummaryDTO> summaries = filtered.stream()
+                .map(productMapper::toSummaryDto)
                 .collect(Collectors.toList());
 
         int start = Math.min(dto.getPageIndex() * dto.getPageSize(), summaries.size());
@@ -85,9 +85,9 @@ public class BookService {
     }
 
 
-    public Page<BookSummaryDTO> getBooks(BookSearchDTO searchDTO) {
+    public Page<ProductSummaryDTO> getProducts(ProductSearchDTO searchDTO) {
         Pageable pageable = PageRequest.of(searchDTO.getPage(), searchDTO.getSize(), getSort(searchDTO.getSortBy()));
-        return bookRepository.findBooks(
+        return productRepository.findProducts(
                 searchDTO.getCondition(),
                 searchDTO.getMinPrice(),
                 searchDTO.getMaxPrice(),
@@ -109,11 +109,11 @@ public class BookService {
         };
     }
 
-    public List<BookSummaryDTO> getBestBooks() {
+    public List<ProductSummaryDTO> getBestProducts() {
         Pageable pageable = PageRequest.of(0, 16, Sort.by(Sort.Direction.DESC, "averageRating"));
-        return bookRepository.findByOrderByAverageRatingDesc(pageable);
+        return productRepository.findByOrderByAverageRatingDesc(pageable);
     }
-    public List<Book> getBooksByTitle(String userMessage) {
+    public List<Product> getProductsByTitle(String userMessage) {
         if (userMessage == null || userMessage.isBlank()) {
             return List.of();
         }
@@ -122,7 +122,7 @@ public class BookService {
         String keyword = userMessage.trim();
 
         // MongoDB search (case-insensitive, partial match)
-        List<Book> results = bookRepository.findByTitleContainingIgnoreCase(keyword);
+        List<Product> results = productRepository.findByTitleContainingIgnoreCase(keyword);
 
         // Safety: limit results for AI usage
         return results.stream()
@@ -130,7 +130,7 @@ public class BookService {
                 .toList();
     }
     
-    public List<Book> getBooksByCategoryName(String categoryName) {
+    public List<Product> getProductsByCategoryName(String categoryName) {
         // 1. Find the category ID(s) matching the name
         List<Category> categories = categoryRepository.findByNameContainingIgnoreCase(categoryName);
         
@@ -142,8 +142,8 @@ public class BookService {
                 .map(ObjectId::new) // Ensure correct type for MongoDB
                 .toList();
 
-        // 3. Find books with those Category IDs
-        // (You might need to add this method to BookRepository too: findByCategoryIdsIn(List<ObjectId> ids))
-        return bookRepository.findByCategoryIdsIn(categoryIds).stream().limit(5).toList();
+        // 3. Find products with those Category IDs
+        // (You might need to add this method to ProductRepository too: findByCategoryIdsIn(List<ObjectId> ids))
+        return productRepository.findByCategoryIdsIn(categoryIds).stream().limit(5).toList();
     }
 }

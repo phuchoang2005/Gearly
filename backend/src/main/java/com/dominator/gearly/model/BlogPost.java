@@ -26,8 +26,8 @@ public class BlogPost {
 
     private Instant publishDate;
 
-    @Field("bookId")
-    private String bookId;
+    @Field("productId")
+    private String productId;
 
     private List<String> tags;
 

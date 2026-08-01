@@ -25,7 +25,7 @@ public class BlogPostMapper {
         dto.setTitle(blogPost.getTitle());
         dto.setAuthor(blogPost.getAuthor());
         dto.setPublishDate(blogPost.getPublishDate());
-        dto.setBookId(blogPost.getBookId());
+        dto.setProductId(blogPost.getProductId());
         dto.setTags(blogPost.getTags());
         dto.setContent(blogPost.getContent());
         return dto;

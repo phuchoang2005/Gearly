@@ -20,7 +20,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderItem {
-    private String bookId;
+    private String productId;
     private String title;
     private double price;
     private String imageUrl;
