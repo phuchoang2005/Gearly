@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {getWishlist} from '@u_services/wishlistService';
-import {getBookByIds} from "@u_services/bookService.js";
+import {getProductByIds} from "@u_services/productService.js";
 
 export const useWishlistData = (auth, queryParams, setQueryParams) => {
     return useQuery({
@@ -11,7 +11,7 @@ export const useWishlistData = (auth, queryParams, setQueryParams) => {
                 const wishlistItems = JSON.parse(localStorage.getItem("wishlist") || "[]");
 
                 if (wishlistItems.length === 0) return [];
-                res = await getBookByIds(wishlistItems, queryParams.searchTxt, queryParams.pageIndex, queryParams.pageSize);
+                res = await getProductByIds(wishlistItems, queryParams.searchTxt, queryParams.pageIndex, queryParams.pageSize);
             } else {
                 res = await getWishlist(queryParams);
             }

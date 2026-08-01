@@ -571,7 +571,7 @@ return (
                 <div className="flex-1">
                     <h4 className="text-lg font-semibold text-red-900 mb-2">Danger Zone</h4>
                     <p className="text-sm text-red-700 mb-4">
-                        Temporarily deactivate your account. You can reactivate it anytime by contacting Bookify
+                        Temporarily deactivate your account. You can reactivate it anytime by contacting Gearly
                         Support.
                     </p>
                     <button
@@ -612,7 +612,7 @@ return (
             onConfirm={confirmDeactivateAccount}
             loading={loading}
             title="Confirm Deactivation"
-            description="This account is now inactive. Contact Bookify Support to reactivate."
+            description="This account is now inactive. Contact Gearly Support to reactivate."
             confirmText="Yes, Deactivate"
         />
     </div>

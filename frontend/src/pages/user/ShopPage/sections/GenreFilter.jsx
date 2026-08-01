@@ -12,7 +12,7 @@ export default function GenreFilter({genres, selectedGenres, handleGenreChange})
                                className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500 accent-[#1C387F]"
                         />
                         <span className="text-xs">{genre.name}</span>
-                        <span className="text-xs text-gray-500 ml-auto">{genre.bookCount|| 0}</span>
+                        <span className="text-xs text-gray-500 ml-auto">{genre.productCount|| 0}</span>
                     </label>
                 ))}
             </div>

@@ -126,7 +126,7 @@ export default function OrderConfirmationPage() {
                             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                                 {orderDetails.items.map((item, idx) => (
                                     <div
-                                        key={item.bookId || idx}
+                                        key={item.productId || idx}
                                         className="flex justify-between items-start bg-neutral-50 p-4 rounded-md border"
                                     >
                                         <div className="flex">

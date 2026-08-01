@@ -93,7 +93,7 @@ export default function PaymentPage() {
         setLoading(true)
 
         const payload = {
-            items: selectedItems.map(({bookId, quantity}) => ({bookId, quantity})),
+            items: selectedItems.map(({productId, quantity}) => ({productId, quantity})),
             paymentInfo: {method: selectedMethod},
             shippingInformation: transformAddress(shippingAddress || {}),
         }

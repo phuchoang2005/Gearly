@@ -17,7 +17,7 @@ export function ReviewModal({isOpen, order, onClose, onSubmit}) {
     const [formData, setFormData] = useState({
         reviews:
             order?.items?.map((item) => ({
-                bookId: item.bookId,
+                productId: item.productId,
                 rating: 5, // Default
                 subject: "",
                 comment: "",
@@ -34,7 +34,7 @@ export function ReviewModal({isOpen, order, onClose, onSubmit}) {
             await onSubmit({
                 orderId: order.id,
                 reviews: formData.reviews.map((r) => ({
-                    bookId: r.bookId,
+                    productId: r.productId,
                     rating: r.rating,
                     subject: r.subject,
                     comment: r.comment,
@@ -43,7 +43,7 @@ export function ReviewModal({isOpen, order, onClose, onSubmit}) {
             // Reset form
             setFormData({
                 reviews: order.items.map((item) => ({
-                    bookId: item.bookId,
+                    productId: item.productId,
                     rating: 5,
                     subject: "",
                     comment: "",
@@ -60,7 +60,7 @@ export function ReviewModal({isOpen, order, onClose, onSubmit}) {
         setFormData({
             reviews:
                 order?.items?.map((item) => ({
-                    bookId: item.bookId,
+                    productId: item.productId,
                     rating: 5,
                     subject: "",
                     comment: "",
@@ -118,21 +118,21 @@ export function ReviewModal({isOpen, order, onClose, onSubmit}) {
                                     </div>
                                     <p className="mt-1 text-sm text-blue-100">
                                         Share your experience and help other readers discover
-                                        great books
+                                        great products
                                     </p>
                                 </div>
 
                                 <div className="p-8">
                                     <form onSubmit={handleSubmit} className="space-y-8">
-                                        {/* Individual Book Reviews */}
+                                        {/* Individual Product Reviews */}
                                         {formData.reviews.map((review, index) => {
                                             const item = order.items[index]
                                             return (
                                                 <div
-                                                    key={item.bookId}
+                                                    key={item.productId}
                                                     className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-sm"
                                                 >
-                                                    {/* Book Header */}
+                                                    {/* Product Header */}
                                                     <div className="flex items-start space-x-6 mb-8">
                                                         <img
                                                             src={
@@ -238,7 +238,7 @@ export function ReviewModal({isOpen, order, onClose, onSubmit}) {
                                                                         reviews: newReviews,
                                                                     }))
                                                                 }}
-                                                                placeholder="What did you think about this book? Share your thoughts, favorite parts, or what others should know..."
+                                                                placeholder="What did you think about this product? Share your thoughts, favorite parts, or what others should know..."
                                                                 rows={4}
                                                                 className="
                                                                   w-full px-4 py-3 border border-gray-300 rounded-lg

@@ -1,12 +1,12 @@
 import api from "../api";
 
-export const getBookReviews = (queryParams) => {
+export const getProductReviews = (queryParams) => {
     const params = new URLSearchParams(queryParams);
     return api.get(`/reviews?${params}`);
 }
 
-export const getRatingDistribution = (bookId) => {
-    return api.get(`/reviews/distribution?bookId=${bookId}`);
+export const getRatingDistribution = (productId) => {
+    return api.get(`/reviews/distribution?productId=${productId}`);
 }
 
 export const submitReview = (data) =>

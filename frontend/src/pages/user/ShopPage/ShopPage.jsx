@@ -6,7 +6,7 @@ import SearchAndCount from "./sections/SearchAndCount";
 import ActiveFilters from "./sections/ActiveFilters";
 import MobileFiltersToggle from "./sections/MobileFiltersToggle";
 import FiltersSidebar from "./sections/FiltersSidebar";
-import BookGrid from "./sections/BookGrid";
+import ProductGrid from "./sections/ProductGrid";
 import Pagination from "./sections/Pagination";
 import LoadingScreen from "@u_components/shared/LoadingScreen";
 import ErrorScreen from "@u_components/shared/ErrorScreen";
@@ -86,19 +86,19 @@ export default function ShopPage() {
     }), [state]);
 
     const [debouncedParams] = useDebounce(queryParams, 400);
-    const { categories, books, isLoading, isError } = useShopData(debouncedParams);
+    const { categories, products, isLoading, isError } = useShopData(debouncedParams);
 
     useEffect(() => {
         if (searchRef.current) searchRef.current.focus();
-        if (!books) return;
-        const {number, size, totalPages, totalElements} = books;
+        if (!products) return;
+        const {number, size, totalPages, totalElements} = products;
         updateState("page", {
             number: totalPages !== 0 ? Math.min(Math.max(number, 0), totalPages - 1) : 0,
             size,
             totalPages,
             totalElements
         });
-    }, [books]);
+    }, [products]);
 
     useEffect(() => {
         const currentSearch = searchParams.get("search") || ""
@@ -270,7 +270,7 @@ export default function ShopPage() {
                             <ErrorScreen />
                         ) : (
                             <>
-                                <BookGrid books={books.content} clearAllFilters={clearAll} />
+                                <ProductGrid products={products.content} clearAllFilters={clearAll} />
                                 <Pagination
                                     totalPages={state.page.totalPages}
                                     currentPage={state.page.number + 1}

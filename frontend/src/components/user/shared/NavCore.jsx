@@ -13,7 +13,7 @@ export default function NavCore({
         <div className={`${bgClass} ${padding}`}>
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
                 <Link to="/" className="shrink-0 pr-4">
-                    <img src={logoSrc} alt="Bookify Logo" className="w-42"/>
+                    <img src={logoSrc} alt="Gearly Logo" className="w-42"/>
                 </Link>
                 <SearchBar />
                 <TopIconsBar color={iconColor} />

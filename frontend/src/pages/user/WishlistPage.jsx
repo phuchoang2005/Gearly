@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AuthContext } from "@contexts/AuthContext.jsx";
 import LoadingScreen from "@u_components/shared/LoadingScreen.jsx";
 import ErrorScreen from "@u_components/shared/ErrorScreen.jsx";
-import BookGrid from "@u_pages/ShopPage/sections/BookGrid.jsx";
+import ProductGrid from "@u_pages/ShopPage/sections/ProductGrid.jsx";
 import PrecomputePagination from "@u_components/shared/PrecomputePagination.jsx";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
@@ -20,7 +20,7 @@ export default function WishlistPage() {
     const location = useLocation();
 
     const { auth, setAuth } = useContext(AuthContext);
-    const booksRef = useRef(null);
+    const productsRef = useRef(null);
     const searchRef = useRef(null);
 
     const [selected, setSelected] = useState(new Set());
@@ -34,13 +34,13 @@ export default function WishlistPage() {
     const { data, isLoading, isError } = useWishlistData(auth, debouncedParams, setState);
 
     const {
-        content: books = [],
+        content: products = [],
         totalPages = 0,
         totalElements = 0,
         number: pageNumber = 0,
     } = data || {};
 
-    const [allBookIds, setAllBookIds] = useState(() =>
+    const [allProductIds, setAllProductIds] = useState(() =>
         auth?.user?.favorites ??
         JSON.parse(localStorage.getItem("wishlist") || "[]")
     );
@@ -85,7 +85,7 @@ export default function WishlistPage() {
     useEffect(() => {
         const syncWishlist = () => {
             const guestList = getGuestWishlist();
-            setAllBookIds(auth?.user?.favorites ?? guestList);
+            setAllProductIds(auth?.user?.favorites ?? guestList);
         };
 
         window.addEventListener("guest-wishlist-updated", syncWishlist);
@@ -102,13 +102,13 @@ export default function WishlistPage() {
     }, [data]);
 
     useEffect(() => {
-        handleRemoveBook();
+        handleRemoveProduct();
     }, [location.search]);
 
-    const isAllSelected = selected.size === allBookIds.length;
+    const isAllSelected = selected.size === allProductIds.length;
 
     const toggleSelectAll = () => {
-        setSelected(isAllSelected ? new Set() : new Set(allBookIds));
+        setSelected(isAllSelected ? new Set() : new Set(allProductIds));
     };
 
     const handleSelectToggle = (id) => {
@@ -119,11 +119,11 @@ export default function WishlistPage() {
         });
     };
 
-    const handleRemoveBook = (bookId) => {
+    const handleRemoveProduct = (productId) => {
         queryClient.invalidateQueries(["wishlist", state]);
-        if (bookId) {
+        if (productId) {
             setSelected((prev) => {
-                if (prev.has(bookId)) prev.delete(bookId);
+                if (prev.has(productId)) prev.delete(productId);
                 return prev;
             });
         }
@@ -131,7 +131,7 @@ export default function WishlistPage() {
 
     const handleBulkRemove = async () => {
         try {
-            const currentList = allBookIds.filter((f) => !selected.has(f));
+            const currentList = allProductIds.filter((f) => !selected.has(f));
             if (auth) {
                 await showPromise(
                     bulkRemoveWishlist(selected),
@@ -159,7 +159,7 @@ export default function WishlistPage() {
                 window.dispatchEvent(new Event("guest-wishlist-updated"));
             }
             setSelected(new Set());
-            handleRemoveBook();
+            handleRemoveProduct();
         } catch (e) {
             showError("Error when trying to remove products.");
         }
@@ -207,8 +207,8 @@ export default function WishlistPage() {
                 <>
                     {MemoHeader}
 
-                    {books.length || state.searchTxt.length > 0 ? (
-                        <div className="max-w-screen-lg mx-auto my-15" ref={booksRef}>
+                    {products.length || state.searchTxt.length > 0 ? (
+                        <div className="max-w-screen-lg mx-auto my-15" ref={productsRef}>
                             {searchAndCount}
 
                             {selected.size > 0 && (
@@ -247,11 +247,11 @@ export default function WishlistPage() {
                                 </div>
                             )}
 
-                            <BookGrid
-                                books={books}
-                                onRemoveBook={handleRemoveBook}
+                            <ProductGrid
+                                products={products}
+                                onRemoveProduct={handleRemoveProduct}
                                 clearAllFilters={clearAll}
-                                selectedIds={books
+                                selectedIds={products
                                     .map((b) => b.id)
                                     .filter((id) => selected.has(id))}
                                 onToggleSelect={handleSelectToggle}
@@ -261,7 +261,7 @@ export default function WishlistPage() {
                                 totalPages={totalPages}
                                 currentPage={pageNumber + 1}
                                 setState={setState}
-                                scrollRef={booksRef}
+                                scrollRef={productsRef}
                             />
                         </div>
                     ) : (

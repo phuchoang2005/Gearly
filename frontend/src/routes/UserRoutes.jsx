@@ -8,7 +8,7 @@ import LoadingScreen from '@u_components/shared/LoadingScreen';
 import {lazy, Suspense} from 'react';
 import ScrollToTopButton from "@u_components/shared/ScrollToTopButton.jsx";
 import ChatBox from "@u_components/shared/ChatBox.jsx";
-import BookDetailsPage from "@u_pages/BookDetailsPage/BookDetailsPage.jsx";
+import ProductDetailsPage from "@u_pages/ProductDetailsPage/ProductDetailsPage.jsx";
 import WishlistPage from "@u_pages/WishlistPage.jsx";
 import CartPage from "@u_pages/CartPage.jsx";
 import CheckoutPage from "@u_pages/CheckoutPage.jsx";
@@ -53,7 +53,7 @@ export default function UserRoutes() {
                         <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
                         <Route path="/reset-password" element={<ResetPasswordPage/>}/>
                         <Route path="/shop" element={<ShopPage/>}/>
-                        <Route path="/book/:bookId" element={<BookDetailsPage/>}/>
+                        <Route path="/product/:productId" element={<ProductDetailsPage/>}/>
                         <Route path="/wishlist" element={<WishlistPage/>}/>
                         <Route path="/cart" element={<CartPage/>}/>
                         <Route path="/blog" element={<BlogPage/>}/>

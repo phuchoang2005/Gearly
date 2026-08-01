@@ -182,20 +182,20 @@ export default function BlogDetailsPage() {
                                     className="text-gray-800 leading-relaxed whitespace-pre-wrap text-justify  ">{blogPost.content}</div>
                             </div>
 
-                            {blogPost.bookId && (
+                            {blogPost.productId && (
                                 <div className="mt-12 pt-8 border-t border-gray-100">
                                     <div className="bg-[#EEF1F8] rounded-lg p-6">
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                                             <BookOpen className="w-5 h-5 text-[#1C387F]"/>
-                                            Related Book
+                                            Related Product
                                         </h3>
                                         <p className="text-gray-600 mb-4">This post is related to one of our featured
-                                            books.</p>
+                                            products.</p>
                                         <Link
-                                            to={`/book/${blogPost.bookId}`}
+                                            to={`/product/${blogPost.productId}`}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-[#1C387F] hover:bg-[#152A5F] text-white font-medium rounded-lg transition-colors"
                                         >
-                                            View Book Details
+                                            View Product Details
                                             <ArrowLeft className="w-4 h-4 rotate-180"/>
                                         </Link>
                                     </div>
