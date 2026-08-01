@@ -23,7 +23,19 @@ import {
   FormOutlined,
 } from "@ant-design/icons";
 import jsonServerDataProvider from "@refinedev/simple-rest";
-import { authProvider } from "./authProvider";
+import axios from "axios";
+import { authProvider, TOKEN_KEY } from "./authProvider";
+
+// Axios instance that attaches the persisted JWT to every request, so calls to
+// the ROLE_ADMIN-locked /api/admin/** surface are authorized.
+const axiosInstance = axios.create();
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 import "dayjs/locale/de";
 
@@ -51,7 +63,7 @@ const App: React.FC = () => {
 
   // const API_URL = "https://api.finefoods.refine.dev";
   const API_URL = "http://localhost:8080/api/admin";
-  const dataProvider = jsonServerDataProvider(API_URL);
+  const dataProvider = jsonServerDataProvider(API_URL, axiosInstance);
 
   const { t, i18n } = useTranslation();
 

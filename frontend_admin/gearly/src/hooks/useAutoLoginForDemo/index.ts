@@ -1,50 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import { authProvider } from "../../authProvider";
-
 /**
- * This hook is used to automatically login the user.
- * We use this hook to skip the login page and demonstrate the application more quickly.
+ * The admin app previously auto-logged-in with hard-coded demo credentials
+ * ("demo@refine.dev"). It now uses real authentication against the backend
+ * (see `authProvider`), so this hook is intentionally a no-op: it never blocks
+ * rendering, and Refine's <Authenticated> gate redirects to /login when needed.
+ *
+ * Kept (rather than deleted) only to avoid churning App.tsx's bootstrap.
  */
-export const useAutoLoginForDemo = () => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  const login = useCallback(async () => {
-    try {
-      await authProvider.login({
-        email: "demo@refine.dev",
-        password: "demodemo",
-      });
-    } catch (_error) {
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading]);
-
-  useEffect(() => {
-    const shouldLogin = localStorage.getItem("auto_login") !== "false";
-    if (!shouldLogin) {
-      setIsLoading(false);
-      return;
-    }
-
-    login();
-  }, []);
-
-  return { loading: isLoading };
-};
-
-/**
- *  Enable auto login feature.
- *  This is used to skip the login page and demonstrate the application more quickly.
- */
-export const enableAutoLogin = () => {
-  localStorage.setItem("auto_login", "true");
-};
-
-/**
- *  Disable auto login feature.
- *  This is used to skip the login page and demonstrate the application more quickly.
- */
-export const disableAutoLogin = () => {
-  localStorage.setItem("auto_login", "false");
-};
+export const useAutoLoginForDemo = () => ({ loading: false });
