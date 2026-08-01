@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dominator</groupId>
-    <artifactId>bookify</artifactId>
+    <artifactId>gearly</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Bookify</name>
-    <description>Bookify</description>
+    <name>Gearly</name>
+    <description>Gearly</description>
     <url/>
     <licenses>
         <license/>
