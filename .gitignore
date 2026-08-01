@@ -68,6 +68,8 @@ Thumbs.db
 # Scripts
 *.sh
 *.bat
+# ...except committed seed/migration tooling (Sprint 5 deliverable)
+!backend/data/seed/seed.sh
 
 structure.txt
 .fuse_hidden*

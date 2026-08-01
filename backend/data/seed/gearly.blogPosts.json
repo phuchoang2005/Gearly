@@ -7,7 +7,7 @@
   "publishDate": {
     "$date": "2025-12-24T08:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e0445381"
   },
   "tags": [
@@ -29,7 +29,7 @@
   "publishDate": {
     "$date": "2025-12-24T09:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e0445360"
   },
   "tags": [
@@ -50,7 +50,7 @@
   "publishDate": {
     "$date": "2025-12-24T10:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e0445367"
   },
   "tags": [
@@ -71,7 +71,7 @@
   "publishDate": {
     "$date": "2025-12-24T11:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e0445387"
   },
   "tags": [
@@ -92,7 +92,7 @@
   "publishDate": {
     "$date": "2025-12-24T12:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e044537b"
   },
   "tags": [
@@ -113,7 +113,7 @@
   "publishDate": {
     "$date": "2025-12-24T13:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e044536f"
   },
   "tags": [
@@ -134,7 +134,7 @@
   "publishDate": {
     "$date": "2025-12-24T14:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e0445364"
   },
   "tags": [
@@ -155,7 +155,7 @@
   "publishDate": {
     "$date": "2025-12-24T15:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e0445370"
   },
   "tags": [
@@ -176,7 +176,7 @@
   "publishDate": {
     "$date": "2025-12-24T16:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e044537e"
   },
   "tags": [
@@ -197,7 +197,7 @@
   "publishDate": {
     "$date": "2025-12-24T17:00:00.000Z"
   },
-  "bookId": {
+  "productId": {
     "$oid": "682023424a1ae581e044536d"
   },
   "tags": [

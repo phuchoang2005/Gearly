@@ -32,7 +32,7 @@ EXPOSE 8080
 # Non-secret runtime defaults. Secrets (JWT_SECRET, MAIL_*, MOMO_*,
 # GOOGLE_CLIENT_ID, GITHUB_MODELS_*) are NOT baked into the image — they are
 # injected at run time via docker-compose `environment:` (from backend/.env).
-ENV SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/bookify
+ENV SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/gearly
 ENV SPRING_PROFILES_ACTIVE=docker
 
 # Chạy app

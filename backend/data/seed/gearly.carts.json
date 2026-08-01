@@ -75,7 +75,7 @@
   "userId": "6845f3caf6159c1e348dcc72",
   "items": [
     {
-      "bookId": "682023424a1ae581e0445367",
+      "productId": "682023424a1ae581e0445367",
       "title": "GermLine",
       "author": "Nelson Erlick",
       "price": 2.65,
@@ -85,7 +85,7 @@
       "stock": 61
     },
     {
-      "bookId": "682023424a1ae581e044536b",
+      "productId": "682023424a1ae581e044536b",
       "title": "Infinity Beach",
       "author": "Jack McDevitt",
       "price": 14.62,
