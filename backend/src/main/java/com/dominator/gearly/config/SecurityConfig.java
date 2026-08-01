@@ -57,7 +57,11 @@ public class SecurityConfig {
                         "/api/addresses/**",
                         "/api/blogposts/**",
                         "/api/pages/**",
-                        "/ws-chat/**"
+                        "/ws-chat/**",
+                        // OpenAPI / Swagger UI (API documentation)
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html"
                     )
                     .permitAll()
                     // Everything else under /api/admin/** now requires the ADMIN role.
