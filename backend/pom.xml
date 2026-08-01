@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dominator</groupId>
-    <artifactId>bookify</artifactId>
+    <artifactId>gearly</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Bookify</name>
-    <description>Bookify</description>
+    <name>Gearly</name>
+    <description>Gearly</description>
     <url/>
     <licenses>
         <license/>
@@ -125,6 +125,11 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
             <version>1.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.7.0</version>
         </dependency>
 
     </dependencies>

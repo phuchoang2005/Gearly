@@ -18,7 +18,7 @@ export default function MomoReturnPage() {
             navigate("/cart", { replace: true });
             return;
         }
-        const ourOrderId = momoOrderId.replace(/^Bookify-/, "");
+        const ourOrderId = momoOrderId.replace(/^Gearly-/, "");
 
         const payload = {
             partnerCode: params.get("partnerCode"),

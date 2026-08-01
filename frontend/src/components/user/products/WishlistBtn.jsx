@@ -4,18 +4,18 @@ import { AuthContext } from "@contexts/AuthContext";
 import { addToWishlist, removeFromWishlist } from "@u_services/wishlistService";
 import { showPromise, showSuccess } from "@utils/toast.js";
 
-export default function WishlistBtn({ bookId, onRemoveBook }) {
+export default function WishlistBtn({ productId, onRemoveProduct }) {
     const { auth, setAuth } = useContext(AuthContext);
     const [liked, setLiked] = useState(false);
 
     useEffect(() => {
         if (auth?.user?.favorites) {
-            setLiked(auth.user.favorites.includes(bookId));
+            setLiked(auth.user.favorites.includes(productId));
         } else {
             const guestList = JSON.parse(localStorage.getItem("wishlist") || "[]");
-            setLiked(guestList.includes(bookId));
+            setLiked(guestList.includes(productId));
         }
-    }, [auth, bookId]);
+    }, [auth, productId]);
 
     const toggleWishlist = async () => {
         const isGuest = !auth?.user;
@@ -25,7 +25,7 @@ export default function WishlistBtn({ bookId, onRemoveBook }) {
                 : auth.user.favorites || []
         );
 
-        const isAlreadyInList = currentList.has(bookId);
+        const isAlreadyInList = currentList.has(productId);
         const isAdding = !isAlreadyInList;
 
         const updateGuestWishlist = () => {
@@ -35,12 +35,12 @@ export default function WishlistBtn({ bookId, onRemoveBook }) {
 
         if (isGuest) {
             if (isAlreadyInList) {
-                currentList.delete(bookId);
+                currentList.delete(productId);
                 showSuccess("Removed from wishlist");
                 updateGuestWishlist();
-                onRemoveBook?.(bookId);
+                onRemoveProduct?.(productId);
             } else {
-                currentList.add(bookId);
+                currentList.add(productId);
                 showSuccess("Added to wishlist");
                 updateGuestWishlist();
             }
@@ -50,12 +50,12 @@ export default function WishlistBtn({ bookId, onRemoveBook }) {
 
         const action = async () => {
             if (isAlreadyInList) {
-                await removeFromWishlist(bookId);
-                currentList.delete(bookId);
-                onRemoveBook?.(bookId);
+                await removeFromWishlist(productId);
+                currentList.delete(productId);
+                onRemoveProduct?.(productId);
             } else {
-                await addToWishlist(bookId);
-                currentList.add(bookId);
+                await addToWishlist(productId);
+                currentList.add(productId);
             }
 
             const updatedAuth = {

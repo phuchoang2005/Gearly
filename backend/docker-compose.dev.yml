@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mongodb:
     image: mongo:6.0
@@ -20,7 +18,7 @@ services:
       - .:/app # Mount toàn bộ project vào container
       - ~/.m2:/root/.m2 # Cache Maven dependencies để khởi động nhanh hơn
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/bookify
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/gearly
       SPRING_PROFILES_ACTIVE: docker
       # Secrets & config injected from backend/.env (see .env.example)
       JWT_SECRET: ${JWT_SECRET}

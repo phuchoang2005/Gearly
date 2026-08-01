@@ -15,7 +15,7 @@ export default function SearchBar() {
     const inputRef = useRef(null)
     const dropdownRef = useRef(null)
 
-    const { books, isLoading } = useShopData({
+    const { products, isLoading } = useShopData({
         condition: "",
         minPrice: 0,
         maxPrice: 200,
@@ -27,7 +27,7 @@ export default function SearchBar() {
         size: 20,
     })
 
-    const results = books?.content || []
+    const results = products?.content || []
 
     useEffect(() => {
         setIsOpen(query.length > 0)
@@ -66,7 +66,7 @@ export default function SearchBar() {
     }
 
     const goToProduct = (id) => {
-        navigate(`/book/${id}`)
+        navigate(`/product/${id}`)
         setIsOpen(false)
         setQuery("")
     }
@@ -202,7 +202,7 @@ export default function SearchBar() {
                                     onClick={handleViewAllResults}
                                 >
                                     <div className="flex items-center justify-center space-x-2 text-sm font-medium text-[#D70018] group-hover:text-[#B80012]">
-                                        <span>View all {books?.totalElements || "results"} products</span>
+                                        <span>View all {products?.totalElements || "results"} products</span>
                                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                     </div>
                                 </div>

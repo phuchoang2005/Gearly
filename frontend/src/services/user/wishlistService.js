@@ -5,10 +5,10 @@ export const getWishlist = (params) => {
     return api.get(`/wishlist?${queryString}`);
 }
 
-export const addToWishlist = (bookId) => api.post(`/wishlist/${bookId}`);
+export const addToWishlist = (productId) => api.post(`/wishlist/${productId}`);
 
-export const removeFromWishlist = (bookId) => api.delete(`/wishlist/${bookId}`);
+export const removeFromWishlist = (productId) => api.delete(`/wishlist/${productId}`);
 
-export const mergeWishlist = (bookIds) => api.post('/wishlist/batch', bookIds);
+export const mergeWishlist = (productIds) => api.post('/wishlist/batch', productIds);
 
-export const bulkRemoveWishlist = (bookids) => api.post('/wishlist/bulk_remove', [...bookids])
+export const bulkRemoveWishlist = (productids) => api.post('/wishlist/bulk_remove', [...productids])

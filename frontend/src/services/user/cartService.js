@@ -10,13 +10,13 @@ export const getGuestCart = (guestId) =>
 export const addGuestItem = (guestId, item) =>
     api.post(`/guest-cart/add?guestId=${guestId}`, item);
 
-export const updateGuestQuantity = (guestId, bookId, quantity) =>
+export const updateGuestQuantity = (guestId, productId, quantity) =>
     api.put(
-        `/guest-cart/update?guestId=${guestId}&bookId=${bookId}&quantity=${quantity}`
+        `/guest-cart/update?guestId=${guestId}&productId=${productId}&quantity=${quantity}`
     );
 
-export const removeGuestItem = (guestId, bookId) =>
-    api.delete(`/guest-cart/remove?guestId=${guestId}&bookId=${bookId}`);
+export const removeGuestItem = (guestId, productId) =>
+    api.delete(`/guest-cart/remove?guestId=${guestId}&productId=${productId}`);
 
 export const clearGuestCart = (guestId) =>
     api.delete(`/guest-cart/clear?guestId=${guestId}`);
@@ -31,11 +31,11 @@ export const getCart = () =>
 export const addItem = (item) =>
     api.post('/cart/add', item);
 
-export const updateQuantity = (bookId, quantity) =>
-    api.put(`/cart/update?bookId=${bookId}&quantity=${quantity}`);
+export const updateQuantity = (productId, quantity) =>
+    api.put(`/cart/update?productId=${productId}&quantity=${quantity}`);
 
-export const removeItem = (bookId) =>
-    api.delete(`/cart/remove?bookId=${bookId}`);
+export const removeItem = (productId) =>
+    api.delete(`/cart/remove?productId=${productId}`);
 
 export const clearCart = () =>
     api.delete('/cart/clear');

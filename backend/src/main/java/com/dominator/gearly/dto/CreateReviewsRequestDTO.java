@@ -1,0 +1,15 @@
+package com.dominator.gearly.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class CreateReviewsRequestDTO {
+    private String orderId;
+    private List<CreateReviewRequestDTO> reviews;
+}

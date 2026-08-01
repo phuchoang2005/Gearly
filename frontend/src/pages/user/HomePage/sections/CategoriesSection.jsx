@@ -106,8 +106,8 @@ const CategorySlider = ({ categories }) => {
 
                                 <div className="absolute top-6 right-6">
                                     <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium">
-                                        {category.bookCount}{" "}
-                                        {category.bookCount === 1 ? "item" : "items"}
+                                        {category.productCount}{" "}
+                                        {category.productCount === 1 ? "item" : "items"}
                                     </span>
                                 </div>
 

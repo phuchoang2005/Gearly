@@ -10,7 +10,7 @@ import { CheckoutContext } from "@contexts/CheckoutContext.jsx";
 const ProductCard = ({
     product,
     scale = 0.9,
-    onRemoveBook,
+    onRemoveProduct,
     showCheckbox = false,
     checked = false,
     onToggle = () => {}
@@ -21,7 +21,7 @@ const ProductCard = ({
     const authorName = product.authors?.[0] || "";
     const hasRating = product.ratingCount > 0;
     const ratingValue = hasRating ? product.averageRating : 0;
-    const imageUrl = product.images?.[0]?.url || "/book-placeholder.jpg";
+    const imageUrl = product.images?.[0]?.url || "/product-placeholder.jpg";
     const isOOS = product.stock < 1;
 
     const { addToCart } = useCartActions();
@@ -33,7 +33,7 @@ const ProductCard = ({
         }
 
         await addToCart({
-            bookId: product.id,
+            productId: product.id,
             title: product.title,
             author: authorName,
             price: product.price,
@@ -48,7 +48,7 @@ const ProductCard = ({
         await handleAddToCart();
 
         setSelectedItems([{
-            bookId: product.id,
+            productId: product.id,
             title: product.title,
             author: authorName,
             price: product.price,
@@ -88,9 +88,9 @@ const ProductCard = ({
                     />
                 )}
 
-                <WishlistBtn bookId={product.id} onRemoveBook={onRemoveBook} />
+                <WishlistBtn productId={product.id} onRemoveProduct={onRemoveProduct} />
 
-                <Link to={`/book/${product.id}`} className="pt-11">
+                <Link to={`/product/${product.id}`} className="pt-11">
                     <div className="w-full aspect-square bg-white rounded-md
                                     flex items-center justify-center p-3">
                         <img
@@ -102,7 +102,7 @@ const ProductCard = ({
                 </Link>
 
                 <div className="text-center">
-                    <Link to={`/book/${product.id}`}>
+                    <Link to={`/product/${product.id}`}>
                         <h3 className="text-sm font-semibold leading-tight hover:text-[#D70018] transition">
                             {product.title}
                         </h3>

@@ -35,11 +35,11 @@ export default function CartPage() {
 
     const toggleSelection = useCallback(
         id => {
-            const item = cartItems.find(i => i.bookId === id)
+            const item = cartItems.find(i => i.productId === id)
             if (!item) return
             setSelectedItems(prev => {
-                const exists = prev.some(x => x.bookId === id)
-                return exists ? prev.filter(x => x.bookId !== id) : [...prev, item]
+                const exists = prev.some(x => x.productId === id)
+                return exists ? prev.filter(x => x.productId !== id) : [...prev, item]
             })
         },
         [cartItems, setSelectedItems]
@@ -48,7 +48,7 @@ export default function CartPage() {
     const selectAll = useCallback(() => {
         if (cartItems.length === 0) return
         const allSelected = cartItems.every(i =>
-            selectedItems.some(s => s.bookId === i.bookId)
+            selectedItems.some(s => s.productId === i.productId)
         )
         setSelectedItems(allSelected ? [] : [...cartItems])
     }, [cartItems, selectedItems, setSelectedItems])
@@ -75,7 +75,7 @@ export default function CartPage() {
                 { loading: 'Removing...', success: 'Removed', error: 'Failed' }
             ).then(() => {
                 invalidate()
-                setSelectedItems(prev => prev.filter(i => i.bookId !== id))
+                setSelectedItems(prev => prev.filter(i => i.productId !== id))
             })
         },
         [auth, invalidate, setSelectedItems]
@@ -142,7 +142,7 @@ export default function CartPage() {
                                     type="checkbox"
                                     onChange={selectAll}
                                     checked={cartItems.length > 0 && cartItems.every(i =>
-                                        selectedItems.some(s => s.bookId === i.bookId)
+                                        selectedItems.some(s => s.productId === i.productId)
                                     )}
                                 />
                             </div>
@@ -153,12 +153,12 @@ export default function CartPage() {
                         </div>
 
                         {cartItems.map(item => (
-                            <div key={item.bookId} className="grid grid-cols-12 gap-4 px-6 py-4 border-t">
+                            <div key={item.productId} className="grid grid-cols-12 gap-4 px-6 py-4 border-t">
                                 <div className="col-span-1 flex items-center">
                                     <input
                                         type="checkbox"
-                                        checked={selectedItems.some(s => s.bookId === item.bookId)}
-                                        onChange={() => toggleSelection(item.bookId)}
+                                        checked={selectedItems.some(s => s.productId === item.productId)}
+                                        onChange={() => toggleSelection(item.productId)}
                                     />
                                 </div>
 
@@ -175,11 +175,11 @@ export default function CartPage() {
                                 </div>
 
                                 <div className="col-span-2 flex justify-center gap-2">
-                                    <button onClick={() => handleUpdateQuantity(item.bookId, item.quantity - 1)}>
+                                    <button onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}>
                                         <Minus />
                                     </button>
                                     <span>{item.quantity}</span>
-                                    <button onClick={() => handleUpdateQuantity(item.bookId, item.quantity + 1)}>
+                                    <button onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}>
                                         <Plus />
                                     </button>
                                 </div>
@@ -187,7 +187,7 @@ export default function CartPage() {
                                 <div className="col-span-3 text-center font-semibold">
                                     ${(item.price * item.quantity).toFixed(2)}
                                     <button
-                                        onClick={() => handleRemoveItem(item.bookId)}
+                                        onClick={() => handleRemoveItem(item.productId)}
                                         className="block text-sm text-[#D70018] mt-1"
                                     >
                                         Remove
