@@ -90,6 +90,23 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Testcontainers: real MongoDB for the context-load + analytics integration tests.
+             Docker-gated (disabledWithoutDocker) so `mvn test` still passes offline. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mongodb</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -162,6 +179,24 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <!--
+                          Disable the Ryuk reaper sidecar for the Testcontainers-backed
+                          tests. Ryuk bind-mounts the Docker socket, which fails on
+                          Colima's virtiofs mounts ("operation not supported").
+                          Testcontainers still stops the containers it starts via JVM
+                          shutdown hooks. (Docker API version + host are set per-developer
+                          in ~/.docker-java.properties / ~/.testcontainers.properties —
+                          see README "Testing".)
+                        -->
+                        <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
+                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>
