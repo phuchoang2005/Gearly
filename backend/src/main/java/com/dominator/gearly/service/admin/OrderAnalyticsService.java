@@ -89,7 +89,7 @@ public class OrderAnalyticsService {
     }
 
     private MatchOperation buildMatch(TimeFrame timeFrame) {
-        Criteria criteria = Criteria.where("orderstatus").is("COMPLETED");
+        Criteria criteria = Criteria.where("orderStatus").is("COMPLETED");
         Instant start = timeFrame.getStartInstant();
         if (start != null) {
             criteria = criteria.and("doneAt").gte(start);
