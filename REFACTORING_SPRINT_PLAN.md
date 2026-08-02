@@ -147,11 +147,17 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 **Goal:** Turn the per-sprint tests into a coherent safety-net suite; final regression pass. *(Phase 9)*
 
 **Backlog**
-- [ ] **Fill gaps:** unit tests for `UserService`/`AuthService`, `OrderAnalyticsService`, mappers (`ProductMapper`, `OrderMapper`, `UserMapper`).
-- [ ] **Slice tests:** `@WebMvcTest` covering `GlobalExceptionHandler` + representative admin/user controllers (validation, not-found, admin-denied).
-- [ ] **Context:** `GearlyApplicationTests.contextLoads` green with test properties (`@DataMongoTest`/embedded or mocked Mongo where needed).
-- [ ] **Regression:** end-to-end run of both frontends against the backend — catalog browse → cart → order → review — confirming rename + refactor preserved behavior.
-- [ ] **Docs:** finalize README (env vars, run instructions, architecture overview), confirm Swagger UI.
+- [x] **Fill gaps:** new `UserServiceTest`, `OrderMapperTest`, `TimeFrameTest`; `OrderAnalyticsService` now has a **Testcontainers `@DataMongoTest`** integration test (`OrderAnalyticsServiceIntegrationTest`) that inserts orders and asserts the aggregations. (`AuthServiceTest`/`ProductMapperTest`/`UserMapperTest` already existed from S3/S4.) **Two real bugs surfaced & fixed by these tests:** (1) `TimeFrame.getStartInstant()` called `Instant.minus(…, ChronoUnit.MONTHS/YEARS)` — unsupported units that throw at runtime for every non-`ALL` timeframe; now computed on a UTC `OffsetDateTime`. (2) `OrderAnalyticsService` matched on document field `"orderstatus"` (all-lowercase) while the stored field is `"orderStatus"`, so **every analytics query silently returned empty**; fixed to `"orderStatus"`.
+- [x] **Slice tests:** new `GlobalExceptionHandlerTest` (standalone MockMvc + throwaway controller) exercises every handler branch — 404/409/400, malformed-body 400, opaque 500. Representative admin/user controller slices already exist (`UserControllerTest`, `AdminProductControllerTest`, `AdminOrderSecurityTest`).
+- [x] **Context:** `GearlyApplicationTests.contextLoads` re-enabled — boots the full graph against a real MongoDB via **Testcontainers `@ServiceConnection`** under an `@ActiveProfiles("test")` profile (`application-test.properties` supplies dummy secrets). Docker-gated (`@Testcontainers(disabledWithoutDocker = true)`) so `mvn test` stays green offline.
+- [x] **Docs:** backend `README.md` rewritten — architecture/layering table, env vars, run instructions (Makefile/Docker + local JDK 21), seed/migrate, testing (incl. the Colima Testcontainers setup). **Swagger** confirmed: the context-load test now boots `OpenApiConfig`/`SecurityConfig` in-context, and S5 already live-verified `/v3/api-docs` + `/swagger-ui`.
+- [ ] **Regression:** backend is green (`mvn test`, see below) with the two analytics bugs fixed; the full **frontend** e2e happy-path (catalog → cart → order → review across both apps) remains a **user action** — run it against the seeded stack.
+
+> **S6 status:** ✅ core complete on branch `refactor/s6-tests` (commits only, not merged/tagged — per the established per-sprint flow). **`mvn clean test` green: 42 run, 0 failures, 0 skipped** (JDK 21, Colima up — the 4 Testcontainers tests run; they self-skip, still green, when Docker is absent). Verified the **Makefile** end-to-end against Colima (`seed` → products=51; `migrate` idempotent; `ps`).
+>
+> **Test-infra notes (Colima):** Ryuk is disabled in the Surefire config (it can't bind-mount Colima's virtiofs socket). docker-java doesn't auto-read the Docker CLI context and defaults to an API version modern engines reject, so two per-developer home files are needed to actually *run* the container tests: `~/.testcontainers.properties` (`docker.host=…/.colima/default/docker.sock`) and `~/.docker-java.properties` (`api.version=1.44`). Documented in the README; without them the container tests just skip.
+>
+> **Still deferred (FE-contract-adjacent, not test-hardening — carry forward):** `Product.addedAt/modifiedAt` `String`→`Instant` (+ data migration + admin date-render check); admin `@RequestBody Order`→request DTO; avatar public-URL `/uploads/...`; raw entity responses (`Order`/`Cart`/`Product`/`Review`)→response DTOs. These need coordinated DB/FE changes and are best done as a small dedicated follow-up, not folded into the test sprint.
 
 **Verify:** `mvn test` green; e2e happy-path passes; `README` lets a fresh clone build + run.
 
