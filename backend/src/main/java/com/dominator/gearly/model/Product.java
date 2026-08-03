@@ -11,6 +11,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.List;
 
 @AllArgsConstructor
@@ -40,8 +41,8 @@ public class Product {
     private int totalRating;
 
     @CreatedDate
-    private String addedAt;
+    private Instant addedAt;
 
     @LastModifiedDate
-    private String modifiedAt;
+    private Instant modifiedAt;
 }

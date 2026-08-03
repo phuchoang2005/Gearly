@@ -1,8 +1,11 @@
-// In-place schema migration for the Bookify -> Gearly rename (Sprint 5).
+// In-place schema migration for the Bookify -> Gearly rename (Sprint 5) plus the
+// Sprint 7 product-timestamp type change.
 //
 // Renames the `books` collection -> `products` and the `bookId` reference key
 // -> `productId` everywhere it appears (top-level in reviews/blogPosts, nested
-// in carts.items[]). Idempotent: safe to run more than once.
+// in carts.items[]), and converts products.addedAt/modifiedAt from ISO-8601
+// strings to real BSON Dates (matching Product.addedAt/modifiedAt : Instant, so
+// the "newest" sort orders chronologically). Idempotent: safe to run more than once.
 //
 // Use this when you already have a populated database whose data you want to
 // keep (as opposed to re-seeding from the dumps with seed.sh). Run it against
@@ -70,10 +73,22 @@
 
   // 4. drop the historical index-name typo if present
   //    (Spring recreates it as idx_items_productId on boot)
-  const stale = db.orders.getIndexes().find(i => i.name === "idx_items_bookdId");
-  if (stale) {
-    db.orders.dropIndex("idx_items_bookdId");
-    print("orders: dropped stale index idx_items_bookdId");
+  if (names.includes("orders")) {
+    const stale = db.orders.getIndexes().find(i => i.name === "idx_items_bookdId");
+    if (stale) {
+      db.orders.dropIndex("idx_items_bookdId");
+      print("orders: dropped stale index idx_items_bookdId");
+    }
+  }
+
+  // 5. products.addedAt/modifiedAt: ISO-8601 String -> BSON Date (Sprint 7).
+  //    Type-guarded so re-runs skip the already-converted Date values.
+  for (const field of ["addedAt", "modifiedAt"]) {
+    const res = db.products.updateMany(
+      { [field]: { $type: "string" } },
+      [{ $set: { [field]: { $toDate: "$" + field } } }]
+    );
+    print(`products: ${field} string -> Date in ${res.modifiedCount} docs`);
   }
 
   print("Migration complete.");

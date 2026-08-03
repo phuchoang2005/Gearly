@@ -10,6 +10,7 @@ import com.dominator.gearly.model.Image;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +56,7 @@ class ProductMapperTest {
         product.setAverageRating(4.5);
         product.setRatingCount(10);
         product.setTotalRating(45);
-        product.setAddedAt("2025-01-01T00:00:00Z");
+        product.setAddedAt(Instant.parse("2025-01-01T00:00:00Z"));
 
         String hex = new ObjectId().toHexString();
         ProductUpdateDTO dto = new ProductUpdateDTO();
@@ -76,7 +77,7 @@ class ProductMapperTest {
         assertThat(product.getAverageRating()).isEqualTo(4.5);
         assertThat(product.getRatingCount()).isEqualTo(10);
         assertThat(product.getTotalRating()).isEqualTo(45);
-        assertThat(product.getAddedAt()).isEqualTo("2025-01-01T00:00:00Z");
+        assertThat(product.getAddedAt()).isEqualTo(Instant.parse("2025-01-01T00:00:00Z"));
         // updated
         assertThat(product.getTitle()).isEqualTo("New Title");
         assertThat(product.getCondition()).isEqualTo("USED");

@@ -96,8 +96,8 @@ class ResponseDtoWireCompatTest {
         product.setAverageRating(4.5);
         product.setRatingCount(10);
         product.setTotalRating(45);
-        product.setAddedAt("2026-01-02T03:04:05Z");
-        product.setModifiedAt("2026-01-03T03:04:05Z");
+        product.setAddedAt(Instant.parse("2026-01-02T03:04:05Z"));
+        product.setModifiedAt(Instant.parse("2026-01-03T03:04:05Z"));
 
         ProductResponseDTO dto = productMapper.toResponseDto(product);
 

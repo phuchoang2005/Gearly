@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bson.types.ObjectId;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -30,6 +31,6 @@ public class ProductResponseDTO {
     private double averageRating;
     private int ratingCount;
     private int totalRating;
-    private String addedAt;
-    private String modifiedAt;
+    private Instant addedAt;
+    private Instant modifiedAt;
 }
