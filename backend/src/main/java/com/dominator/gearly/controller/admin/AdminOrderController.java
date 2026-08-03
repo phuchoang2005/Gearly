@@ -1,6 +1,7 @@
 package com.dominator.gearly.controller.admin;
 
 import com.dominator.gearly.dto.OrderPatchDTO;
+import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.dto.QuantitySoldDTO;
 import com.dominator.gearly.dto.TopSellerDTO;
 import com.dominator.gearly.model.Order;
@@ -14,9 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// TODO(S5): the raw @RequestBody Order on create/update should become a request DTO.
-// Deferred with the admin-FE rework (S5) so the DTO matches the real payload;
-// Order responses become OrderResponseDTO in S4.
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/admin/orders")
@@ -49,12 +47,12 @@ public class AdminOrderController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Order> updateOrder(@PathVariable String id, @RequestBody Order newOrder) {
+    public ResponseEntity<Order> updateOrder(@PathVariable String id, @RequestBody OrderUpsertRequestDTO newOrder) {
         return ResponseEntity.ok(orderService.updateOrder(id, newOrder));
     }
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody Order newOrder) {
+    public ResponseEntity<Order> createOrder(@RequestBody OrderUpsertRequestDTO newOrder) {
         return ResponseEntity.ok(orderService.createOrder(newOrder));
     }
 

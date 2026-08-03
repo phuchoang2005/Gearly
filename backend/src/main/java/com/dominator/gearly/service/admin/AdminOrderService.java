@@ -1,14 +1,15 @@
 package com.dominator.gearly.service.admin;
 
 import com.dominator.gearly.dto.OrderPatchDTO;
+import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderStatus;
 import com.dominator.gearly.model.TransactionStatus;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.service.common.PaymentFactory;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class AdminOrderService {
 
     private final OrderRepository orderRepository;
     private final PaymentFactory paymentFactory;
+    private final OrderMapper orderMapper;
 
     /** Source statuses from which each target status may be reached. */
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_SOURCES = Map.of(
@@ -58,14 +60,16 @@ public class AdminOrderService {
         return findOrThrow(id);
     }
 
-    public Order updateOrder(String id, Order order) {
+    public Order updateOrder(String id, OrderUpsertRequestDTO dto) {
         Order existingOrder = findOrThrow(id);
-        BeanUtils.copyProperties(order, existingOrder, "_id", "addedAt", "modifiedAt");
+        orderMapper.applyUpsert(existingOrder, dto);
         existingOrder.setModifiedAt(Instant.now());
         return orderRepository.save(existingOrder);
     }
 
-    public Order createOrder(Order order) {
+    public Order createOrder(OrderUpsertRequestDTO dto) {
+        Order order = new Order();
+        orderMapper.applyUpsert(order, dto);
         order.setOrderStatus(OrderStatus.PENDING);
         order.setAddedAt(Instant.now());
         order.setModifiedAt(Instant.now());
