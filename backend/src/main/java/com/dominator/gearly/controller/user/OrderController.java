@@ -4,6 +4,8 @@ import com.dominator.gearly.dto.CancelOrderRequestDTO;
 import com.dominator.gearly.dto.CreateOrderResponse;
 import com.dominator.gearly.dto.MessageResponse;
 import com.dominator.gearly.dto.OrderCreationRequestDTO;
+import com.dominator.gearly.dto.OrderResponseDTO;
+import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.service.user.CustomerOrderService;
@@ -25,15 +27,17 @@ import java.util.Map;
 public class OrderController {
 
     private final CustomerOrderService orderService;
+    private final OrderMapper orderMapper;
 
     @GetMapping
-    public ResponseEntity<Page<Order>> getOrders(
+    public ResponseEntity<Page<OrderResponseDTO>> getOrders(
             @AuthenticationPrincipal AuthenticatedUser authUser,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status
     ) {
-        return ResponseEntity.ok(orderService.searchOrders(authUser, search, status, page));
+        return ResponseEntity.ok(orderService.searchOrders(authUser, search, status, page)
+                .map(orderMapper::toResponseDto));
     }
 
     @GetMapping("/stats")
@@ -53,17 +57,17 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable String orderId) {
-        return ResponseEntity.ok(orderService.findById(orderId));
+    public ResponseEntity<OrderResponseDTO> getOrderById(@PathVariable String orderId) {
+        return ResponseEntity.ok(orderMapper.toResponseDto(orderService.findById(orderId)));
     }
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(
+    public ResponseEntity<OrderResponseDTO> createOrder(
             @AuthenticationPrincipal AuthenticatedUser authUser,
             @Valid @RequestBody OrderCreationRequestDTO orderRequestDTO
     ) {
         Order createdOrder = orderService.createOrder(authUser, orderRequestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderMapper.toResponseDto(createdOrder));
     }
 
     @PostMapping("/momo")

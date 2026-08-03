@@ -3,6 +3,7 @@ package com.dominator.gearly.security;
 import com.dominator.gearly.config.CorsConfig;
 import com.dominator.gearly.config.SecurityConfig;
 import com.dominator.gearly.controller.admin.AdminOrderController;
+import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.service.admin.AdminOrderService;
 import com.dominator.gearly.service.admin.OrderAnalyticsService;
@@ -38,6 +39,8 @@ class AdminOrderSecurityTest {
     private AdminOrderService orderService;
     @MockBean
     private OrderAnalyticsService orderAnalyticsService;
+    @MockBean
+    private OrderMapper orderMapper;
 
     // Collaborators of the real JwtAuthenticationFilter (unused without a Bearer header).
     @MockBean

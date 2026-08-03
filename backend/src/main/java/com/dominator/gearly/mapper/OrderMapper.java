@@ -1,5 +1,6 @@
 package com.dominator.gearly.mapper;
 
+import com.dominator.gearly.dto.OrderResponseDTO;
 import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.Product;
@@ -39,5 +40,23 @@ public class OrderMapper {
         target.setReviewed(dto.isReviewed());
         target.setNote(dto.getNote());
         target.setDoneAt(dto.getDoneAt());
+    }
+
+    /** Response view mirroring the entity's wire shape. */
+    public OrderResponseDTO toResponseDto(Order order) {
+        OrderResponseDTO dto = new OrderResponseDTO();
+        dto.setId(order.getId());
+        dto.setUserId(order.getUserId());
+        dto.setItems(order.getItems());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setPayment(order.getPayment());
+        dto.setOrderStatus(order.getOrderStatus());
+        dto.setShippingInformation(order.getShippingInformation());
+        dto.setReviewed(order.isReviewed());
+        dto.setNote(order.getNote());
+        dto.setAddedAt(order.getAddedAt());
+        dto.setModifiedAt(order.getModifiedAt());
+        dto.setDoneAt(order.getDoneAt());
+        return dto;
     }
 }

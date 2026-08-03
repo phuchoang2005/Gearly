@@ -1,9 +1,11 @@
 package com.dominator.gearly.controller.user;
 
+import com.dominator.gearly.dto.ProductResponseDTO;
 import com.dominator.gearly.dto.ProductSearchDTO;
 import com.dominator.gearly.dto.ProductSummaryDTO;
 import com.dominator.gearly.dto.WishlistRequestDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.mapper.ProductMapper;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.service.user.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -18,14 +20,15 @@ import java.util.List;
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
+    private final ProductMapper productMapper;
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProduct(@PathVariable String id) {
+    public ResponseEntity<ProductResponseDTO> getProduct(@PathVariable String id) {
         Product product = productService.getProductById(id);
         if (product == null) {
             throw new ResourceNotFoundException("Product not found");
         }
-        return ResponseEntity.ok(product);
+        return ResponseEntity.ok(productMapper.toResponseDto(product));
     }
 
     @GetMapping()

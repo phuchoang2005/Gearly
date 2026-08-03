@@ -29,8 +29,30 @@ public class AdminReviewService {
     private final ReviewMapper     reviewMapper;
 
     public List<AdminReviewResponseDTO> getAllReviews() {
-        List<Review> reviews = reviewRepo.findAll();
+        return toDtos(reviewRepo.findAll());
+    }
 
+    public List<AdminReviewResponseDTO> getReviewsByStatus(ReviewStatus status) {
+        return toDtos(reviewRepo.findReviewByStatus(status));
+    }
+
+    public AdminReviewResponseDTO approveReview(String id) {
+        return toDto(setStatus(id, ReviewStatus.APPROVED));
+    }
+
+    public AdminReviewResponseDTO rejectReview(String id) {
+        return toDto(setStatus(id, ReviewStatus.REJECTED));
+    }
+
+    private Review setStatus(String id, ReviewStatus status) {
+        Review review = reviewRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+        review.setStatus(status);
+        return reviewRepo.save(review);
+    }
+
+    /** Resolves product title and author name for a batch of reviews. */
+    private List<AdminReviewResponseDTO> toDtos(List<Review> reviews) {
         // collect unique product/user IDs
         Set<String> productIds = reviews.stream()
                 .map(r -> r.getProductId().toHexString())
@@ -39,7 +61,7 @@ public class AdminReviewService {
                 .map(r -> r.getUserId().toHexString())
                 .collect(Collectors.toSet());
 
-        // batch‐fetch products and users
+        // batch-fetch products and users
         Map<String, Product> productMap = productRepo.findAllById(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, b -> b));
@@ -47,36 +69,26 @@ public class AdminReviewService {
                 .stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
-        // map each review into the DTO
         return reviews.stream()
-                .map(r -> {
-                    String bId = r.getProductId().toHexString();
-                    String uId = r.getUserId().toHexString();
-                    Product product = productMap.get(bId);
-                    User user = userMap.get(uId);
-
-                    String productTitle = product != null ? product.getTitle() : "—";
-                    String userName = user != null ? user.getFullName() : "—";
-                    return reviewMapper.toAdminDto(r, productTitle, userName);
-                })
+                .map(r -> reviewMapper.toAdminDto(
+                        r,
+                        titleOf(productMap.get(r.getProductId().toHexString())),
+                        nameOf(userMap.get(r.getUserId().toHexString()))))
                 .collect(Collectors.toList());
     }
 
-    public List<Review> getReviewsByStatus(ReviewStatus status) {
-        return reviewRepo.findReviewByStatus(status);
+    /** Single-review variant that resolves the product/user directly. */
+    private AdminReviewResponseDTO toDto(Review review) {
+        Product product = productRepo.findById(review.getProductId().toHexString()).orElse(null);
+        User user = userRepo.findById(review.getUserId().toHexString()).orElse(null);
+        return reviewMapper.toAdminDto(review, titleOf(product), nameOf(user));
     }
 
-    public Review approveReview(String id) {
-        Review review = reviewRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
-        review.setStatus(ReviewStatus.APPROVED);
-        return reviewRepo.save(review);
+    private String titleOf(Product product) {
+        return product != null ? product.getTitle() : "—";
     }
 
-    public Review rejectReview(String id) {
-        Review review = reviewRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
-        review.setStatus(ReviewStatus.REJECTED);
-        return reviewRepo.save(review);
+    private String nameOf(User user) {
+        return user != null ? user.getFullName() : "—";
     }
 }

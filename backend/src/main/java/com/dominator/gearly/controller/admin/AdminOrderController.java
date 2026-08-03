@@ -1,10 +1,11 @@
 package com.dominator.gearly.controller.admin;
 
 import com.dominator.gearly.dto.OrderPatchDTO;
+import com.dominator.gearly.dto.OrderResponseDTO;
 import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.dto.QuantitySoldDTO;
 import com.dominator.gearly.dto.TopSellerDTO;
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.OrderStatus;
 import com.dominator.gearly.model.TimeFrame;
 import com.dominator.gearly.service.admin.AdminOrderService;
@@ -21,15 +22,17 @@ import java.util.List;
 public class AdminOrderController {
     private final AdminOrderService orderService;
     private final OrderAnalyticsService orderAnalyticsService;
+    private final OrderMapper orderMapper;
 
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        return ResponseEntity.ok(orderService.getAllOrders());
+    public ResponseEntity<List<OrderResponseDTO>> getAllOrders() {
+        return ResponseEntity.ok(orderService.getAllOrders().stream()
+                .map(orderMapper::toResponseDto).toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable String id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+    public ResponseEntity<OrderResponseDTO> getOrderById(@PathVariable String id) {
+        return ResponseEntity.ok(orderMapper.toResponseDto(orderService.getOrderById(id)));
     }
 
     @GetMapping("/quantity-sold")
@@ -47,13 +50,13 @@ public class AdminOrderController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Order> updateOrder(@PathVariable String id, @RequestBody OrderUpsertRequestDTO newOrder) {
-        return ResponseEntity.ok(orderService.updateOrder(id, newOrder));
+    public ResponseEntity<OrderResponseDTO> updateOrder(@PathVariable String id, @RequestBody OrderUpsertRequestDTO newOrder) {
+        return ResponseEntity.ok(orderMapper.toResponseDto(orderService.updateOrder(id, newOrder)));
     }
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody OrderUpsertRequestDTO newOrder) {
-        return ResponseEntity.ok(orderService.createOrder(newOrder));
+    public ResponseEntity<OrderResponseDTO> createOrder(@RequestBody OrderUpsertRequestDTO newOrder) {
+        return ResponseEntity.ok(orderMapper.toResponseDto(orderService.createOrder(newOrder)));
     }
 
     @PostMapping("/{id}/set-cancel")
@@ -92,7 +95,7 @@ public class AdminOrderController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Order> patchOrder(@PathVariable String id, @RequestBody OrderPatchDTO orderPatch) {
-        return ResponseEntity.ok(orderService.patchOrder(id, orderPatch));
+    public ResponseEntity<OrderResponseDTO> patchOrder(@PathVariable String id, @RequestBody OrderPatchDTO orderPatch) {
+        return ResponseEntity.ok(orderMapper.toResponseDto(orderService.patchOrder(id, orderPatch)));
     }
 }
