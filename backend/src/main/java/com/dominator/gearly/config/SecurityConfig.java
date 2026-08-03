@@ -32,9 +32,11 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth ->
                 auth
-                    // Uploaded static assets stay public (served for storefront/admin display).
-                    // Listed first so it wins over the /api/admin/** rule below.
-                    .requestMatchers("/api/admin/uploads/**")
+                    // Uploaded static assets (avatars, product media) are served under
+                    // /uploads/** (spring.mvc.static-path-pattern) and must stay public so
+                    // the storefront/admin can display them. The admin-only WRITE endpoint
+                    // (POST /api/admin/media/upload) still falls under the /api/admin/** rule.
+                    .requestMatchers("/uploads/**")
                     .permitAll()
                     // Genuinely public routes: auth, catalog reads, reviews, guest cart,
                     // payment webhooks, addresses, content pages, chat handshake.
