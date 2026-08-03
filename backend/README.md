@@ -22,7 +22,7 @@ Conventional layered Spring app under `com.dominator.gearly`:
 | `model/` | MongoDB documents (`products`, `orders`, `carts`, `users`, …). |
 | `dto/` | Request/response payloads. |
 | `exception/` | `ApiException` hierarchy + `GlobalExceptionHandler` (uniform `ErrorResponse`). |
-| `security/` | JWT filter/util, `SecurityConfig`; `/api/admin/**` requires `ROLE_ADMIN`. |
+| `security/` | JWT filter/util, `SecurityConfig`; `/api/admin/**` requires `ROLE_ADMIN`, uploaded assets under `/uploads/**` are public. |
 | `ai/` | Intent routing + GitHub Models client for the shopping assistant. |
 | `websocket/` | Chat WebSocket endpoint (`/ws-chat/**`). |
 | `config/` | CORS, OpenAPI, Mongo config. |
@@ -96,9 +96,13 @@ make run                         # or: mvn spring-boot:run
 Sample data lives in [`data/seed/`](data/seed/).
 
 - `make seed` — drops & reloads every collection from `data/seed/gearly.*.json`
-  (products, users, orders, reviews, categories, cities/states/countries, …).
+  (products, users, orders, reviews, categories, cities/states/countries, …). The
+  product dumps store `addedAt`/`modifiedAt` as Extended-JSON `$date`, so a fresh
+  seed lands real `Date`s (matching `Product.addedAt : Instant`) — no migrate step
+  needed for new data.
 - `make migrate` — idempotent in-place migration of an existing **Bookify**-shaped
-  DB → Gearly (`books`→`products`, nested `bookId`→`productId`).
+  DB → Gearly (`books`→`products`, nested `bookId`→`productId`) **and** the
+  `products.addedAt`/`modifiedAt` `String`→`Date` conversion for legacy data.
 - `make mongosh` — open a shell on the `gearly` database.
 
 ---
@@ -110,8 +114,9 @@ With the app running:
 - Swagger UI: <http://localhost:8080/swagger-ui/index.html>
 - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
 
-Public routes (auth, catalog reads, webhooks, `/ws-chat/**`, the docs
-endpoints) are open; everything under `/api/admin/**` requires an admin JWT.
+Public routes (auth, catalog reads, webhooks, `/ws-chat/**`, uploaded media at
+`/uploads/**`, the docs endpoints) are open; everything under `/api/admin/**`
+requires an admin JWT.
 
 ---
 
