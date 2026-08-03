@@ -54,7 +54,7 @@ public class AdminProductService {
         product.setTotalRating(0);
 
         // set timestamps
-        String now = Instant.now().toString();
+        Instant now = Instant.now();
         product.setAddedAt(now);
         product.setModifiedAt(now);
 
@@ -68,7 +68,7 @@ public class AdminProductService {
         );
 
         productMapper.updateEntity(product, dto);
-        product.setModifiedAt(Instant.now().toString());
+        product.setModifiedAt(Instant.now());
 
         Product saved = productRepository.save(product);
         return productMapper.toAdminDto(saved, fetchCategoryNames(saved.getCategoryIds()));

@@ -1,26 +1,22 @@
-package com.dominator.gearly.model;
+package com.dominator.gearly.dto;
 
+import com.dominator.gearly.model.Image;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
 
-@AllArgsConstructor
-@NoArgsConstructor
+/**
+ * Full product-detail response (GET /api/products/{id}). Mirrors the {@link
+ * com.dominator.gearly.model.Product} entity field-for-field, including the
+ * resolved {@code categoryNames}, so the wire shape is unchanged while the
+ * controller no longer hands back the persistence entity.
+ */
 @Getter
 @Setter
-@Document(collection = "products")
-public class Product {
-    @Id
+public class ProductResponseDTO {
     private String id;
     private String title;
     private List<String> authors;
@@ -31,18 +27,10 @@ public class Product {
     private int stock;
     private List<ObjectId> categoryIds;
     private List<Image> images;
-
-    @Transient
     private List<String> categoryNames;
-
-    // Rating
     private double averageRating;
     private int ratingCount;
     private int totalRating;
-
-    @CreatedDate
     private Instant addedAt;
-
-    @LastModifiedDate
     private Instant modifiedAt;
 }

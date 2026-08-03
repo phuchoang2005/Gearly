@@ -22,8 +22,9 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 | **S4** | Mapper Layer + Repo/AI Tidy | 6, 7 | ~4 d | Low | `mapper/` package, tidy repos & AI clients |
 | **S5** | The Great Rename → Gearly/Product | 8 | ~4 d | **Highest** | Renamed package+domain, DB + FE migrated |
 | **S6** | Test Hardening & Stabilization | 9 | ~3 d | Low | Green `mvn test`, OpenAPI docs, regression pass |
+| **S7** | Deferred Follow-ups (Model / DTO / API) | — | ~2 d | Med | Admin request DTO, entity→response DTOs, public `/uploads`, Product `Instant` + migration |
 
-**Dependency order is strict:** S1 → S2 → S3 → S4 → S5 → S6. S5 is done *after* the structure is clean so it's a single mechanical sweep. Testing is written *within* each sprint for what that sprint touched; **S6 consolidates** and fills gaps.
+**Dependency order is strict:** S1 → S2 → S3 → S4 → S5 → S6. S5 is done *after* the structure is clean so it's a single mechanical sweep. Testing is written *within* each sprint for what that sprint touched; **S6 consolidates** and fills gaps. **S7** is the dedicated follow-up that clears the FE-/DB-contract-adjacent items deliberately deferred out of S2/S4/S5/S6.
 
 ---
 
@@ -162,6 +163,25 @@ The backend (`/backend`, Spring Boot 3.4.3 / Java 21 / MongoDB) is named **Booki
 **Verify:** `mvn test` green; e2e happy-path passes; `README` lets a fresh clone build + run.
 
 **Risks:** low. This is the buffer sprint — absorb any spillover from S3/S5 here.
+
+---
+
+## Sprint 7 — Deferred Follow-ups (Model / DTO / API consistency)
+**Goal:** Clear the four FE-/DB-contract-adjacent items deliberately carried through S2/S4/S5 into S6's "Still deferred" note, as a single dedicated follow-up. **FE-safe by construction:** response DTOs mirror the entity wire shape byte-for-byte; the one DB-coupled change (Product timestamps) ships with a verified migration.
+
+**Backlog**
+- [x] **Admin Order request DTO:** replace the raw `@RequestBody Order` on `POST`/`PUT /api/admin/orders` with `OrderUpsertRequestDTO` (id + audit timestamps intentionally absent so a client can't set them); `OrderMapper.applyUpsert` copies the admin-settable fields, mirroring the old `BeanUtils.copyProperties` bind.
+- [x] **Entity → response DTOs:** controllers for Order (admin + user), Cart (user + guest), Product detail, and Review (admin) return dedicated response DTOs instead of Mongo entities. New `OrderResponseDTO`/`CartResponseDTO`/`ProductResponseDTO` mirror their entity field-for-field (reusing the nested value models); the review endpoints reuse the existing `AdminReviewResponseDTO` (`getReviewsByStatus`/`approve`/`reject` were still leaking raw `Review`). **Wire-compat proven** by `ResponseDtoWireCompatTest` (`@JsonTest` serializes each entity and its mapper output with the production `ObjectMapper` and asserts identical JSON trees).
+- [x] **Avatar / media public URL:** `SecurityConfig` permitted a dead `/api/admin/uploads/**` while the real static path `/uploads/**` fell through to `authenticated()` (anonymous image loads → 401). Permit `/uploads/**` (the admin *write* endpoint stays under `/api/admin/**` → ADMIN); map `NoResourceFoundException` → 404 so a missing asset is a clean 404, not a catch-all 500. `UploadsSecurityTest` covers both. *(The `store()` path + `app.avatar.*` config were already in place from S3; this closes the serving gap.)*
+- [x] **Product timestamps `String` → `Instant`:** entity + `AdminProductService` + `ProductResponseDTO` now use `Instant`, so the "newest" sort orders chronologically. `migrate.js` gains an idempotent, type-guarded `products.addedAt/modifiedAt` `String`→`Date` conversion (via `$toDate`) for legacy DBs, with its orders-index step guarded against a missing collection; the seed dump stores the two timestamps as Extended-JSON `$date` so a fresh `make seed` lands `Date`s directly (fixed a malformed `08:00:0Z` second that `mongoimport`'s stricter `$date` parser rejected). **Verified on Dockerized (Colima) mongo:** fresh seed → products=51 all `Date`, newest sort works; legacy string DB → migrate converts 51+51 and is idempotent on re-run.
+- [x] **Tests:** `ResponseDtoWireCompatTest` (Order/Cart/Product wire equality), `UploadsSecurityTest` (public read / locked write), `OrderMapperTest.applyUpsert`, `AdminReviewServiceTest` (approve/reject resolve title+name, `—` fallback, not-found). `mvn test` green (51 run, 0 failures, 0 skipped; JDK 21, Colima up).
+- [x] **Docs:** backend `README.md` (public `/uploads/**`, seed/migrate timestamp notes) + this plan section.
+
+> **S7 status:** ✅ complete on branch `refactor/s7-followups` (commits only, not merged/tagged, not pushed — per the established per-sprint flow). Backend `mvn test` green (51 run, 0 failures, 0 skipped). Clears all four items from S6's "Still deferred" note. **User actions:** (1) run `data/seed/migrate.js` (or `make -C backend migrate`) against the real DB **after snapshotting** to convert existing product timestamps; (2) confirm the admin/storefront date rendering of product `addedAt`/`modifiedAt` now that they serialize as UTC ISO-8601 (`…Z`) `Instant`s, and that avatar images resolve from the backend origin (`<backend>/uploads/avatars/…`).
+
+**Verify:** bad-input/missing-id still uniform `ErrorResponse`; `grep -rn "ResponseEntity<Order>\|<Cart>\|<Product>\|<Review>" backend/src/main` returns nothing; `/uploads/**` reachable anonymously (404 for a missing file, not 401); migrate.js idempotent and `products.addedAt` is a `Date`.
+
+**Risks:** medium — response reshaping and a live-data type change both touch the FE/DB contract, mitigated by the byte-for-byte wire-compat test and the Docker-verified, idempotent migration. Timestamps serialize as `…Z` UTC now — the admin-FE date-render check is the one manual follow-up.
 
 ---
 

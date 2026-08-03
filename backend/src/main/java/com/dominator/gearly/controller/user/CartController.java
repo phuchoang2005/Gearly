@@ -1,6 +1,7 @@
 package com.dominator.gearly.controller.user;
 
-import com.dominator.gearly.model.Cart;
+import com.dominator.gearly.dto.CartResponseDTO;
+import com.dominator.gearly.mapper.CartMapper;
 import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.service.user.CartService;
@@ -16,23 +17,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CartController {
     private final CartService cartService;
+    private final CartMapper cartMapper;
 
     @GetMapping
-    public ResponseEntity<Cart> get(@AuthenticationPrincipal AuthenticatedUser authUser) {
-        return ResponseEntity.ok(cartService.getOrCreate(authUser.getUser().getId(), null));
+    public ResponseEntity<CartResponseDTO> get(@AuthenticationPrincipal AuthenticatedUser authUser) {
+        return ResponseEntity.ok(cartMapper.toResponseDto(
+                cartService.getOrCreate(authUser.getUser().getId(), null)));
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Cart> add(@AuthenticationPrincipal AuthenticatedUser authUser,
+    public ResponseEntity<CartResponseDTO> add(@AuthenticationPrincipal AuthenticatedUser authUser,
                                     @RequestBody CartItem item) {
-        return ResponseEntity.ok(cartService.addItem(authUser.getUser().getId(), null, item));
+        return ResponseEntity.ok(cartMapper.toResponseDto(
+                cartService.addItem(authUser.getUser().getId(), null, item)));
     }
 
     @PutMapping("/update")
-    public ResponseEntity<Cart> update(@AuthenticationPrincipal AuthenticatedUser authUser,
+    public ResponseEntity<CartResponseDTO> update(@AuthenticationPrincipal AuthenticatedUser authUser,
                                        @RequestParam String productId,
                                        @RequestParam int quantity) {
-        return ResponseEntity.ok(cartService.updateQuantity(authUser.getUser().getId(), null, productId, quantity));
+        return ResponseEntity.ok(cartMapper.toResponseDto(
+                cartService.updateQuantity(authUser.getUser().getId(), null, productId, quantity)));
     }
 
     @DeleteMapping("/remove")
@@ -49,10 +54,11 @@ public class CartController {
     }
 
     @PostMapping("/merge")
-    public ResponseEntity<Cart> merge(@AuthenticationPrincipal AuthenticatedUser authUser,
+    public ResponseEntity<CartResponseDTO> merge(@AuthenticationPrincipal AuthenticatedUser authUser,
                                       @RequestParam String guestId,
                                       @RequestBody List<CartItem> items) {
-        return ResponseEntity.ok(cartService.mergeCart(authUser.getUser().getId(), guestId, items));
+        return ResponseEntity.ok(cartMapper.toResponseDto(
+                cartService.mergeCart(authUser.getUser().getId(), guestId, items)));
     }
 
     @DeleteMapping("/guest-cart")
@@ -63,8 +69,9 @@ public class CartController {
     }
 
     @PostMapping("/bulk-add")
-    public ResponseEntity<Cart> bulkAdd(@AuthenticationPrincipal AuthenticatedUser authUser,
+    public ResponseEntity<CartResponseDTO> bulkAdd(@AuthenticationPrincipal AuthenticatedUser authUser,
                                         @RequestBody List<String> items) {
-        return ResponseEntity.ok(cartService.addItems(authUser.getUser().getId(), null, items));
+        return ResponseEntity.ok(cartMapper.toResponseDto(
+                cartService.addItems(authUser.getUser().getId(), null, items)));
     }
 }

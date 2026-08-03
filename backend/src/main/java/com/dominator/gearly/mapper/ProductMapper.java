@@ -3,6 +3,7 @@ package com.dominator.gearly.mapper;
 import com.dominator.gearly.dto.AdminProductDTO;
 import com.dominator.gearly.dto.ProductCreateDTO;
 import com.dominator.gearly.dto.ProductInLowStockDTO;
+import com.dominator.gearly.dto.ProductResponseDTO;
 import com.dominator.gearly.dto.ProductSummaryDTO;
 import com.dominator.gearly.dto.ProductUpdateDTO;
 import com.dominator.gearly.model.Product;
@@ -59,6 +60,31 @@ public class ProductMapper {
 
     public ProductInLowStockDTO toLowStockDto(Product product) {
         return new ProductInLowStockDTO(product.getId(), product.getTitle(), product.getStock());
+    }
+
+    /**
+     * Full product-detail response mirroring the entity's wire shape (including
+     * the transient {@code categoryNames}, resolved on the read path).
+     */
+    public ProductResponseDTO toResponseDto(Product product) {
+        ProductResponseDTO dto = new ProductResponseDTO();
+        dto.setId(product.getId());
+        dto.setTitle(product.getTitle());
+        dto.setAuthors(product.getAuthors());
+        dto.setDescription(product.getDescription());
+        dto.setPrice(product.getPrice());
+        dto.setOriginalPrice(product.getOriginalPrice());
+        dto.setCondition(product.getCondition());
+        dto.setStock(product.getStock());
+        dto.setCategoryIds(product.getCategoryIds());
+        dto.setImages(product.getImages());
+        dto.setCategoryNames(product.getCategoryNames());
+        dto.setAverageRating(product.getAverageRating());
+        dto.setRatingCount(product.getRatingCount());
+        dto.setTotalRating(product.getTotalRating());
+        dto.setAddedAt(product.getAddedAt());
+        dto.setModifiedAt(product.getModifiedAt());
+        return dto;
     }
 
     /** Builds a new entity from a create request. Rating fields and timestamps stay with the service. */
