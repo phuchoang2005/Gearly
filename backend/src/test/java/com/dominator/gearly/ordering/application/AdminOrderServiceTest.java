@@ -1,7 +1,5 @@
-package com.dominator.gearly.service.admin;
+package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.dto.OrderPatchDTO;
-import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.Order;
@@ -68,14 +66,10 @@ class AdminOrderServiceTest {
                 Money.of(price), "http://img/" + productId + ".png", Quantity.of(quantity));
     }
 
-    private OrderUpsertRequestDTO upsert(OrderStatus status, List<OrderLine> lines) {
-        OrderUpsertRequestDTO dto = new OrderUpsertRequestDTO();
-        dto.setUserId(UserId.of("u1"));
-        dto.setItems(lines);
-        dto.setOrderStatus(status);
-        dto.setShippingInformation(
-                new ShippingInformation("Ada", "Lovelace", "ada@example.com", "0123456789", null));
-        return dto;
+    private AdminOrderCommand upsert(OrderStatus status, List<OrderLine> lines) {
+        return new AdminOrderCommand(UserId.of("u1"), lines,
+                new ShippingInformation("Ada", "Lovelace", "ada@example.com", "0123456789", null),
+                null, status, false, null, null);
     }
 
     /** An order sitting at {@code status} — reached by transitioning to it, never by assignment. */
@@ -188,14 +182,17 @@ class AdminOrderServiceTest {
                     .isEqualTo(TransactionStatus.PENDING);
         }
 
+        /**
+         * The command has no totalAmount component at all, which is the structural half of
+         * this fix: a payload total worth $10,000 against lines worth $10 used to store both,
+         * and now stops at the api layer where the DTO documents the field as ignored.
+         */
         @Test
-        @DisplayName("the total is priced from the lines, not taken from the payload")
+        @DisplayName("the total is priced from the lines — the command cannot carry one")
         void pricesTheOrderFromItsLines() {
-            OrderUpsertRequestDTO dto = upsert(null, List.of(line("p1", 10.00, 2)));
-            dto.setTotalAmount(Money.of(10_000.00)); // a payload that contradicts its own lines
             saveReturnsArgument();
 
-            Order order = service.createOrder(dto);
+            Order order = service.createOrder(upsert(null, List.of(line("p1", 10.00, 2))));
 
             // subtotal 20.00 + tax 1.60 + shipping 15.00
             assertThat(order.getTotalAmount()).isEqualTo(Money.of(36.60));
@@ -214,11 +211,12 @@ class AdminOrderServiceTest {
             findsOrder(order);
             saveReturnsArgument();
 
-            OrderUpsertRequestDTO dto = upsert(OrderStatus.PROCESSING, List.of(line("p2", 40.00, 1)));
-            dto.setNote("gift wrap");
-            dto.setReviewed(true);
+            AdminOrderCommand command = new AdminOrderCommand(UserId.of("u1"),
+                    List.of(line("p2", 40.00, 1)),
+                    new ShippingInformation("Ada", "Lovelace", "ada@example.com", "0123456789", null),
+                    null, OrderStatus.PROCESSING, true, "gift wrap", null);
 
-            Order updated = service.updateOrder("o1", dto);
+            Order updated = service.replaceOrder("o1", command);
 
             assertThat(updated.getUserId()).isEqualTo(UserId.of("u1"));
             assertThat(updated.getItems()).singleElement()
@@ -237,7 +235,7 @@ class AdminOrderServiceTest {
             findsOrder(order);
 
             assertThatThrownBy(() ->
-                    service.updateOrder("o1", upsert(OrderStatus.REFUNDED, List.of(line("p1", 10.00, 1)))))
+                    service.replaceOrder("o1", upsert(OrderStatus.REFUNDED, List.of(line("p1", 10.00, 1)))))
                     .isInstanceOf(IllegalOrderTransitionException.class);
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
@@ -251,7 +249,7 @@ class AdminOrderServiceTest {
             findsOrder(order);
             saveReturnsArgument();
 
-            Order updated = service.updateOrder("o1", upsert(OrderStatus.PENDING, List.of(line("p1", 10.00, 1))));
+            Order updated = service.replaceOrder("o1", upsert(OrderStatus.PENDING, List.of(line("p1", 10.00, 1))));
 
             assertThat(updated.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
         }
@@ -271,11 +269,9 @@ class AdminOrderServiceTest {
             saveReturnsArgument();
             Money before = order.getTotalAmount();
 
-            OrderPatchDTO dto = new OrderPatchDTO();
-            dto.setShippingInformation(
-                    new ShippingInformation("Grace", "Hopper", "grace@example.com", "0999", null));
-
-            Order patched = service.patchOrder("o1", dto);
+            Order patched = service.patchOrder("o1", new AdminOrderPatchCommand(null,
+                    new ShippingInformation("Grace", "Hopper", "grace@example.com", "0999", null),
+                    null, null, null));
 
             assertThat(patched.getShippingInformation().getFirstName()).isEqualTo("Grace");
             assertThat(patched.getTotalAmount()).isEqualTo(before);
@@ -289,10 +285,8 @@ class AdminOrderServiceTest {
             findsOrder(order);
             saveReturnsArgument();
 
-            OrderPatchDTO dto = new OrderPatchDTO();
-            dto.setItems(List.of(line("p1", 10.00, 3)));
-
-            Order patched = service.patchOrder("o1", dto);
+            Order patched = service.patchOrder("o1", new AdminOrderPatchCommand(
+                    List.of(line("p1", 10.00, 3)), null, null, null, null));
 
             // subtotal 30.00 + tax 2.40 + shipping 15.00 — the threshold is strictly greater-than
             assertThat(patched.getTotalAmount()).isEqualTo(Money.of(47.40));
@@ -309,10 +303,10 @@ class AdminOrderServiceTest {
             Order order = orderWithStatus(OrderStatus.PENDING);
             findsOrder(order);
 
-            OrderPatchDTO dto = new OrderPatchDTO();
-            dto.setOrderStatus(OrderStatus.REFUNDED);
+            AdminOrderPatchCommand command =
+                    new AdminOrderPatchCommand(null, null, null, OrderStatus.REFUNDED, null);
 
-            assertThatThrownBy(() -> service.patchOrder("o1", dto))
+            assertThatThrownBy(() -> service.patchOrder("o1", command))
                     .isInstanceOf(IllegalOrderTransitionException.class);
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
@@ -326,10 +320,8 @@ class AdminOrderServiceTest {
             findsOrder(order);
             saveReturnsArgument();
 
-            OrderPatchDTO dto = new OrderPatchDTO();
-            dto.setOrderStatus(OrderStatus.DELIVERED);
-
-            Order patched = service.patchOrder("o1", dto);
+            Order patched = service.patchOrder("o1",
+                    new AdminOrderPatchCommand(null, null, null, OrderStatus.DELIVERED, null));
 
             assertThat(patched.getOrderStatus()).isEqualTo(OrderStatus.DELIVERED);
             assertThat(patched.getPayment().getTransactions())

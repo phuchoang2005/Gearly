@@ -1,7 +1,7 @@
 package com.dominator.gearly.controller.user;
 
 import com.dominator.gearly.config.MomoConfig;
-import com.dominator.gearly.service.user.CustomerOrderService;
+import com.dominator.gearly.ordering.application.OnlinePaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,13 +19,13 @@ import java.util.Map;
 public class PaymentController {
 
     private static final String HMAC_SHA256 = "HmacSHA256";
-    private final CustomerOrderService orderService;
+    private final OnlinePaymentService onlinePaymentService;
     private final MomoConfig momoConfig;
     private final DateTimeFormatter RESPONSE_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public PaymentController(CustomerOrderService orderService, MomoConfig momoConfig) {
-        this.orderService = orderService;
+    public PaymentController(OnlinePaymentService onlinePaymentService, MomoConfig momoConfig) {
+        this.onlinePaymentService = onlinePaymentService;
         this.momoConfig = momoConfig;
     }
 
@@ -68,7 +68,7 @@ public class PaymentController {
         }
 
         int resultCode = Integer.parseInt(p.resultCode());
-        orderService.updateOrderStatusFromMomo(
+        onlinePaymentService.recordGatewayResult(
                 p.orderId(), p.transId(), resultCode, p.toString()
         );
 

@@ -1,13 +1,11 @@
-package com.dominator.gearly.service.admin;
+package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.dto.OrderPatchDTO;
-import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
-import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.shared.domain.OrderId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,14 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Admin order CRUD and the status-transition workflow. Sales analytics live in
- * {@link OrderAnalyticsService}.
+ * Admin order CRUD and the status-transition workflow.
  *
  * <p>What used to be here and is not any more: the transition table (now on
  * {@code OrderStatus}), the money-affecting transaction effects (now on {@code Order}), the
  * field-by-field payload copy through the entity's setters (now {@code Order.replaceContent}
  * / {@code Order.amend}), and the by-hand total recompute (now {@code PricingPolicy}, via the
- * aggregate). Every write below hands the payload to the aggregate and saves what comes back.
+ * aggregate). Every write below hands a command to the aggregate and saves what comes back.
  */
 @RequiredArgsConstructor
 @Service
@@ -41,43 +38,46 @@ public class AdminOrderService {
     }
 
     /** {@code PUT} — replace the whole order. */
-    public Order updateOrder(String id, OrderUpsertRequestDTO dto) {
+    @Transactional
+    public Order replaceOrder(String id, AdminOrderCommand command) {
         Order existingOrder = findOrThrow(id);
         existingOrder.replaceContent(
-                dto.getUserId(),
-                dto.getItems(),
-                dto.getShippingInformation(),
-                dto.getPayment(),
-                dto.getOrderStatus(),
-                dto.isReviewed(),
-                dto.getNote(),
-                dto.getDoneAt(),
+                command.userId(),
+                command.lines(),
+                command.shippingInformation(),
+                command.payment(),
+                command.orderStatus(),
+                command.reviewed(),
+                command.note(),
+                command.doneAt(),
                 pricingPolicy);
         return orderRepository.save(existingOrder);
     }
 
-    public Order createOrder(OrderUpsertRequestDTO dto) {
+    @Transactional
+    public Order createOrder(AdminOrderCommand command) {
         Order order = Order.createByAdministrator(
-                dto.getUserId(),
-                dto.getItems(),
-                dto.getShippingInformation(),
-                dto.getPayment(),
-                dto.isReviewed(),
-                dto.getNote(),
-                dto.getDoneAt(),
+                command.userId(),
+                command.lines(),
+                command.shippingInformation(),
+                command.payment(),
+                command.reviewed(),
+                command.note(),
+                command.doneAt(),
                 pricingPolicy);
         return orderRepository.save(order);
     }
 
     /** {@code PATCH} — correct individual fields. An absent field is left alone. */
-    public Order patchOrder(String id, OrderPatchDTO dto) {
+    @Transactional
+    public Order patchOrder(String id, AdminOrderPatchCommand command) {
         Order existing = findOrThrow(id);
         existing.amend(
-                dto.getItems(),
-                dto.getShippingInformation(),
-                dto.getPayment(),
-                dto.getOrderStatus(),
-                dto.getDoneAt(),
+                command.lines(),
+                command.shippingInformation(),
+                command.payment(),
+                command.orderStatus(),
+                command.doneAt(),
                 pricingPolicy);
         return orderRepository.save(existing);
     }

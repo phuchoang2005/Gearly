@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.ordering.api;
 
 import com.dominator.gearly.ordering.domain.OrderLine;
 import com.dominator.gearly.ordering.domain.OrderStatus;

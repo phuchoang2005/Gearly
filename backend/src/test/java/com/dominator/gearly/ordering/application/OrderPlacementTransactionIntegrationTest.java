@@ -1,17 +1,14 @@
-package com.dominator.gearly.service.user;
+package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.dto.OrderCreationRequestDTO;
-import com.dominator.gearly.dto.OrderItemRequestDTO;
-import com.dominator.gearly.dto.PaymentRequestDTO;
 import com.dominator.gearly.model.Image;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
-import com.dominator.gearly.model.User;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.repository.ProductRepository;
-import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.service.user.CartService;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.UserId;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,7 +62,7 @@ class OrderPlacementTransactionIntegrationTest {
     @ServiceConnection
     static MongoDBContainer mongo = new MongoDBContainer(DockerImageName.parse("mongo:6.0"));
 
-    @Autowired private CustomerOrderService customerOrderService;
+    @Autowired private PlaceOrderService placeOrderService;
     @Autowired private ProductRepository productRepository;
     @Autowired private OrderRepository orderRepository;
     @Autowired private MongoTemplate mongoTemplate;
@@ -100,26 +97,11 @@ class OrderPlacementTransactionIntegrationTest {
         return productRepository.save(product);
     }
 
-    private AuthenticatedUser authUser() {
-        User user = new User();
-        user.setId(USER_ID);
-        return new AuthenticatedUser(user);
-    }
-
-    private OrderCreationRequestDTO orderFor(String productId, int quantity) {
-        OrderItemRequestDTO item = new OrderItemRequestDTO();
-        item.setProductId(productId);
-        item.setQuantity(quantity);
-
-        PaymentRequestDTO payment = new PaymentRequestDTO();
-        payment.setMethod("cod");
-
-        OrderCreationRequestDTO request = new OrderCreationRequestDTO();
-        request.setItems(List.of(item));
-        request.setPaymentInfo(payment);
-        request.setShippingInformation(new ShippingInformation(
-                "Ada", "Lovelace", "ada@example.com", "0123456789", null));
-        return request;
+    private PlaceOrderCommand orderFor(String productId, int quantity) {
+        return new PlaceOrderCommand(
+                List.of(new PlaceOrderCommand.RequestedLine(productId, quantity)),
+                "cod",
+                new ShippingInformation("Ada", "Lovelace", "ada@example.com", "0123456789", null));
     }
 
     private int stockOf(String productId) {
@@ -135,7 +117,7 @@ class OrderPlacementTransactionIntegrationTest {
         doThrow(new IllegalStateException("cart service exploded"))
                 .when(cartService).removeItems(any(), any(), anyMap());
 
-        assertThatThrownBy(() -> customerOrderService.createOrder(authUser(), orderFor(product.getId(), 3)))
+        assertThatThrownBy(() -> placeOrderService.place(UserId.of(USER_ID), orderFor(product.getId(), 3)))
                 .isInstanceOf(IllegalStateException.class);
 
         assertThat(orderRepository.findAll())
@@ -155,7 +137,7 @@ class OrderPlacementTransactionIntegrationTest {
     void successfulPlacement_commitsOrderAndStock() {
         Product product = savedProductWithStock(10);
 
-        Order order = customerOrderService.createOrder(authUser(), orderFor(product.getId(), 3));
+        Order order = placeOrderService.place(UserId.of(USER_ID), orderFor(product.getId(), 3));
 
         assertThat(order.getId()).isNotNull();
         assertThat(orderRepository.findById(order.orderId())).isPresent();

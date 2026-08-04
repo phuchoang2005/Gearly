@@ -1,7 +1,8 @@
 package com.dominator.gearly.mapper;
 
 import com.dominator.gearly.dto.CartResponseDTO;
-import com.dominator.gearly.dto.OrderResponseDTO;
+import com.dominator.gearly.ordering.api.OrderResponseDTO;
+import com.dominator.gearly.ordering.api.OrderResponseMapper;
 import com.dominator.gearly.dto.ProductResponseDTO;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.CartItem;
@@ -52,7 +53,7 @@ class ResponseDtoWireCompatTest {
     @Autowired
     private ObjectMapper json;
 
-    private final OrderMapper orderMapper = new OrderMapper();
+    private final OrderResponseMapper orderMapper = new OrderResponseMapper();
     private final CartMapper cartMapper = new CartMapper();
     private final ProductMapper productMapper = new ProductMapper();
 

@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.ordering.api;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

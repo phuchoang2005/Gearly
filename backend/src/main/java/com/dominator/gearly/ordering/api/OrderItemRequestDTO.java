@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.ordering.api;
 
 import lombok.Getter;
 import lombok.Setter;
