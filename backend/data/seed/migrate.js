@@ -102,7 +102,7 @@
     if (!names.includes(c)) continue;
     const res = db[c].updateMany(
       { version: { $exists: false } },
-      { $set: { version: NumberLong(0) } }
+      { $set: { version: NumberLong("0") } } // string arg: numeric NumberLong() is deprecated
     );
     print(`${c}: version backfilled in ${res.modifiedCount} docs`);
   }
