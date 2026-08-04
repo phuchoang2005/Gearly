@@ -1,6 +1,7 @@
 package com.dominator.gearly.shared.domain;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A person's name, with {@code fullName} <b>derived</b> rather than stored beside the
@@ -43,6 +44,19 @@ public record PersonName(String firstName, String lastName) {
             throw new IllegalArgumentException("full name must contain a first and last name: " + fullName);
         }
         return new PersonName(trimmed.substring(0, split), trimmed.substring(split + 1));
+    }
+
+    /**
+     * {@link #parse(String)} for callers who cannot control the input — the Google sign-in
+     * flow, where the {@code name} claim is a single free-text field and a one-word display
+     * name is perfectly legal.
+     */
+    public static Optional<PersonName> tryParse(String fullName) {
+        try {
+            return Optional.of(parse(fullName));
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
     }
 
     /** The one source of truth for the display name. */

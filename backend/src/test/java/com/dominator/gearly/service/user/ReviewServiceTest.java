@@ -19,6 +19,9 @@ import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.UserId;
+import com.dominator.gearly.shared.domain.OrderId;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -261,7 +264,7 @@ class ReviewServiceTest {
     class Persistence {
 
         @Test
-        @DisplayName("the review carries the product, order and user ids as ObjectIds and starts PENDING")
+        @DisplayName("the review carries the product, order and user ids as typed ids and starts PENDING")
         void reviewIsBuiltFromTheRequest() {
             Product p = product(0, 0);
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
@@ -270,9 +273,9 @@ class ReviewServiceTest {
             service.createReview(authUser(USER_ID), reviewRequest(5));
 
             assertThat(captureSavedReviews()).singleElement().satisfies(review -> {
-                assertThat(review.getProductId()).isEqualTo(new ObjectId(PRODUCT_ID));
-                assertThat(review.getOrderId()).isEqualTo(new ObjectId(ORDER_ID));
-                assertThat(review.getUserId()).isEqualTo(new ObjectId(USER_ID));
+                assertThat(review.getProductId()).isEqualTo(ProductId.of(PRODUCT_ID));
+                assertThat(review.getOrderId()).isEqualTo(OrderId.of(ORDER_ID));
+                assertThat(review.getUserId()).isEqualTo(UserId.of(USER_ID));
                 assertThat(review.getRating()).isEqualTo(5);
                 assertThat(review.getSubject()).isEqualTo("Great");
                 assertThat(review.getComment()).isEqualTo("Works well");
@@ -354,8 +357,8 @@ class ReviewServiceTest {
         private Review approvedReview(String id, String userId, int rating) {
             Review review = new Review();
             review.setId(id);
-            review.setUserId(new ObjectId(userId));
-            review.setProductId(new ObjectId(PRODUCT_ID));
+            review.setUserId(UserId.of(userId));
+            review.setProductId(ProductId.of(PRODUCT_ID));
             review.setRating(rating);
             review.setSubject("s-" + id);
             review.setComment("c-" + id);

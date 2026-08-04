@@ -1,11 +1,13 @@
 package com.dominator.gearly.dto;
 
 import com.dominator.gearly.model.Image;
+import com.dominator.gearly.shared.domain.CategoryId;
+import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.bson.types.ObjectId;
 
 import java.util.List;
 
@@ -18,11 +20,11 @@ public class AdminProductDTO {
     private String title;
     private List<String> authors;
     private String description;
-    private double price;
-    private double originalPrice;
-    private String condition;
+    private Money price;
+    private Money originalPrice;
+    private ProductCondition condition;
     private int stock;
-    private List<ObjectId> categoryIds;
+    private List<CategoryId> categoryIds;
     private List<String> categoryNames;
     private List<Image> images;
     private double averageRating;

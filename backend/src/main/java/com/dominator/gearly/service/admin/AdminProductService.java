@@ -8,8 +8,8 @@ import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Category;
 import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.CategoryRepository;
+import com.dominator.gearly.shared.domain.CategoryId;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -83,12 +83,12 @@ public class AdminProductService {
         }
     }
 
-    private List<String> fetchCategoryNames(List<ObjectId> categoryIds) {
+    private List<String> fetchCategoryNames(List<CategoryId> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return List.of();
         }
         List<String> stringIds = categoryIds.stream()
-                .map(ObjectId::toHexString)
+                .map(CategoryId::value)
                 .collect(Collectors.toList());
 
         List<Category> categories = categoryRepository.findAllById(stringIds);

@@ -5,6 +5,7 @@ import com.dominator.gearly.dto.UserResponseDTO;
 import com.dominator.gearly.model.Address;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.model.UserStatus;
+import com.dominator.gearly.shared.domain.Role;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -27,7 +28,7 @@ class UserMapperTest {
         u.setPasswordHash("secret-hash");
         u.setPhone("123");
         u.setAddress(new Address("1 St", "City", 1, "State", 2, "0000", "Country", 3));
-        u.setRole("ADMIN");
+        u.setRole(Role.ADMIN);
         u.setVerified(true);
         u.setFavorites(List.of("b1", "b2"));
         u.setStatus(UserStatus.ACTIVE);
@@ -57,7 +58,7 @@ class UserMapperTest {
         AdminUserDTO dto = mapper.toAdminDto(sampleUser());
 
         assertThat(dto.getId()).isEqualTo("u1");
-        assertThat(dto.getRole()).isEqualTo("ADMIN");
+        assertThat(dto.getRole()).isEqualTo(Role.ADMIN);
         assertThat(dto.getEmail()).isEqualTo("ada@example.com");
         assertThat(dto.getFavorites()).containsExactly("b1", "b2");
         assertThat(dto.isVerified()).isTrue();

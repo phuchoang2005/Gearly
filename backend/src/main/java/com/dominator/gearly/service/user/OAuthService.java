@@ -6,6 +6,8 @@ import com.dominator.gearly.mapper.UserMapper;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.JwtUtil;
+import com.dominator.gearly.shared.domain.PersonName;
+import com.dominator.gearly.shared.domain.Role;
 import com.google.api.client.json.webtoken.JsonWebSignature;
 import com.google.api.client.json.webtoken.JsonWebToken;
 import com.google.auth.oauth2.TokenVerifier;
@@ -44,8 +46,11 @@ public class OAuthService {
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User u = new User();
             u.setEmail(email);
-            u.setFullName(name);
-            u.setRole("CUSTOMER");
+            // Google hands back one free-text `name` claim. Split it into parts when it
+            // has them, so first/last/full stay consistent; a one-word display name is
+            // legal, and there it keeps the previous behaviour of a full name alone.
+            PersonName.tryParse(name).ifPresentOrElse(u::setName, () -> u.setFullName(name));
+            u.setRole(Role.CUSTOMER);
             u.setVerified(true);
             return userRepository.save(u);
         });

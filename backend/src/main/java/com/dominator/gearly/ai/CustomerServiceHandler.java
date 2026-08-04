@@ -31,7 +31,7 @@ public class CustomerServiceHandler {
             // 2. Build the product context for the main bot
             String productContext = products.stream()
                 .map(p -> String.format("- %s (ID: %s): Price %s, Rating %s",
-                    p.getTitle(), p.getId(), p.getPrice(), p.getAverageRating()))
+                    p.getTitle(), p.getId(), p.getPrice().toDouble(), p.getAverageRating()))
                 .collect(Collectors.joining("\n"));
 
             String prompt = prompts.getProductRecommendation()

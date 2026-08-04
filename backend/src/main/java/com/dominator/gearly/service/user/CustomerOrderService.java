@@ -8,6 +8,7 @@ import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.*;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.shared.domain.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
@@ -52,9 +53,9 @@ public class CustomerOrderService {
     private final ObjectProvider<CustomerOrderService> self;
 
     private static final BigDecimal TAX_RATE = new BigDecimal("0.08");
-    private static final BigDecimal SHIPPING_COST_THRESHOLD = new BigDecimal("30.00");
-    private static final BigDecimal DEFAULT_SHIPPING_COST = new BigDecimal("15.00");
-    private static final BigDecimal FREE_SHIPPING_COST = new BigDecimal("0.00");
+    private static final Money SHIPPING_COST_THRESHOLD = Money.of("30.00");
+    private static final Money DEFAULT_SHIPPING_COST = Money.of("15.00");
+    private static final Money FREE_SHIPPING_COST = Money.ZERO;
 
     public Order findById(String orderId) {
         return orderRepository.findById(orderId)
@@ -151,16 +152,16 @@ public class CustomerOrderService {
         String userId = authenticatedUser.getUser().getId();
         List<OrderItem> orderItems = buildOrderItems(requestDTO.getItems());
 
-        BigDecimal itemsSubtotal = itemsSubtotal(orderItems);
-        BigDecimal shippingCost = calculateShippingCost(itemsSubtotal);
-        BigDecimal taxes = itemsSubtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal grandTotalUsd = itemsSubtotal.add(taxes).add(shippingCost).setScale(2, RoundingMode.HALF_UP);
+        Money itemsSubtotal = itemsSubtotal(orderItems);
+        Money shippingCost = calculateShippingCost(itemsSubtotal);
+        Money taxes = itemsSubtotal.times(TAX_RATE);
+        Money grandTotalUsd = itemsSubtotal.plus(taxes).plus(shippingCost);
 
         Order order = new Order();
         order.setUserId(userId);
         order.setItems(orderItems);
         order.setShippingInformation(requestDTO.getShippingInformation());
-        order.setTotalAmount(grandTotalUsd.doubleValue());
+        order.setTotalAmount(grandTotalUsd);
         order.setPayment(buildInitialPayment(requestDTO.getPaymentInfo().getMethod(), grandTotalUsd));
         order.setOrderStatus(OrderStatus.PENDING);
         Order savedOrder = orderRepository.save(order);
@@ -182,10 +183,10 @@ public class CustomerOrderService {
         return orderItems;
     }
 
-    private BigDecimal itemsSubtotal(List<OrderItem> orderItems) {
+    private Money itemsSubtotal(List<OrderItem> orderItems) {
         return orderItems.stream()
-                .map(i -> BigDecimal.valueOf(i.getPrice()).multiply(BigDecimal.valueOf(i.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(i -> i.getPrice().times(i.getQuantity()))
+                .reduce(Money.ZERO, Money::plus);
     }
 
     private void applyStockAndClearCart(String userId, List<OrderItem> orderItems) {
@@ -214,21 +215,23 @@ public class CustomerOrderService {
      */
     public CreateOrderResponse createOrderAndGetMomoUrl(AuthenticatedUser authenticatedUser, OrderCreationRequestDTO requestDTO) {
         Order order = self.getObject().createOrder(authenticatedUser, requestDTO);
-        BigDecimal amountUsd = BigDecimal.valueOf(order.getTotalAmount());
+        // MoMo's client is a generic payment gateway and still speaks BigDecimal; S13 puts
+        // it behind a PaymentGateway port that can take a Money directly.
+        BigDecimal amountUsd = order.getTotalAmount().amount();
         String paymentUrl = momoService.createPaymentUrl(amountUsd, order.getId());
         return new CreateOrderResponse(order.getId(), paymentUrl);
     }
 
-    private BigDecimal calculateShippingCost(BigDecimal subtotal) {
-        return subtotal.compareTo(SHIPPING_COST_THRESHOLD) > 0 ? FREE_SHIPPING_COST : DEFAULT_SHIPPING_COST;
+    private Money calculateShippingCost(Money subtotal) {
+        return subtotal.isGreaterThan(SHIPPING_COST_THRESHOLD) ? FREE_SHIPPING_COST : DEFAULT_SHIPPING_COST;
     }
 
-    private Payment buildInitialPayment(String method, BigDecimal amount) {
+    private Payment buildInitialPayment(String method, Money amount) {
         Transaction transaction = new Transaction();
         transaction.setTransactionId(UUID.randomUUID().toString());
         transaction.setStatus(TransactionStatus.PENDING);
-        transaction.setAmount(amount.doubleValue());
-        transaction.setRawResponse("Pending payment: " + amount.doubleValue());
+        transaction.setAmount(amount);
+        transaction.setRawResponse("Pending payment: " + amount.toDouble());
         transaction.setCreatedAt(Instant.now());
 
         Payment payment = new Payment();

@@ -2,6 +2,7 @@ package com.dominator.gearly.repository.custom.impl;
 
 import com.dominator.gearly.dto.ProductSummaryDTO;
 import com.dominator.gearly.repository.custom.ProductRepositoryCustom;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
@@ -22,13 +23,15 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
     private final MongoTemplate mongoTemplate;
 
     @Override
-    public Page<ProductSummaryDTO> findProducts(String condition, double minPrice, double maxPrice,
+    public Page<ProductSummaryDTO> findProducts(ProductCondition condition, double minPrice, double maxPrice,
                                           List<String> genres, String search, double minRating, Pageable pageable) {
         Query query = new Query();
 
-        // Condition
-        if (condition != null && !condition.isBlank()) {
-            query.addCriteria(Criteria.where("condition").is(condition));
+        // Condition. Matched on the enum's stored token rather than on a caller-supplied
+        // string, so a value the catalog does not use can no longer reach the query and
+        // silently match nothing — ProductService rejects it at the edge instead.
+        if (condition != null) {
+            query.addCriteria(Criteria.where("condition").is(condition.wireValue()));
         }
 
         // Price range

@@ -1,6 +1,8 @@
 package com.dominator.gearly.dto;
 
 import com.dominator.gearly.model.Image;
+import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,9 +18,9 @@ public class ProductSummaryDTO {
     private String id;
     private String title;
     private List<String> authors;
-    private double price;
+    private Money price;
     private int stock;
-    private String condition;
+    private ProductCondition condition;
     private double averageRating;
     private int ratingCount;
     private int totalRating;

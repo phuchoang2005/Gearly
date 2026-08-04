@@ -1,21 +1,23 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.shared.domain.Money;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.util.List;
 
-
-import java.time.Instant;
-
+/**
+ * One movement of money against an order — the initial pending charge, the gateway's
+ * settlement callback, a refund.
+ *
+ * <p>The {@code @Document} annotation is a copy-paste artifact: transactions are only ever
+ * embedded in a {@link Payment}. S10 drops it when this becomes {@code PaymentTransaction}
+ * in {@code ordering.domain}.
+ */
 @Document(collection = "transaction")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,7 +26,7 @@ import java.time.Instant;
 public class Transaction {
     private String transactionId;
     private TransactionStatus status;
-    private double amount;
+    private Money amount = Money.ZERO;
     private String rawResponse;
     @CreatedDate
     private Instant createdAt;

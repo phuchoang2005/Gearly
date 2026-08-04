@@ -6,6 +6,7 @@ import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderItem;
 import com.dominator.gearly.model.OrderStatus;
 import com.dominator.gearly.model.Product;
+import com.dominator.gearly.shared.domain.Money;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -22,7 +23,7 @@ class OrderMapperTest {
         Product product = new Product();
         product.setId("p1");
         product.setTitle("RTX 4090");
-        product.setPrice(1599.0);
+        product.setPrice(Money.of(1599.0));
         product.setImages(List.of(new Image("http://img/first.png", "gpu"),
                 new Image("http://img/second.png", "gpu-back")));
 
@@ -30,7 +31,7 @@ class OrderMapperTest {
 
         assertThat(item.getProductId()).isEqualTo("p1");
         assertThat(item.getTitle()).isEqualTo("RTX 4090");
-        assertThat(item.getPrice()).isEqualTo(1599.0);
+        assertThat(item.getPrice()).isEqualTo(Money.of(1599.0));
         assertThat(item.getQuantity()).isEqualTo(3);
         // snapshot uses the product's first image
         assertThat(item.getImageUrl()).isEqualTo("http://img/first.png");
@@ -45,8 +46,8 @@ class OrderMapperTest {
 
         OrderUpsertRequestDTO dto = new OrderUpsertRequestDTO();
         dto.setUserId("u1");
-        dto.setItems(List.of(new OrderItem("p1", "GPU", 10.0, "http://img", 2)));
-        dto.setTotalAmount(20.0);
+        dto.setItems(List.of(new OrderItem("p1", "GPU", Money.of(10.0), "http://img", 2)));
+        dto.setTotalAmount(Money.of(20.0));
         dto.setOrderStatus(OrderStatus.PROCESSING);
         dto.setReviewed(true);
         dto.setNote("gift wrap");
@@ -57,7 +58,7 @@ class OrderMapperTest {
         // admin-settable fields copied
         assertThat(existing.getUserId()).isEqualTo("u1");
         assertThat(existing.getItems()).hasSize(1);
-        assertThat(existing.getTotalAmount()).isEqualTo(20.0);
+        assertThat(existing.getTotalAmount()).isEqualTo(Money.of(20.0));
         assertThat(existing.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
         assertThat(existing.isReviewed()).isTrue();
         assertThat(existing.getNote()).isEqualTo("gift wrap");

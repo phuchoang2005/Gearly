@@ -9,6 +9,7 @@ import com.dominator.gearly.model.OrderStatus;
 import com.dominator.gearly.model.TransactionStatus;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.service.common.PaymentFactory;
+import com.dominator.gearly.shared.domain.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,9 +92,9 @@ public class AdminOrderService {
         }
         if (dto.getItems() != null) {
             existing.setItems(dto.getItems());
-            double total = existing.getItems().stream()
-                    .mapToDouble(i -> i.getPrice() * i.getQuantity())
-                    .sum();
+            Money total = existing.getItems().stream()
+                    .map(i -> i.getPrice().times(i.getQuantity()))
+                    .reduce(Money.ZERO, Money::plus);
             existing.setTotalAmount(total);
         }
         if (dto.getDoneAt() != null) {

@@ -8,6 +8,8 @@ import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.model.Image;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.repository.CartRepository;
+import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -63,9 +65,9 @@ class CartServiceTest {
         p.setId(id);
         p.setTitle("Product " + id);
         p.setAuthors(List.of("Author " + id));
-        p.setPrice(price);
+        p.setPrice(Money.of(price));
         p.setStock(stock);
-        p.setCondition("new");
+        p.setCondition(ProductCondition.NEW);
         p.setImages(List.of(new Image("http://img/" + id + ".png", "alt")));
         return p;
     }
@@ -74,7 +76,7 @@ class CartServiceTest {
         CartItem item = new CartItem();
         item.setProductId(productId);
         item.setTitle("Product " + productId);
-        item.setPrice(10.00);
+        item.setPrice(Money.of(10.00));
         item.setQuantity(quantity);
         item.setStock(stock);
         return item;
@@ -216,13 +218,13 @@ class CartServiceTest {
             stubSaveReturnsArgument();
 
             CartItem incoming = cartItem("p1", 2, 5);
-            incoming.setPrice(0.01);
+            incoming.setPrice(Money.of(0.01));
 
             Cart result = service.addItem(USER_ID, null, incoming);
 
             assertThat(result.getItems()).singleElement().satisfies(item -> {
                 assertThat(item.getQuantity()).isEqualTo(2);
-                assertThat(item.getPrice()).isEqualTo(0.01);
+                assertThat(item.getPrice()).isEqualTo(Money.of(0.01));
             });
         }
 
@@ -532,10 +534,10 @@ class CartServiceTest {
                 assertThat(item.getProductId()).isEqualTo("p1");
                 assertThat(item.getTitle()).isEqualTo("Product p1");
                 assertThat(item.getAuthor()).isEqualTo("Author p1");
-                assertThat(item.getPrice()).isEqualTo(24.99);
+                assertThat(item.getPrice()).isEqualTo(Money.of(24.99));
                 assertThat(item.getQuantity()).isEqualTo(1);
                 assertThat(item.getImage()).isEqualTo("http://img/p1.png");
-                assertThat(item.getCondition()).isEqualTo("new");
+                assertThat(item.getCondition()).isEqualTo(ProductCondition.NEW);
                 assertThat(item.getStock()).isEqualTo(5);
             });
         }

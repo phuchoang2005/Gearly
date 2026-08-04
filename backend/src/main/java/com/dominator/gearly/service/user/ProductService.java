@@ -8,8 +8,9 @@ import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Category;
 import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.CategoryRepository;
+import com.dominator.gearly.shared.domain.CategoryId;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.domain.*;
 import com.dominator.gearly.exception.BadRequestException;
 import org.springframework.stereotype.Service;
@@ -26,10 +27,10 @@ public class ProductService {
 
     public Product getProductById(String id) {
         return productRepository.findById(id).map(product -> {
-            List<ObjectId> categoryIds = product.getCategoryIds();
+            List<CategoryId> categoryIds = product.getCategoryIds();
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 List<String> categoryIdStrings = categoryIds.stream()
-                        .map(ObjectId::toHexString)
+                        .map(CategoryId::value)
                         .toList();
 
                 List<String> names = categoryRepository.findAllById(categoryIdStrings)
@@ -88,7 +89,7 @@ public class ProductService {
     public Page<ProductSummaryDTO> getProducts(ProductSearchDTO searchDTO) {
         Pageable pageable = PageRequest.of(searchDTO.getPage(), searchDTO.getSize(), getSort(searchDTO.getSortBy()));
         return productRepository.findProducts(
-                searchDTO.getCondition(),
+                parseCondition(searchDTO.getCondition()),
                 searchDTO.getMinPrice(),
                 searchDTO.getMaxPrice(),
                 searchDTO.getGenres(),
@@ -96,6 +97,25 @@ public class ProductService {
                 searchDTO.getMinRating(),
                 pageable
         );
+    }
+
+    /**
+     * Turns the storefront's {@code condition} filter into a {@link ProductCondition}.
+     *
+     * <p>Blank means "no filter", as it always has. An unrecognized value now fails with a
+     * 400 instead of being passed through to a string-equality match that could only ever
+     * return nothing — the difference between telling the caller their filter is wrong and
+     * showing them an empty shop.
+     */
+    private ProductCondition parseCondition(String condition) {
+        if (condition == null || condition.isBlank()) {
+            return null;
+        }
+        try {
+            return ProductCondition.fromWireValue(condition);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
     }
 
     private Sort getSort(String sortBy) {
@@ -137,13 +157,12 @@ public class ProductService {
         if (categories.isEmpty()) return List.of();
 
         // 2. Get IDs
-        List<ObjectId> categoryIds = categories.stream()
+        List<CategoryId> categoryIds = categories.stream()
                 .map(Category::getId)
-                .map(ObjectId::new) // Ensure correct type for MongoDB
+                .map(CategoryId::of)
                 .toList();
 
         // 3. Find products with those Category IDs
-        // (You might need to add this method to ProductRepository too: findByCategoryIdsIn(List<ObjectId> ids))
         return productRepository.findByCategoryIdsIn(categoryIds).stream().limit(5).toList();
     }
 }

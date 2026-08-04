@@ -6,6 +6,7 @@ import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderItem;
 import com.dominator.gearly.model.OrderStatus;
 import com.dominator.gearly.model.TimeFrame;
+import com.dominator.gearly.shared.domain.Money;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,7 +110,7 @@ class OrderAnalyticsServiceIntegrationTest {
         i.setProductId(productId);
         i.setTitle(title);
         i.setQuantity(quantity);
-        i.setPrice(10.0);
+        i.setPrice(Money.of(10.0));
         return i;
     }
 
@@ -119,7 +120,7 @@ class OrderAnalyticsServiceIntegrationTest {
         order.setItems(List.of(items));
         order.setOrderStatus(status);
         order.setDoneAt(doneAt);
-        order.setTotalAmount(0);
+        order.setTotalAmount(Money.ZERO);
         mongoTemplate.save(order);
     }
 }

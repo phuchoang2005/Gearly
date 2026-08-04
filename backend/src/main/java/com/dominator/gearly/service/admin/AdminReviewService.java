@@ -55,10 +55,10 @@ public class AdminReviewService {
     private List<AdminReviewResponseDTO> toDtos(List<Review> reviews) {
         // collect unique product/user IDs
         Set<String> productIds = reviews.stream()
-                .map(r -> r.getProductId().toHexString())
+                .map(r -> r.getProductId().value())
                 .collect(Collectors.toSet());
         Set<String> userIds = reviews.stream()
-                .map(r -> r.getUserId().toHexString())
+                .map(r -> r.getUserId().value())
                 .collect(Collectors.toSet());
 
         // batch-fetch products and users
@@ -72,15 +72,15 @@ public class AdminReviewService {
         return reviews.stream()
                 .map(r -> reviewMapper.toAdminDto(
                         r,
-                        titleOf(productMap.get(r.getProductId().toHexString())),
-                        nameOf(userMap.get(r.getUserId().toHexString()))))
+                        titleOf(productMap.get(r.getProductId().value())),
+                        nameOf(userMap.get(r.getUserId().value()))))
                 .collect(Collectors.toList());
     }
 
     /** Single-review variant that resolves the product/user directly. */
     private AdminReviewResponseDTO toDto(Review review) {
-        Product product = productRepo.findById(review.getProductId().toHexString()).orElse(null);
-        User user = userRepo.findById(review.getUserId().toHexString()).orElse(null);
+        Product product = productRepo.findById(review.getProductId().value()).orElse(null);
+        User user = userRepo.findById(review.getUserId().value()).orElse(null);
         return reviewMapper.toAdminDto(review, titleOf(product), nameOf(user));
     }
 

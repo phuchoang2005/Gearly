@@ -1,11 +1,13 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.shared.domain.CategoryId;
+import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -46,11 +48,24 @@ public class Product {
     private String title;
     private List<String> authors;
     private String description;
-    private double price;
-    private double originalPrice;
-    private String condition;
+
+    /**
+     * Prices default to {@link Money#ZERO} rather than {@code null} so that a document
+     * written before the field existed reads back as {@code 0.00}, exactly as the previous
+     * {@code double} did.
+     */
+    private Money price = Money.ZERO;
+    private Money originalPrice = Money.ZERO;
+
+    private ProductCondition condition;
     private int stock;
-    private List<ObjectId> categoryIds;
+
+    /**
+     * Stored as BSON {@code ObjectId} — see {@link CategoryId} for why this one id type is
+     * different, and {@code DomainTypeConverters} for the pair that keeps it that way.
+     */
+    private List<CategoryId> categoryIds;
+
     private List<Image> images;
 
     @Transient

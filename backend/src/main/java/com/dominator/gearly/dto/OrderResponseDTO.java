@@ -4,6 +4,7 @@ import com.dominator.gearly.model.OrderItem;
 import com.dominator.gearly.model.OrderStatus;
 import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.ShippingInformation;
+import com.dominator.gearly.shared.domain.Money;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,7 +23,7 @@ public class OrderResponseDTO {
     private String id;
     private String userId;
     private List<OrderItem> items;
-    private double totalAmount;
+    private Money totalAmount;
     private Payment payment;
     private OrderStatus orderStatus;
     private ShippingInformation shippingInformation;
