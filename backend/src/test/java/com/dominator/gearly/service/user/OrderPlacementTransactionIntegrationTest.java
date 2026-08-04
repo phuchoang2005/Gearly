@@ -8,7 +8,7 @@ import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.model.User;
-import com.dominator.gearly.repository.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.Money;
@@ -82,7 +82,10 @@ class OrderPlacementTransactionIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        orderRepository.deleteAll();
+        // Dropping the collection rather than calling a repository delete: the OrderRepository
+        // port deliberately has no deleteAll — nothing in the application ever deletes an
+        // order, and a port should not grow a method purely so a test can use it.
+        mongoTemplate.dropCollection(Order.class);
         productRepository.deleteAll();
     }
 
@@ -155,7 +158,7 @@ class OrderPlacementTransactionIntegrationTest {
         Order order = customerOrderService.createOrder(authUser(), orderFor(product.getId(), 3));
 
         assertThat(order.getId()).isNotNull();
-        assertThat(orderRepository.findById(order.getId())).isPresent();
+        assertThat(orderRepository.findById(order.orderId())).isPresent();
         assertThat(stockOf(product.getId())).isEqualTo(7);
     }
 

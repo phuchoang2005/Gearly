@@ -12,8 +12,9 @@ import com.dominator.gearly.ordering.domain.PaymentTransaction;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.TransactionStatus;
-import com.dominator.gearly.repository.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.UserId;
@@ -87,7 +88,7 @@ class AdminOrderServiceTest {
     }
 
     private void findsOrder(Order order) {
-        when(orderRepository.findById("o1")).thenReturn(Optional.of(order));
+        when(orderRepository.findById(OrderId.of("o1"))).thenReturn(Optional.of(order));
     }
 
     private void saveReturnsArgument() {
@@ -161,7 +162,7 @@ class AdminOrderServiceTest {
 
         @Test
         void orderNotFound_throws() {
-            when(orderRepository.findById("missing")).thenReturn(Optional.empty());
+            when(orderRepository.findById(OrderId.of("missing"))).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.transition("missing", OrderStatus.PROCESSING))
                     .isInstanceOf(ResourceNotFoundException.class);

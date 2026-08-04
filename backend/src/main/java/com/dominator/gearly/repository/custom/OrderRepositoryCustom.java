@@ -1,9 +1,0 @@
-package com.dominator.gearly.repository.custom;
-
-import com.dominator.gearly.ordering.domain.Order;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-
-public interface OrderRepositoryCustom {
-    Page<Order> searchOrders(String userId, String status, String searchTerm, Pageable pageable);
-}

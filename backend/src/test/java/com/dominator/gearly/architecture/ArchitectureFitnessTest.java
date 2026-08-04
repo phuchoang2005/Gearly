@@ -171,19 +171,31 @@ class ArchitectureFitnessTest {
                     .allowEmptyShould(true);
 
     /**
-     * {@code MongoTemplate} is the query side's privilege and nobody else's. Aggregations
-     * belong in {@code analytics}; everything else goes through a repository port.
+     * {@code MongoTemplate} is for the query side and for repository adapters. Nobody else.
+     * A domain, application or api class that names it has skipped a port.
      *
-     * <p>SCOPE: the new packages only — {@code service.admin} still injects it today. The
-     * scope comes off in S13, when the analytics package is the last holder.
+     * <p>S10 narrowed this: it used to permit {@code analytics} alone. That was too strict to
+     * be right rather than usefully strict. A repository adapter in {@code ..infrastructure..}
+     * is <em>by definition</em> the layer that knows the storage technology — it exists to
+     * implement a domain port in terms of it — and the customer order search cannot be
+     * expressed any other way: it is a dozen optional regex clauses OR'd together, which the
+     * derived-query DSL cannot build. Under the old wording the only way to satisfy the rule
+     * was to leave the criteria behind in the legacy {@code repository/} package, i.e. to
+     * pass the rule by not completing the move. The exemption is by layer, not by class name,
+     * so it cannot be borrowed by an application service.
+     *
+     * <p>SCOPE: the new packages only — {@code service.admin} still injects it today. That
+     * scope comes off in S13, when analytics and the adapters are the last holders.
      */
     @ArchTest
-    static final ArchRule mongo_template_is_reserved_for_analytics =
+    static final ArchRule mongo_template_is_reserved_for_analytics_and_adapters =
             noClasses().that().resideInAnyPackage(NEW_PACKAGES)
                     .and().resideOutsideOfPackage(ROOT + ".analytics..")
+                    .and().resideOutsideOfPackage(ROOT + "..infrastructure..")
                     .should().dependOnClassesThat()
                     .haveFullyQualifiedName("org.springframework.data.mongodb.core.MongoTemplate")
-                    .because("analytics is the read side and the only package allowed raw Mongo access")
+                    .because("raw Mongo access belongs to the read side and to repository adapters; "
+                            + "everything else goes through a port")
                     .allowEmptyShould(true);
 
     // ------------------------------------------------------------------------

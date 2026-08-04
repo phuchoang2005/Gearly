@@ -7,7 +7,8 @@ import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
-import com.dominator.gearly.repository.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderRepository;
+import com.dominator.gearly.shared.domain.OrderId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -104,7 +105,7 @@ public class AdminOrderService {
     }
 
     private Order findOrThrow(String id) {
-        return orderRepository.findById(id)
+        return orderRepository.findById(OrderId.of(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 }

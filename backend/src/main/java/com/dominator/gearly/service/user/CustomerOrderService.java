@@ -11,16 +11,19 @@ import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderLine;
+import com.dominator.gearly.ordering.domain.OrderPage;
+import com.dominator.gearly.ordering.domain.OrderQuery;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
-import com.dominator.gearly.repository.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -57,39 +60,66 @@ public class CustomerOrderService {
      */
     private final ObjectProvider<CustomerOrderService> self;
 
+    /** How many of a customer's orders one page of their history shows. */
+    private static final int PAGE_SIZE = 10;
+
+    /** Newest activity first — the order the customer's list has always been shown in. */
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "modifiedAt");
+
     public Order findById(String orderId) {
-        return orderRepository.findById(orderId)
+        return orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
+    /**
+     * One page of the caller's own order history.
+     *
+     * <p>Three repository methods collapsed into one query object. The {@code Page} is
+     * rebuilt here, at the edge, from the context's own {@code OrderPage} — the domain may
+     * not name a Spring Data paging type, and the JSON the frontends receive is unchanged.
+     */
     public Page<Order> searchOrders(AuthenticatedUser authUser,
                                     String searchTerm,
                                     String status,
                                     int page) {
-        String userId = authUser.getUser().getId();
-        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "modifiedAt"));
+        UserId userId = UserId.of(authUser.getUser().getId());
 
-        boolean hasSearch = (searchTerm != null && !searchTerm.trim().isEmpty());
-        boolean hasStatus = (status != null && !status.trim().isEmpty());
+        OrderPage result = orderRepository.findFor(
+                new OrderQuery(userId, parseStatus(status), searchTerm, page, PAGE_SIZE));
 
-        if (!hasSearch && !hasStatus) {
-            return orderRepository.findByUserId(userId, pageable);
+        return new PageImpl<>(
+                result.content(),
+                PageRequest.of(result.page(), result.size(), NEWEST_FIRST),
+                result.totalElements());
+    }
+
+    /**
+     * Blank means "no filter", as it always has.
+     *
+     * <p>An unrecognized value is a 400. It used to be either a 500 or an empty list
+     * depending on whether a search term happened to accompany it — {@code OrderStatus
+     * .valueOf} on one path, a raw string compared against the stored enum on the other.
+     * Same treatment the {@code condition} filter got in S9, and same reason: telling the
+     * caller their filter is wrong beats showing them nothing.
+     */
+    private OrderStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
         }
-
-        if (!hasSearch) {
-            return orderRepository.findByUserIdAndOrderStatus(userId, OrderStatus.valueOf(status.trim()), pageable);
+        try {
+            return OrderStatus.valueOf(status.trim());
+        } catch (IllegalArgumentException unknown) {
+            throw new BadRequestException("Unknown order status: " + status);
         }
-
-        return orderRepository.searchOrders(userId, status, searchTerm.trim(), pageable);
     }
 
     public Map<String, Long> getOrderCountsByStatus(AuthenticatedUser authUser) {
-        String userId = authUser.getUser().getId();
+        UserId userId = UserId.of(authUser.getUser().getId());
 
         // Count orders by each individual status
         Map<String, Long> statusCounts = new LinkedHashMap<>();
         for (OrderStatus status : OrderStatus.values()) {
-            long count = orderRepository.countByUserIdAndOrderStatus(userId, status);
+            long count = orderRepository.countByUserAndStatus(userId, status);
             statusCounts.put(status.name(), count);
         }
 
@@ -99,7 +129,7 @@ public class CustomerOrderService {
                 OrderStatus.CANCELLED,
                 OrderStatus.REFUNDED
         );
-        long inProgress = orderRepository.countByUserIdAndOrderStatusNotIn(userId, finalStatuses);
+        long inProgress = orderRepository.countByUserAndStatusNotIn(userId, finalStatuses);
         statusCounts.put("totalInProgress", inProgress);
 
         return statusCounts;
@@ -115,7 +145,7 @@ public class CustomerOrderService {
     public void cancelOrder(AuthenticatedUser authUser, CancelOrderRequestDTO dto) {
         UserId userId = UserId.of(authUser.getUser().getId());
 
-        Order order = orderRepository.findById(dto.getOrderId())
+        Order order = orderRepository.findById(OrderId.of(dto.getOrderId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (!order.isOwnedBy(userId)) {
@@ -200,7 +230,7 @@ public class CustomerOrderService {
                                           int resultCode,
                                           String rawResponse) {
         String ourOrderId = momoOrderId.replaceFirst("^Gearly-", "");
-        Order order = orderRepository.findById(ourOrderId)
+        Order order = orderRepository.findById(OrderId.of(ourOrderId))
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         order.recordGatewayResult(momoTransactionId, resultCode == 0, rawResponse);

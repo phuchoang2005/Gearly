@@ -21,9 +21,10 @@ import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.PaymentTransaction;
 import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.model.User;
-import com.dominator.gearly.repository.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -376,7 +377,7 @@ class CustomerOrderServiceTest {
         @DisplayName("an unpaid order is cancelled outright and the reason is stored as the note")
         void unpaid_isCancelled() {
             Order order = existingOrder(OrderStatus.PENDING, TransactionStatus.PENDING);
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             service.cancelOrder(authUser(USER_ID), cancelRequest());
 
@@ -395,7 +396,7 @@ class CustomerOrderServiceTest {
             // behavior pinned here is legal from every write path rather than only this one.
             // See OrderStatusTest.pendingRefundIsReachableFromEveryPaidState.
             Order order = existingOrder(OrderStatus.PENDING, TransactionStatus.SUCCESSFUL);
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             service.cancelOrder(authUser(USER_ID), cancelRequest());
 
@@ -412,7 +413,7 @@ class CustomerOrderServiceTest {
         @DisplayName("a PROCESSING order is cancellable too")
         void processing_isCancellable() {
             Order order = existingOrder(OrderStatus.PROCESSING, TransactionStatus.PENDING);
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             service.cancelOrder(authUser(USER_ID), cancelRequest());
 
@@ -423,7 +424,7 @@ class CustomerOrderServiceTest {
         @DisplayName("cancelling someone else's order is forbidden")
         void otherUsersOrder_isForbidden() {
             Order order = existingOrder(OrderStatus.PENDING, TransactionStatus.PENDING);
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             assertThatThrownBy(() -> service.cancelOrder(authUser("someone-else"), cancelRequest()))
                     .isInstanceOf(ApiException.class)
@@ -437,7 +438,7 @@ class CustomerOrderServiceTest {
         @DisplayName("an order past PROCESSING can no longer be cancelled")
         void shippedOrder_conflicts() {
             Order order = existingOrder(OrderStatus.SHIPPED, TransactionStatus.SUCCESSFUL);
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             // Was ConflictException. The rule moved onto the aggregate, which may not name a
             // web type, so it throws a DomainConflictException subclass instead — mapped to
@@ -474,7 +475,7 @@ class CustomerOrderServiceTest {
         @DisplayName("resultCode 0 records a SUCCESSFUL transaction and moves the order to PROCESSING")
         void success_movesToProcessing() {
             Order order = pendingOrder();
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             service.updateOrderStatusFromMomo("Gearly-order-1", "momo-tx-1", 0, "{\"ok\":true}");
 
@@ -502,7 +503,7 @@ class CustomerOrderServiceTest {
                     .paidWith("momo")
                     .at(OrderStatus.PROCESSING)
                     .build();
-            when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
             service.updateOrderStatusFromMomo("Gearly-order-1", "momo-tx-2", 1006, "{\"ok\":false}");
 
@@ -516,7 +517,7 @@ class CustomerOrderServiceTest {
         @DisplayName("only a leading Gearly- prefix is stripped from the gateway's order id")
         void stripsOnlyTheLeadingPrefix() {
             Order order = pendingOrder();
-            when(orderRepository.findById("order-Gearly-1")).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of("order-Gearly-1"))).thenReturn(Optional.of(order));
 
             service.updateOrderStatusFromMomo("Gearly-order-Gearly-1", "momo-tx-3", 0, "{}");
 
@@ -547,9 +548,9 @@ class CustomerOrderServiceTest {
     @DisplayName("getOrderCountsByStatus reports every status plus a totalInProgress roll-up")
     void getOrderCountsByStatus_includesEveryStatusAndTotalInProgress() {
         for (OrderStatus status : OrderStatus.values()) {
-            when(orderRepository.countByUserIdAndOrderStatus(USER_ID, status)).thenReturn(1L);
+            when(orderRepository.countByUserAndStatus(UserId.of(USER_ID), status)).thenReturn(1L);
         }
-        when(orderRepository.countByUserIdAndOrderStatusNotIn(eq(USER_ID), any())).thenReturn(5L);
+        when(orderRepository.countByUserAndStatusNotIn(eq(UserId.of(USER_ID)), any())).thenReturn(5L);
 
         Map<String, Long> counts = service.getOrderCountsByStatus(authUser(USER_ID));
 
