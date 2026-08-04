@@ -1,48 +1,42 @@
 package com.dominator.gearly.mapper;
 
 import com.dominator.gearly.dto.OrderResponseDTO;
-import com.dominator.gearly.dto.OrderUpsertRequestDTO;
-import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.Product;
-import com.dominator.gearly.model.OrderItem;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderLine;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Quantity;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds {@link OrderItem} snapshots from a {@link Product} at order-placement time,
- * capturing the price and title as they were when the order was made, and applies
- * admin upsert payloads onto {@link Order} entities.
+ * Builds {@link OrderLine} snapshots from a {@link Product} at order-placement time,
+ * capturing the price and title as they were when the order was made, and renders an
+ * {@link Order} as its response view.
+ *
+ * <p>{@code applyUpsert} is gone. It used to copy the admin payload field-by-field onto the
+ * entity through its setters, which made it one of the three paths that could set a status
+ * without consulting the transition table. The admin write paths call
+ * {@code Order.replaceContent} / {@code Order.amend} now, so the aggregate applies the
+ * payload and enforces its own rules while doing it.
+ *
+ * <p>{@code toOrderLine} is the seam S11 replaces: once Catalog publishes a
+ * {@code CatalogSnapshot}, Ordering stops naming {@code Product} at all and this becomes
+ * {@code OrderLine.fromSnapshot(...)}. Its unguarded {@code getImages().getFirst()} — a
+ * crash on any image-less product — is S11's to fix along with it.
  */
 @Component
 public class OrderMapper {
 
-    public OrderItem toOrderItem(Product product, int quantity) {
-        OrderItem item = new OrderItem();
-        item.setProductId(product.getId());
-        item.setImageUrl(product.getImages().getFirst().getUrl());
-        item.setTitle(product.getTitle());
-        item.setPrice(product.getPrice());
-        item.setQuantity(quantity);
-        return item;
+    public OrderLine toOrderLine(Product product, int quantity) {
+        return new OrderLine(
+                ProductId.of(product.getId()),
+                product.getTitle(),
+                product.getPrice(),
+                product.getImages().getFirst().getUrl(),
+                Quantity.of(quantity));
     }
 
-    /**
-     * Copies the admin-settable fields from {@code dto} onto {@code target}. The
-     * order id and audit timestamps are managed by the service and never taken
-     * from the request. Mirrors the fields the old raw-entity bind wrote.
-     */
-    public void applyUpsert(Order target, OrderUpsertRequestDTO dto) {
-        target.setUserId(dto.getUserId());
-        target.setItems(dto.getItems());
-        target.setTotalAmount(dto.getTotalAmount());
-        target.setPayment(dto.getPayment());
-        target.setOrderStatus(dto.getOrderStatus());
-        target.setShippingInformation(dto.getShippingInformation());
-        target.setReviewed(dto.isReviewed());
-        target.setNote(dto.getNote());
-        target.setDoneAt(dto.getDoneAt());
-    }
-
-    /** Response view mirroring the entity's wire shape. */
+    /** Response view mirroring the aggregate's wire shape. */
     public OrderResponseDTO toResponseDto(Order order) {
         OrderResponseDTO dto = new OrderResponseDTO();
         dto.setId(order.getId());

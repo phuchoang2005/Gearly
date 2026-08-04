@@ -41,14 +41,17 @@ public enum OrderStatus {
     REFUNDED,
     COMPLETED;
 
-    /**
-     * Source statuses from which each target may be reached. A status absent from the keys —
-     * {@code PENDING} — is reachable from nowhere: it is only ever an order's opening state.
-     */
+    /** Source statuses from which each target may be reached. */
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_SOURCES;
 
     static {
         ALLOWED_SOURCES = new EnumMap<>(OrderStatus.class);
+        // The one backwards edge, and it earns its place: a payment gateway reporting a
+        // failed checkout returns the order to awaiting payment. The MoMo callback did
+        // exactly this by assignment, and the S8 suite pins it. Modelling it as an edge is
+        // what lets that path go through the same guard as every other, instead of being a
+        // special case the aggregate has to carve out.
+        ALLOWED_SOURCES.put(PENDING, EnumSet.of(PROCESSING));
         ALLOWED_SOURCES.put(PROCESSING, EnumSet.of(PENDING));
         ALLOWED_SOURCES.put(SHIPPED, EnumSet.of(PROCESSING));
         ALLOWED_SOURCES.put(DELIVERED, EnumSet.of(SHIPPED));

@@ -3,42 +3,33 @@ package com.dominator.gearly.service.admin;
 import com.dominator.gearly.dto.OrderPatchDTO;
 import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
-import com.dominator.gearly.mapper.OrderMapper;
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
+import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.ordering.domain.TransactionStatus;
+import com.dominator.gearly.ordering.domain.PricingPolicy;
 import com.dominator.gearly.repository.OrderRepository;
-import com.dominator.gearly.service.common.PaymentFactory;
-import com.dominator.gearly.shared.domain.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Admin order CRUD and the status-transition workflow. Sales analytics live in
- * {@link OrderAnalyticsService}; payment/transaction assembly in
- * {@link PaymentFactory}.
+ * {@link OrderAnalyticsService}.
+ *
+ * <p>What used to be here and is not any more: the transition table (now on
+ * {@code OrderStatus}), the money-affecting transaction effects (now on {@code Order}), the
+ * field-by-field payload copy through the entity's setters (now {@code Order.replaceContent}
+ * / {@code Order.amend}), and the by-hand total recompute (now {@code PricingPolicy}, via the
+ * aggregate). Every write below hands the payload to the aggregate and saves what comes back.
  */
 @RequiredArgsConstructor
 @Service
 public class AdminOrderService {
 
     private final OrderRepository orderRepository;
-    private final PaymentFactory paymentFactory;
-    private final OrderMapper orderMapper;
-
-    /** Transitions that also record a payment transaction on the order. */
-    private static final Map<OrderStatus, TxEffect> TX_EFFECTS = Map.of(
-            OrderStatus.DELIVERED,      new TxEffect(TransactionStatus.SUCCESSFUL, "Payment successful"),
-            OrderStatus.PENDING_REFUND, new TxEffect(TransactionStatus.PENDING_REFUND, "Pending refund..."),
-            OrderStatus.REFUNDED,       new TxEffect(TransactionStatus.REFUNDED, "Refund...")
-    );
-
-    private record TxEffect(TransactionStatus status, String rawResponse) {}
+    private final PricingPolicy pricingPolicy;
 
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
@@ -48,71 +39,66 @@ public class AdminOrderService {
         return findOrThrow(id);
     }
 
+    /** {@code PUT} — replace the whole order. */
     public Order updateOrder(String id, OrderUpsertRequestDTO dto) {
         Order existingOrder = findOrThrow(id);
-        orderMapper.applyUpsert(existingOrder, dto);
-        existingOrder.setModifiedAt(Instant.now());
+        existingOrder.replaceContent(
+                dto.getUserId(),
+                dto.getItems(),
+                dto.getShippingInformation(),
+                dto.getPayment(),
+                dto.getOrderStatus(),
+                dto.isReviewed(),
+                dto.getNote(),
+                dto.getDoneAt(),
+                pricingPolicy);
         return orderRepository.save(existingOrder);
     }
 
     public Order createOrder(OrderUpsertRequestDTO dto) {
-        Order order = new Order();
-        orderMapper.applyUpsert(order, dto);
-        order.setOrderStatus(OrderStatus.PENDING);
-        order.setAddedAt(Instant.now());
-        order.setModifiedAt(Instant.now());
-        paymentFactory.appendTransaction(order, TransactionStatus.PENDING, null);
+        Order order = Order.createByAdministrator(
+                dto.getUserId(),
+                dto.getItems(),
+                dto.getShippingInformation(),
+                dto.getPayment(),
+                dto.isReviewed(),
+                dto.getNote(),
+                dto.getDoneAt(),
+                pricingPolicy);
         return orderRepository.save(order);
     }
 
+    /** {@code PATCH} — correct individual fields. An absent field is left alone. */
     public Order patchOrder(String id, OrderPatchDTO dto) {
         Order existing = findOrThrow(id);
-
-        if (dto.getOrderStatus() != null) {
-            existing.setOrderStatus(dto.getOrderStatus());
-        }
-        if (dto.getShippingInformation() != null) {
-            existing.setShippingInformation(dto.getShippingInformation());
-        }
-        if (dto.getPayment() != null) {
-            existing.setPayment(dto.getPayment());
-        }
-        if (dto.getItems() != null) {
-            existing.setItems(dto.getItems());
-            Money total = existing.getItems().stream()
-                    .map(i -> i.getPrice().times(i.getQuantity()))
-                    .reduce(Money.ZERO, Money::plus);
-            existing.setTotalAmount(total);
-        }
-        if (dto.getDoneAt() != null) {
-            existing.setDoneAt(dto.getDoneAt());
-        }
-
-        existing.setModifiedAt(Instant.now());
+        existing.amend(
+                dto.getItems(),
+                dto.getShippingInformation(),
+                dto.getPayment(),
+                dto.getOrderStatus(),
+                dto.getDoneAt(),
+                pricingPolicy);
         return orderRepository.save(existing);
     }
 
     /**
-     * Move an order to {@code target} when its current status permits it, recording a
-     * payment transaction for money-affecting transitions. Returns {@code false} when
-     * the transition is not allowed from the order's current status.
+     * Move an order to {@code target} when its current status permits it, recording a payment
+     * transaction for money-affecting transitions.
+     *
+     * <p>Returns {@code false} rather than propagating the 409 the aggregate throws. This is
+     * the one place in the system where a refused transition is not a 409: the seven
+     * {@code /api/admin/orders/{id}/set-*} endpoints have always answered {@code 200 false}
+     * and the admin frontend reads that boolean, so the contract is preserved here rather
+     * than turned into a frontend change.
      */
     @Transactional
     public boolean transition(String id, OrderStatus target) {
         Order order = findOrThrow(id);
-
-        if (!order.getOrderStatus().canTransitionTo(target)) {
+        try {
+            order.transitionTo(target);
+        } catch (IllegalOrderTransitionException refused) {
             return false;
         }
-
-        order.setOrderStatus(target);
-        order.setModifiedAt(Instant.now());
-
-        TxEffect effect = TX_EFFECTS.get(target);
-        if (effect != null) {
-            paymentFactory.appendTransaction(order, effect.status(), effect.rawResponse());
-        }
-
         orderRepository.save(order);
         return true;
     }

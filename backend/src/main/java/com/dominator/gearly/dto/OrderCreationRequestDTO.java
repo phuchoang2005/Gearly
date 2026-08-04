@@ -1,6 +1,6 @@
 package com.dominator.gearly.dto;
 
-import com.dominator.gearly.model.ShippingInformation;
+import com.dominator.gearly.ordering.domain.ShippingInformation;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.Valid;

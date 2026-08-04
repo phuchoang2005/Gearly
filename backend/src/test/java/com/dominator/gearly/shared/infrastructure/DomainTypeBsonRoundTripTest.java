@@ -4,13 +4,10 @@ import com.dominator.gearly.dto.BestSellerDTO;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.Category;
 import com.dominator.gearly.model.CartItem;
-import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.model.Payment;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Review;
-import com.dominator.gearly.model.Transaction;
-import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;
@@ -110,29 +107,34 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void onAnOrderTotalAndItsLines() {
-            Order order = new Order();
-            order.setUserId("u1");
-            order.setTotalAmount(Money.of(3198.0));
-            order.setItems(List.of(new OrderItem("p1", "GPU", Money.of(1599.0), "img", 2)));
+            // 1599.00 x 2 = 3198.00, + 8% tax 255.84, free shipping -> 3453.84
+            Order order = OrderFixture.anOrder()
+                    .withLines(OrderFixture.line("p1", "GPU", 1599.0, 2))
+                    .build();
             mongoTemplate.save(order);
 
             Document raw = rawDocument("orders");
 
-            assertThat(raw.get("totalAmount")).isInstanceOf(Double.class).isEqualTo(3198.0);
+            assertThat(raw.get("totalAmount")).isInstanceOf(Double.class).isEqualTo(3453.84);
             Document line = raw.getList("items", Document.class).getFirst();
             assertThat(line.get("price")).isInstanceOf(Double.class).isEqualTo(1599.0);
+
+            // S10 adopted UserId, ProductId and Quantity on the order aggregate. Same claim as
+            // S9's for Money: the stored BSON must not have noticed. Read raw, so a nested
+            // {value: …} document could not pass by reading back the same way it was written.
+            assertThat(raw.get("userId")).isInstanceOf(String.class).isEqualTo("u1");
+            assertThat(line.get("productId")).isInstanceOf(String.class).isEqualTo("p1");
+            assertThat(line.get("quantity")).isInstanceOf(Integer.class).isEqualTo(2);
+            assertThat(raw.get("orderStatus")).isInstanceOf(String.class).isEqualTo("PENDING");
         }
 
         @Test
         void onAnEmbeddedPaymentTransaction() {
-            Transaction tx = new Transaction();
-            tx.setTransactionId("t1");
-            tx.setStatus(TransactionStatus.PENDING);
-            tx.setAmount(Money.of(36.60));
-
-            Order order = new Order();
-            order.setUserId("u1");
-            order.setPayment(new Payment("momo", List.of(tx)));
+            // 10.00 x 2 = 20.00, + 8% tax 1.60, + 15.00 shipping -> the opening charge is 36.60
+            Order order = OrderFixture.anOrder()
+                    .withLines(OrderFixture.line("p1", "GPU", 10.0, 2))
+                    .paidWith("momo")
+                    .build();
             mongoTemplate.save(order);
 
             Document payment = rawDocument("orders").get("payment", Document.class);
@@ -219,9 +221,9 @@ class DomainTypeBsonRoundTripTest {
             assertThat(rawReview.get("orderId")).isInstanceOf(ObjectId.class);
             assertThat(rawReview.get("userId")).isInstanceOf(ObjectId.class);
 
-            Order order = new Order();
-            order.setUserId("u1");
-            order.setItems(List.of(new OrderItem(PRODUCT_HEX, "GPU", Money.ZERO, "img", 1)));
+            Order order = OrderFixture.anOrder()
+                    .withLines(OrderFixture.line(PRODUCT_HEX, "GPU", 0.0, 1))
+                    .build();
             mongoTemplate.save(order);
 
             Document line = rawDocument("orders").getList("items", Document.class).getFirst();

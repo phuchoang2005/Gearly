@@ -1,12 +1,15 @@
 package com.dominator.gearly.mapper;
 
-import com.dominator.gearly.dto.OrderUpsertRequestDTO;
+import com.dominator.gearly.dto.OrderResponseDTO;
 import com.dominator.gearly.model.Image;
-import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.Product;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderFixture;
+import com.dominator.gearly.ordering.domain.OrderLine;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.UserId;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -14,12 +17,19 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * The catalog-to-order-line snapshot, and the response view.
+ *
+ * <p>{@code applyUpsert} used to be tested here. It is gone — copying an admin payload onto an
+ * order is {@code Order.replaceContent} now, so that coverage lives in
+ * {@code AdminOrderServiceTest} where the rules it has to respect can be asserted alongside it.
+ */
 class OrderMapperTest {
 
     private final OrderMapper mapper = new OrderMapper();
 
     @Test
-    void toOrderItem_snapshotsPriceTitleImageAndQuantity() {
+    void toOrderLine_snapshotsPriceTitleImageAndQuantity() {
         Product product = new Product();
         product.setId("p1");
         product.setTitle("RTX 4090");
@@ -27,45 +37,50 @@ class OrderMapperTest {
         product.setImages(List.of(new Image("http://img/first.png", "gpu"),
                 new Image("http://img/second.png", "gpu-back")));
 
-        OrderItem item = mapper.toOrderItem(product, 3);
+        OrderLine line = mapper.toOrderLine(product, 3);
 
-        assertThat(item.getProductId()).isEqualTo("p1");
-        assertThat(item.getTitle()).isEqualTo("RTX 4090");
-        assertThat(item.getPrice()).isEqualTo(Money.of(1599.0));
-        assertThat(item.getQuantity()).isEqualTo(3);
+        assertThat(line.getProductId().value()).isEqualTo("p1");
+        assertThat(line.getTitle()).isEqualTo("RTX 4090");
+        assertThat(line.getPrice()).isEqualTo(Money.of(1599.0));
+        assertThat(line.getQuantity().toInt()).isEqualTo(3);
         // snapshot uses the product's first image
-        assertThat(item.getImageUrl()).isEqualTo("http://img/first.png");
+        assertThat(line.getImageUrl()).isEqualTo("http://img/first.png");
     }
 
     @Test
-    void applyUpsert_copiesAdminSettableFields_leavesIdAndTimestamps() {
-        Order existing = new Order();
-        existing.setId("o1");
-        existing.setAddedAt(Instant.parse("2020-01-01T00:00:00Z"));
-        existing.setModifiedAt(Instant.parse("2020-01-01T00:00:00Z"));
+    @DisplayName("a line knows what it costs, so the total never has to be computed by hand")
+    void orderLine_knowsItsOwnTotal() {
+        OrderLine line = OrderFixture.line("p1", "GPU", 10.50, 3);
 
-        OrderUpsertRequestDTO dto = new OrderUpsertRequestDTO();
-        dto.setUserId("u1");
-        dto.setItems(List.of(new OrderItem("p1", "GPU", Money.of(10.0), "http://img", 2)));
-        dto.setTotalAmount(Money.of(20.0));
-        dto.setOrderStatus(OrderStatus.PROCESSING);
-        dto.setReviewed(true);
-        dto.setNote("gift wrap");
-        dto.setDoneAt(Instant.parse("2026-01-01T00:00:00Z"));
+        assertThat(line.lineTotal()).isEqualTo(Money.of(31.50));
+    }
 
-        mapper.applyUpsert(existing, dto);
+    @Test
+    void toResponseDto_mirrorsEveryFieldOfTheAggregate() {
+        Order order = OrderFixture.anOrder()
+                .ownedBy("u1")
+                .withLines(OrderFixture.line("p1", "GPU", 10.0, 2))
+                .withNote("gift wrap")
+                .reviewed()
+                .doneAt(Instant.parse("2026-01-04T03:04:05Z"))
+                .persistedAs("o1",
+                        Instant.parse("2026-01-02T03:04:05Z"),
+                        Instant.parse("2026-01-03T03:04:05Z"))
+                .build();
 
-        // admin-settable fields copied
-        assertThat(existing.getUserId()).isEqualTo("u1");
-        assertThat(existing.getItems()).hasSize(1);
-        assertThat(existing.getTotalAmount()).isEqualTo(Money.of(20.0));
-        assertThat(existing.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
-        assertThat(existing.isReviewed()).isTrue();
-        assertThat(existing.getNote()).isEqualTo("gift wrap");
-        assertThat(existing.getDoneAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
-        // managed fields untouched by the mapper
-        assertThat(existing.getId()).isEqualTo("o1");
-        assertThat(existing.getAddedAt()).isEqualTo(Instant.parse("2020-01-01T00:00:00Z"));
-        assertThat(existing.getModifiedAt()).isEqualTo(Instant.parse("2020-01-01T00:00:00Z"));
+        OrderResponseDTO dto = mapper.toResponseDto(order);
+
+        assertThat(dto.getId()).isEqualTo("o1");
+        assertThat(dto.getUserId()).isEqualTo(UserId.of("u1"));
+        assertThat(dto.getItems()).hasSize(1);
+        assertThat(dto.getTotalAmount()).isEqualTo(order.getTotalAmount());
+        assertThat(dto.getPayment()).isSameAs(order.getPayment());
+        assertThat(dto.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
+        assertThat(dto.getShippingInformation()).isSameAs(order.getShippingInformation());
+        assertThat(dto.isReviewed()).isTrue();
+        assertThat(dto.getNote()).isEqualTo("gift wrap");
+        assertThat(dto.getAddedAt()).isEqualTo(Instant.parse("2026-01-02T03:04:05Z"));
+        assertThat(dto.getModifiedAt()).isEqualTo(Instant.parse("2026-01-03T03:04:05Z"));
+        assertThat(dto.getDoneAt()).isEqualTo(Instant.parse("2026-01-04T03:04:05Z"));
     }
 }

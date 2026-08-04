@@ -1,6 +1,6 @@
 package com.dominator.gearly.repository.custom;
 
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

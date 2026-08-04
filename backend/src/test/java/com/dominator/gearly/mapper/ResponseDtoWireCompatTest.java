@@ -6,10 +6,8 @@ import com.dominator.gearly.dto.ProductResponseDTO;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.model.Image;
-import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.model.Payment;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.shared.domain.CategoryId;
@@ -26,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,18 +58,17 @@ class ResponseDtoWireCompatTest {
 
     @Test
     void orderResponseDto_matchesEntityWire() {
-        Order order = new Order();
-        order.setId("o1");
-        order.setUserId("u1");
-        order.setItems(List.of(new OrderItem("p1", "RTX 4090", Money.of(1599.0), "http://img/a.png", 2)));
-        order.setTotalAmount(Money.of(3198.0));
-        order.setPayment(new Payment("MOMO", List.of()));
-        order.setOrderStatus(OrderStatus.PENDING);
-        order.setReviewed(true);
-        order.setNote("leave at door");
-        order.setAddedAt(Instant.parse("2026-01-02T03:04:05Z"));
-        order.setModifiedAt(Instant.parse("2026-01-03T03:04:05Z"));
-        order.setDoneAt(Instant.parse("2026-01-04T03:04:05Z"));
+        Order order = OrderFixture.anOrder()
+                .ownedBy("u1")
+                .withLines(OrderFixture.line("p1", "RTX 4090", 1599.0, 2))
+                .paidWith("MOMO")
+                .reviewed()
+                .withNote("leave at door")
+                .doneAt(Instant.parse("2026-01-04T03:04:05Z"))
+                .persistedAs("o1",
+                        Instant.parse("2026-01-02T03:04:05Z"),
+                        Instant.parse("2026-01-03T03:04:05Z"))
+                .build();
 
         OrderResponseDTO dto = orderMapper.toResponseDto(order);
 
@@ -151,15 +149,82 @@ class ResponseDtoWireCompatTest {
 
         @Test
         void moneyOnAnOrderAndItsLinesIsAlsoADouble() {
-            Order order = new Order();
-            order.setTotalAmount(Money.of(3198.0));
-            order.setItems(List.of(new OrderItem("p1", "GPU", Money.of(109.99), "u", 2)));
+            // 109.99 x 2 = 219.98, + 8% tax 17.60, shipping free above $30 -> 237.58
+            Order order = OrderFixture.anOrder()
+                    .withLines(OrderFixture.line("p1", "GPU", 109.99, 2))
+                    .build();
 
             JsonNode node = json.valueToTree(orderMapper.toResponseDto(order));
 
             assertThat(node.get("totalAmount").isDouble()).isTrue();
-            assertThat(node.get("totalAmount").asText()).isEqualTo("3198.0");
+            assertThat(node.get("totalAmount").asText()).isEqualTo("237.58");
             assertThat(node.get("items").get(0).get("price").asText()).isEqualTo("109.99");
+        }
+
+        /**
+         * Pins the exact set of JSON properties an order and its nested types carry.
+         *
+         * <p>The DTO-equals-entity test above cannot catch what this catches. An order's
+         * {@code payment} is the <em>same domain object</em> on both sides, so a field added
+         * to {@code Payment} or {@code PaymentTransaction} appears in both trees and they stay
+         * equal — the S9 lesson, in a new place.
+         *
+         * <p>It is not hypothetical. Giving the aggregate behavior added three: Jackson reads
+         * {@code isPaid()}, {@code isSettled()} and {@code isSuccessful()} as properties, so
+         * the first version of S10 quietly added {@code paid}, {@code settled} and
+         * {@code successful} to every order response. All three are {@code @JsonIgnore}d now.
+         */
+        @Test
+        void anOrderCarriesExactlyTheFieldsItAlwaysHas() {
+            Order order = OrderFixture.anOrder()
+                    .withLines(OrderFixture.line("p1", "GPU", 10.0, 2))
+                    .persistedAs("o1", Instant.parse("2026-01-02T03:04:05Z"),
+                            Instant.parse("2026-01-03T03:04:05Z"))
+                    .build();
+
+            JsonNode node = json.valueToTree(orderMapper.toResponseDto(order));
+
+            assertThat(fieldsOf(node)).containsExactlyInAnyOrder(
+                    "id", "userId", "items", "totalAmount", "payment", "orderStatus",
+                    "shippingInformation", "reviewed", "note", "addedAt", "modifiedAt", "doneAt");
+            assertThat(fieldsOf(node.get("payment")))
+                    .containsExactlyInAnyOrder("method", "transactions");
+            assertThat(fieldsOf(node.get("payment").get("transactions").get(0)))
+                    .containsExactlyInAnyOrder(
+                            "transactionId", "status", "amount", "rawResponse", "createdAt");
+            assertThat(fieldsOf(node.get("items").get(0))).containsExactlyInAnyOrder(
+                    "productId", "title", "price", "imageUrl", "quantity");
+            assertThat(fieldsOf(node.get("shippingInformation"))).containsExactlyInAnyOrder(
+                    "firstName", "lastName", "email", "phoneNumber", "address");
+        }
+
+        private List<String> fieldsOf(JsonNode node) {
+            List<String> names = new ArrayList<>();
+            node.fieldNames().forEachRemaining(names::add);
+            return names;
+        }
+
+        /**
+         * The typed ids and {@code Quantity} adopted on the order aggregate in S10 must be as
+         * invisible on the wire as {@code Money} was in S9 — a bare string and a bare int,
+         * not an object with a {@code value} property.
+         */
+        @Test
+        void orderLineIdsAndQuantitiesStaySimpleJsonScalars() {
+            Order order = OrderFixture.anOrder()
+                    .ownedBy("507f1f77bcf86cd799439011")
+                    .withLines(OrderFixture.line("p1", "GPU", 109.99, 2))
+                    .build();
+
+            JsonNode node = json.valueToTree(orderMapper.toResponseDto(order));
+            JsonNode line = node.get("items").get(0);
+
+            assertThat(node.get("userId").isTextual()).isTrue();
+            assertThat(node.get("userId").asText()).isEqualTo("507f1f77bcf86cd799439011");
+            assertThat(line.get("productId").isTextual()).isTrue();
+            assertThat(line.get("productId").asText()).isEqualTo("p1");
+            assertThat(line.get("quantity").isInt()).isTrue();
+            assertThat(line.get("quantity").intValue()).isEqualTo(2);
         }
 
         /**

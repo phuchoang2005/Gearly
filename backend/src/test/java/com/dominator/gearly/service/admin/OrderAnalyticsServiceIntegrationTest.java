@@ -2,11 +2,10 @@ package com.dominator.gearly.service.admin;
 
 import com.dominator.gearly.dto.QuantitySoldDTO;
 import com.dominator.gearly.dto.TopSellerDTO;
-import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderItem;
+import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.TimeFrame;
-import com.dominator.gearly.shared.domain.Money;
+import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,22 +105,32 @@ class OrderAnalyticsServiceIntegrationTest {
         return now.minus(days, ChronoUnit.DAYS);
     }
 
-    private OrderItem item(String productId, String title, int quantity) {
-        OrderItem i = new OrderItem();
-        i.setProductId(productId);
-        i.setTitle(title);
-        i.setQuantity(quantity);
-        i.setPrice(Money.of(10.0));
-        return i;
+    private Document item(String productId, String title, int quantity) {
+        return new Document()
+                .append("productId", productId)
+                .append("title", title)
+                .append("quantity", quantity)
+                .append("price", 10.0);
     }
 
-    private void save(OrderStatus status, Instant doneAt, OrderItem... items) {
-        Order order = new Order();
-        order.setUserId("u1");
-        order.setItems(List.of(items));
-        order.setOrderStatus(status);
-        order.setDoneAt(doneAt);
-        order.setTotalAmount(Money.ZERO);
-        mongoTemplate.save(order);
+    /**
+     * Inserts the raw document rather than saving an {@code Order}.
+     *
+     * <p>Deliberate, and better than what it replaces. These aggregations run against stored
+     * BSON, never against the mapped aggregate, so the thing worth pinning is the document
+     * shape — the {@code orderStatus} field holding the string {@code "COMPLETED"}, the
+     * {@code items} array, the {@code doneAt} date. Writing through the aggregate would put
+     * the write model between the test and the shape it is meant to assert, and would also
+     * mean walking every fixture through four legal status transitions to reach
+     * {@code COMPLETED} just to produce a document this states in one line.
+     */
+    private void save(OrderStatus status, Instant doneAt, Document... items) {
+        mongoTemplate.getCollection("orders").insertOne(new Document()
+                .append("userId", "u1")
+                .append("items", List.of(items))
+                .append("orderStatus", status.name())
+                .append("doneAt", Date.from(doneAt))
+                .append("totalAmount", 0.0)
+                .append("version", 0L));
     }
 }

@@ -1,6 +1,6 @@
 package com.dominator.gearly.repository.custom.impl;
 
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.repository.custom.OrderRepositoryCustom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

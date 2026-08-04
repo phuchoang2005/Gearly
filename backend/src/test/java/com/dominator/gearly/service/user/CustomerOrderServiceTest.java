@@ -7,21 +7,24 @@ import com.dominator.gearly.dto.OrderItemRequestDTO;
 import com.dominator.gearly.dto.PaymentRequestDTO;
 import com.dominator.gearly.exception.ApiException;
 import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ConflictException;
 import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.Image;
-import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderItem;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderCannotBeCancelledException;
+import com.dominator.gearly.ordering.domain.OrderFixture;
+import com.dominator.gearly.ordering.domain.PricingPolicy;
+import com.dominator.gearly.ordering.domain.OrderLine;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.model.Payment;
+import com.dominator.gearly.ordering.domain.Payment;
 import com.dominator.gearly.model.Product;
-import com.dominator.gearly.model.ShippingInformation;
-import com.dominator.gearly.model.Transaction;
+import com.dominator.gearly.ordering.domain.ShippingInformation;
+import com.dominator.gearly.ordering.domain.PaymentTransaction;
 import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.UserId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,10 +35,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,12 +85,15 @@ class CustomerOrderServiceTest {
      */
     private ObjectProvider<CustomerOrderService> selfProvider;
 
+    /** The production numbers: 8% tax, free shipping strictly above $30, otherwise $15. */
+    private final PricingPolicy pricingPolicy = OrderFixture.PRICING;
+
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
         selfProvider = mock(ObjectProvider.class);
         service = new CustomerOrderService(orderRepository, productService, cartService,
-                momoService, new OrderMapper(), selfProvider);
+                momoService, new OrderMapper(), pricingPolicy, selfProvider);
         lenient().when(selfProvider.getObject()).thenReturn(service);
     }
 
@@ -203,13 +208,13 @@ class CustomerOrderServiceTest {
         service.createOrder(authUser(USER_ID), orderRequest("p1", 3));
 
         Order saved = captureSavedOrder();
-        assertThat(saved.getUserId()).isEqualTo(USER_ID);
+        assertThat(saved.getUserId()).isEqualTo(UserId.of(USER_ID));
         assertThat(saved.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
         assertThat(saved.getItems()).singleElement().satisfies(item -> {
-            assertThat(item.getProductId()).isEqualTo("p1");
+            assertThat(item.getProductId().value()).isEqualTo("p1");
             assertThat(item.getTitle()).isEqualTo("Product p1");
             assertThat(item.getPrice()).isEqualTo(Money.of(12.50));
-            assertThat(item.getQuantity()).isEqualTo(3);
+            assertThat(item.getQuantity().toInt()).isEqualTo(3);
             assertThat(item.getImageUrl()).isEqualTo("http://img/p1.png");
         });
     }
@@ -234,17 +239,27 @@ class CustomerOrderServiceTest {
     }
 
     @Test
-    @DisplayName("KNOWN BUG: the freshly built transaction list is immutable, so appending to it in-memory throws")
-    void createOrder_transactionListIsImmutable() {
-        // buildInitialPayment uses List.of(...). Only the Mongo round-trip turns this into a
-        // mutable ArrayList, which is why cancelOrder/updateOrderStatusFromMomo appear to work
-        // in production but not on a just-created in-memory order. S10 must build a mutable list.
+    @DisplayName("FIXED (was a KNOWN BUG): a freshly placed order accepts further transactions in memory")
+    void createOrder_paymentAcceptsFurtherTransactions() {
+        // The S8 suite pinned this as a bug and said S10 must build a mutable list.
+        // buildInitialPayment used List.of(...), so appending to a just-placed order threw
+        // UnsupportedOperationException — cancelOrder and the gateway callback only appeared
+        // to work because a round trip through Mongo turned the list into an ArrayList.
+        //
+        // Payment owns the list now and it is always mutable. What is handed out is still an
+        // unmodifiable view, but deliberately so: appending goes through the aggregate, which
+        // is what stops the ledger gaining a row nothing decided to add.
         when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
         stubSaveReturnsArgument();
 
         Order order = service.createOrder(authUser(USER_ID), orderRequest("p1", 2));
 
-        assertThatThrownBy(() -> order.getPayment().getTransactions().add(new Transaction()))
+        order.recordPayment(TransactionStatus.SUCCESSFUL, "settled");
+        assertThat(order.getPayment().getTransactions()).hasSize(2);
+
+        assertThatThrownBy(() -> order.getPayment().getTransactions()
+                .add(new PaymentTransaction("t", TransactionStatus.PENDING, Money.ZERO, null, null)))
+                .as("the exposed list is a read-only view — append through the aggregate")
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -292,7 +307,9 @@ class CustomerOrderServiceTest {
         when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
             Order o = inv.getArgument(0);
-            o.setId("order-9");
+            // stands in for Mongo assigning the id on insert — see OrderFixture on why
+            // reflection is the honest tool for a persistence-managed field
+            ReflectionTestUtils.setField(o, "id", "order-9");
             return o;
         });
         // Money always carries scale 2, so the gateway now sees 36.60 where it used to see
@@ -328,25 +345,27 @@ class CustomerOrderServiceTest {
     @DisplayName("cancelOrder")
     class CancelOrder {
 
+        /**
+         * An order at {@code status} carrying the opening pending charge every placed order
+         * has, plus whatever extra transactions the test asks for.
+         *
+         * <p>The opening charge is the one difference from the S8 fixture, which built the
+         * transaction list by hand and could therefore describe a paid order that had never
+         * been charged. Lines of $10 x 2 price to the same $36.60 total the old fixture
+         * assigned directly, so every money assertion below is unchanged.
+         */
         private Order existingOrder(OrderStatus status, TransactionStatus... txStatuses) {
-            Order order = new Order();
-            order.setId("order-1");
-            order.setUserId(USER_ID);
-            order.setOrderStatus(status);
-            order.setTotalAmount(Money.of(36.60));
-
-            List<Transaction> transactions = new ArrayList<>();
+            OrderFixture.Builder builder = OrderFixture.anOrder()
+                    .withId("order-1")
+                    .ownedBy(USER_ID)
+                    .withLines(OrderFixture.line("p1", "Product p1", 10.00, 2))
+                    .paidWith("momo");
             for (TransactionStatus txStatus : txStatuses) {
-                Transaction tx = new Transaction();
-                tx.setStatus(txStatus);
-                tx.setCreatedAt(Instant.now());
-                transactions.add(tx);
+                if (txStatus != TransactionStatus.PENDING) {   // the opening charge is already PENDING
+                    builder.withTransaction(txStatus);
+                }
             }
-            Payment payment = new Payment();
-            payment.setMethod("momo");
-            payment.setTransactions(transactions);
-            order.setPayment(payment);
-            return order;
+            return builder.at(status).build();
         }
 
         private CancelOrderRequestDTO cancelRequest() {
@@ -381,8 +400,9 @@ class CustomerOrderServiceTest {
             service.cancelOrder(authUser(USER_ID), cancelRequest());
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING_REFUND);
-            assertThat(order.getPayment().getTransactions()).hasSize(2);
-            Transaction refund = order.getPayment().getTransactions().get(1);
+            // opening pending charge, the successful payment, then the refund
+            assertThat(order.getPayment().getTransactions()).hasSize(3);
+            PaymentTransaction refund = order.getPayment().getTransactions().getLast();
             assertThat(refund.getStatus()).isEqualTo(TransactionStatus.PENDING_REFUND);
             assertThat(refund.getAmount()).isEqualTo(Money.of(36.60));
             assertThat(refund.getRawResponse()).isEqualTo("Refund initiated for order: order-1");
@@ -419,8 +439,11 @@ class CustomerOrderServiceTest {
             Order order = existingOrder(OrderStatus.SHIPPED, TransactionStatus.SUCCESSFUL);
             when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
 
+            // Was ConflictException. The rule moved onto the aggregate, which may not name a
+            // web type, so it throws a DomainConflictException subclass instead — mapped to
+            // the same 409 by GlobalExceptionHandler, which GlobalExceptionHandlerTest pins.
             assertThatThrownBy(() -> service.cancelOrder(authUser(USER_ID), cancelRequest()))
-                    .isInstanceOf(ConflictException.class);
+                    .isInstanceOf(OrderCannotBeCancelledException.class);
 
             verify(orderRepository, never()).save(any());
         }
@@ -432,18 +455,19 @@ class CustomerOrderServiceTest {
     @DisplayName("updateOrderStatusFromMomo")
     class MomoCallback {
 
+        /**
+         * A pending order totalling $36.60, as placed: $10 x 2, plus 8% tax, plus $15
+         * shipping. The one difference from the S8 fixture is the opening pending charge that
+         * placement always creates, which is why the assertions below look at the last
+         * transaction rather than the only one.
+         */
         private Order pendingOrder() {
-            Order order = new Order();
-            order.setId("order-1");
-            order.setUserId(USER_ID);
-            order.setOrderStatus(OrderStatus.PENDING);
-            order.setTotalAmount(Money.of(36.60));
-
-            Payment payment = new Payment();
-            payment.setMethod("momo");
-            payment.setTransactions(new ArrayList<>());
-            order.setPayment(payment);
-            return order;
+            return OrderFixture.anOrder()
+                    .withId("order-1")
+                    .ownedBy(USER_ID)
+                    .withLines(OrderFixture.line("p1", "Product p1", 10.00, 2))
+                    .paidWith("momo")
+                    .build();
         }
 
         @Test
@@ -455,7 +479,7 @@ class CustomerOrderServiceTest {
             service.updateOrderStatusFromMomo("Gearly-order-1", "momo-tx-1", 0, "{\"ok\":true}");
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
-            assertThat(order.getPayment().getTransactions()).singleElement().satisfies(tx -> {
+            assertThat(order.getPayment().getTransactions()).hasSize(2).last().satisfies(tx -> {
                 assertThat(tx.getTransactionId()).isEqualTo("momo-tx-1");
                 assertThat(tx.getStatus()).isEqualTo(TransactionStatus.SUCCESSFUL);
                 assertThat(tx.getAmount()).isEqualTo(Money.of(36.60));
@@ -467,15 +491,24 @@ class CustomerOrderServiceTest {
         @Test
         @DisplayName("a non-zero resultCode records a FAILED transaction and leaves the order PENDING")
         void failure_staysPending() {
-            Order order = pendingOrder();
-            order.setOrderStatus(OrderStatus.PROCESSING);
+            // Starts at PROCESSING on purpose: it proves the callback *forces* PENDING rather
+            // than merely leaving an order that was already there. That reversal is now a
+            // declared edge of the transition table — see OrderStatusTest — instead of an
+            // assignment that skipped the table entirely.
+            Order order = OrderFixture.anOrder()
+                    .withId("order-1")
+                    .ownedBy(USER_ID)
+                    .withLines(OrderFixture.line("p1", "Product p1", 10.00, 2))
+                    .paidWith("momo")
+                    .at(OrderStatus.PROCESSING)
+                    .build();
             when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
 
             service.updateOrderStatusFromMomo("Gearly-order-1", "momo-tx-2", 1006, "{\"ok\":false}");
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
-            assertThat(order.getPayment().getTransactions()).singleElement()
-                    .extracting(Transaction::getStatus)
+            assertThat(order.getPayment().getTransactions()).last()
+                    .extracting(PaymentTransaction::getStatus)
                     .isEqualTo(TransactionStatus.FAILED);
         }
 
@@ -494,22 +527,18 @@ class CustomerOrderServiceTest {
     // ---- initiateRefund (called directly by the cancel path) ---------------
 
     @Test
-    @DisplayName("initiateRefund appends a PENDING_REFUND transaction for the order total")
-    void initiateRefund_appendsPendingRefundTransaction() {
-        Order order = new Order();
-        order.setId("order-7");
-        order.setTotalAmount(Money.of(99.99));
-        Payment payment = new Payment();
-        payment.setTransactions(new ArrayList<>());
+    @DisplayName("an order counts as paid as soon as one of its transactions has succeeded")
+    void anOrderIsPaidOnceATransactionSucceeds() {
+        // This is the condition the cancel path branches on. It was an inline
+        // transactions.stream().anyMatch(...) in the service, next to a public
+        // initiateRefund(order, payment) that any caller could use to append a refund to any
+        // payment. Both are Payment's now, and the free-floating refund helper is gone.
+        Order unpaid = OrderFixture.anOrder().build();
+        Order paid = OrderFixture.anOrder().withTransaction(TransactionStatus.SUCCESSFUL).build();
 
-        service.initiateRefund(order, payment);
-
-        assertThat(payment.getTransactions()).singleElement().satisfies(tx -> {
-            assertThat(tx.getStatus()).isEqualTo(TransactionStatus.PENDING_REFUND);
-            assertThat(tx.getAmount()).isEqualTo(Money.of(99.99));
-            assertThat(tx.getRawResponse()).isEqualTo("Refund initiated for order: order-7");
-            assertThat(tx.getTransactionId()).isNotBlank();
-        });
+        assertThat(unpaid.isPaid()).isFalse();
+        assertThat(paid.isPaid()).isTrue();
+        assertThat(paid.getPayment().isSettled()).isTrue();
     }
 
     // ---- read paths --------------------------------------------------------
@@ -529,7 +558,7 @@ class CustomerOrderServiceTest {
     }
 
     @Test
-    @DisplayName("an OrderItem list keeps its per-line quantity when the same product appears once")
+    @DisplayName("an order line keeps its per-line quantity when the same product appears once")
     void orderItemsCarryQuantities() {
         // Guards the Collectors.toMap in applyStockAndClearCart: it would throw on a duplicate
         // productId, which is why the request DTO is expected to pre-merge lines.
@@ -538,6 +567,6 @@ class CustomerOrderServiceTest {
 
         Order order = service.createOrder(authUser(USER_ID), orderRequest("p1", 4));
 
-        assertThat(order.getItems()).extracting(OrderItem::getQuantity).containsExactly(4);
+        assertThat(order.getItems()).extracting(line -> line.getQuantity().toInt()).containsExactly(4);
     }
 }

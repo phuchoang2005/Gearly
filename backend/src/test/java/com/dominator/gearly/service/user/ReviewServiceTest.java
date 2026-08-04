@@ -8,7 +8,8 @@ import com.dominator.gearly.dto.ReviewResponseDTO;
 import com.dominator.gearly.exception.ApiException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.ReviewMapper;
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Review;
@@ -97,12 +98,14 @@ class ReviewServiceTest {
     }
 
     private Order ownedOrder(OrderStatus status, boolean reviewed) {
-        Order order = new Order();
-        order.setId(ORDER_ID);
-        order.setUserId(USER_ID);
-        order.setOrderStatus(status);
-        order.setReviewed(reviewed);
-        return order;
+        OrderFixture.Builder builder = OrderFixture.anOrder()
+                .withId(ORDER_ID)
+                .ownedBy(USER_ID)
+                .at(status);
+        if (reviewed) {
+            builder.reviewed();
+        }
+        return builder.build();
     }
 
     private CreateReviewsRequestDTO reviewRequest(int rating) {

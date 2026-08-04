@@ -1,6 +1,6 @@
 package com.dominator.gearly.repository;
 
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.repository.custom.OrderRepositoryCustom;
 import org.springframework.data.domain.Page;

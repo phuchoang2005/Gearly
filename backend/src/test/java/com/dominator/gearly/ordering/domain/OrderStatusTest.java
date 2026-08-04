@@ -115,22 +115,19 @@ class OrderStatusTest {
         }
 
         @Test
-        @DisplayName("PENDING is reachable from nowhere: it is only ever an order's opening state")
-        void pendingIsUnreachable() {
+        @DisplayName("PROCESSING is the only way back to PENDING — the failed-payment reversal")
+        void pendingIsReachableOnlyFromProcessing() {
             for (OrderStatus source : OrderStatus.values()) {
                 assertThat(source.canTransitionTo(OrderStatus.PENDING))
                         .as("%s -> PENDING", source)
-                        .isFalse();
+                        .isEqualTo(source == OrderStatus.PROCESSING);
             }
         }
 
         @Test
-        @DisplayName("every status other than PENDING is reachable from somewhere — no orphans")
-        void everyOtherStatusIsReachable() {
+        @DisplayName("every status is reachable from somewhere — no orphans in the table")
+        void everyStatusIsReachable() {
             for (OrderStatus target : OrderStatus.values()) {
-                if (target == OrderStatus.PENDING) {
-                    continue;
-                }
                 boolean reachable = false;
                 for (OrderStatus source : OrderStatus.values()) {
                     reachable |= source.canTransitionTo(target);

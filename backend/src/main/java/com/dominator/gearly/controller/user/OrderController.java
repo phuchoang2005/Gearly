@@ -6,7 +6,7 @@ import com.dominator.gearly.dto.MessageResponse;
 import com.dominator.gearly.dto.OrderCreationRequestDTO;
 import com.dominator.gearly.dto.OrderResponseDTO;
 import com.dominator.gearly.mapper.OrderMapper;
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.service.user.CustomerOrderService;
 import jakarta.validation.Valid;

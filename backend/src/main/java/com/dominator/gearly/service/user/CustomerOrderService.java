@@ -4,13 +4,18 @@ import com.dominator.gearly.dto.CancelOrderRequestDTO;
 import com.dominator.gearly.dto.CreateOrderResponse;
 import com.dominator.gearly.dto.OrderCreationRequestDTO;
 import com.dominator.gearly.dto.OrderItemRequestDTO;
+import com.dominator.gearly.exception.ApiException;
+import com.dominator.gearly.exception.BadRequestException;
+import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.OrderMapper;
-import com.dominator.gearly.model.*;
+import com.dominator.gearly.model.Product;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderLine;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.ordering.domain.TransactionStatus;
+import com.dominator.gearly.ordering.domain.PricingPolicy;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
-import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
@@ -20,16 +25,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.dominator.gearly.exception.ApiException;
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ConflictException;
-import com.dominator.gearly.exception.ResourceNotFoundException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +42,7 @@ public class CustomerOrderService {
     private final CartService cartService;
     private final MomoService momoService;
     private final OrderMapper orderMapper;
+    private final PricingPolicy pricingPolicy;
 
     /**
      * This service, resolved through the Spring proxy. Needed because a plain
@@ -49,15 +51,11 @@ public class CustomerOrderService {
      * {@code ObjectProvider} rather than a direct self-injection because the latter is a
      * constructor cycle.
      *
-     * <p>Temporary. S10 replaces this with an {@code OrderPlaced} event handled
-     * {@code AFTER_COMMIT}, at which point the seam disappears.
+     * <p>Temporary. Goes away when placement moves into {@code ordering.application}, where
+     * the transactional half and the gateway half are separate beans and there is no
+     * self-call left to route.
      */
     private final ObjectProvider<CustomerOrderService> self;
-
-    private static final BigDecimal TAX_RATE = new BigDecimal("0.08");
-    private static final Money SHIPPING_COST_THRESHOLD = Money.of("30.00");
-    private static final Money DEFAULT_SHIPPING_COST = Money.of("15.00");
-    private static final Money FREE_SHIPPING_COST = Money.ZERO;
 
     public Order findById(String orderId) {
         return orderRepository.findById(orderId)
@@ -107,97 +105,66 @@ public class CustomerOrderService {
         return statusCounts;
     }
 
+    /**
+     * The customer cancels. Ownership is checked here — it decides a 403, which is a web
+     * concern — and everything else is the aggregate's: whether the order has gone too far to
+     * cancel, whether the money has arrived and a refund is therefore owed, and which status
+     * that lands on.
+     */
     @Transactional
     public void cancelOrder(AuthenticatedUser authUser, CancelOrderRequestDTO dto) {
-        User user = authUser.getUser();
+        UserId userId = UserId.of(authUser.getUser().getId());
 
         Order order = orderRepository.findById(dto.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        if (!order.getUserId().equals(user.getId())) {
+        if (!order.isOwnedBy(userId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "You are not allowed to cancel this order");
         }
 
-        if (order.getOrderStatus() != OrderStatus.PENDING && order.getOrderStatus() != OrderStatus.PROCESSING) {
-            throw new ConflictException("This order already has status that cannot be cancelled");
-        }
-
-        Payment payment = order.getPayment();
-        boolean alreadyPaid = payment.getTransactions().stream()
-                .anyMatch(tx -> tx.getStatus() == TransactionStatus.SUCCESSFUL);
-
-        if (alreadyPaid) {
-            initiateRefund(order, payment);
-            order.setOrderStatus(OrderStatus.PENDING_REFUND);
-        } else {
-            order.setOrderStatus(OrderStatus.CANCELLED);
-        }
-
-        order.setNote(dto.getReason());
-        order.setModifiedAt(Instant.now());
+        order.cancel(dto.getReason());
         orderRepository.save(order);
-    }
-
-    public void initiateRefund(Order order, Payment payment) {
-        Transaction refundTransaction = new Transaction();
-        refundTransaction.setTransactionId(UUID.randomUUID().toString());
-        refundTransaction.setStatus(TransactionStatus.PENDING_REFUND);
-        refundTransaction.setAmount(order.getTotalAmount());
-        refundTransaction.setRawResponse("Refund initiated for order: " + order.getId());
-        refundTransaction.setCreatedAt(Instant.now());
-
-        payment.getTransactions().add(refundTransaction);
     }
 
     @Transactional
     public Order createOrder(AuthenticatedUser authenticatedUser, OrderCreationRequestDTO requestDTO) {
-        String userId = authenticatedUser.getUser().getId();
-        List<OrderItem> orderItems = buildOrderItems(requestDTO.getItems());
+        UserId userId = UserId.of(authenticatedUser.getUser().getId());
+        List<OrderLine> orderLines = buildOrderLines(requestDTO.getItems());
 
-        Money itemsSubtotal = itemsSubtotal(orderItems);
-        Money shippingCost = calculateShippingCost(itemsSubtotal);
-        Money taxes = itemsSubtotal.times(TAX_RATE);
-        Money grandTotalUsd = itemsSubtotal.plus(taxes).plus(shippingCost);
-
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setItems(orderItems);
-        order.setShippingInformation(requestDTO.getShippingInformation());
-        order.setTotalAmount(grandTotalUsd);
-        order.setPayment(buildInitialPayment(requestDTO.getPaymentInfo().getMethod(), grandTotalUsd));
-        order.setOrderStatus(OrderStatus.PENDING);
+        Order order = Order.place(
+                userId,
+                orderLines,
+                requestDTO.getShippingInformation(),
+                requestDTO.getPaymentInfo().getMethod(),
+                pricingPolicy);
         Order savedOrder = orderRepository.save(order);
 
-        applyStockAndClearCart(userId, orderItems);
+        applyStockAndClearCart(userId, orderLines);
         return savedOrder;
     }
 
-    private List<OrderItem> buildOrderItems(List<OrderItemRequestDTO> itemRequests) {
-        List<OrderItem> orderItems = new ArrayList<>();
+    private List<OrderLine> buildOrderLines(List<OrderItemRequestDTO> itemRequests) {
+        List<OrderLine> orderLines = new ArrayList<>();
         for (OrderItemRequestDTO itemRequest : itemRequests) {
             Product product = productService.getProductById(itemRequest.getProductId());
             int requestedQty = itemRequest.getQuantity();
             if (product.getStock() < requestedQty) {
                 throw new BadRequestException("Insufficient stock for product: " + product.getTitle());
             }
-            orderItems.add(orderMapper.toOrderItem(product, requestedQty));
+            orderLines.add(orderMapper.toOrderLine(product, requestedQty));
         }
-        return orderItems;
+        return orderLines;
     }
 
-    private Money itemsSubtotal(List<OrderItem> orderItems) {
-        return orderItems.stream()
-                .map(i -> i.getPrice().times(i.getQuantity()))
-                .reduce(Money.ZERO, Money::plus);
-    }
-
-    private void applyStockAndClearCart(String userId, List<OrderItem> orderItems) {
-        for (OrderItem item : orderItems) {
-            productService.decreaseStock(item.getProductId(), item.getQuantity());
+    private void applyStockAndClearCart(UserId userId, List<OrderLine> orderLines) {
+        for (OrderLine line : orderLines) {
+            productService.decreaseStock(line.getProductId().value(), line.getQuantity().toInt());
         }
-        Map<String, Integer> qtyMap = orderItems.stream()
-                .collect(Collectors.toMap(OrderItem::getProductId, OrderItem::getQuantity));
-        cartService.removeItems(userId, null, qtyMap);
+        Map<String, Integer> qtyMap = orderLines.stream()
+                .collect(Collectors.toMap(
+                        line -> line.getProductId().value(),
+                        line -> line.getQuantity().toInt()));
+        cartService.removeItems(userId.value(), null, qtyMap);
     }
 
     /**
@@ -210,10 +177,7 @@ public class CustomerOrderService {
      *
      * <p>The call therefore has to go through {@link #self}: invoking
      * {@code createOrder(...)} directly would resolve on {@code this} rather than on the
-     * proxy, and the {@code @Transactional} on it would never be applied. That was the
-     * behavior before this fix — with no transaction manager configured it made no
-     * difference, but now that transactions are real it would have meant order placement
-     * silently running unprotected.
+     * proxy, and the {@code @Transactional} on it would never be applied.
      */
     public CreateOrderResponse createOrderAndGetMomoUrl(AuthenticatedUser authenticatedUser, OrderCreationRequestDTO requestDTO) {
         Order order = self.getObject().createOrder(authenticatedUser, requestDTO);
@@ -224,24 +188,12 @@ public class CustomerOrderService {
         return new CreateOrderResponse(order.getId(), paymentUrl);
     }
 
-    private Money calculateShippingCost(Money subtotal) {
-        return subtotal.isGreaterThan(SHIPPING_COST_THRESHOLD) ? FREE_SHIPPING_COST : DEFAULT_SHIPPING_COST;
-    }
-
-    private Payment buildInitialPayment(String method, Money amount) {
-        Transaction transaction = new Transaction();
-        transaction.setTransactionId(UUID.randomUUID().toString());
-        transaction.setStatus(TransactionStatus.PENDING);
-        transaction.setAmount(amount);
-        transaction.setRawResponse("Pending payment: " + amount.toDouble());
-        transaction.setCreatedAt(Instant.now());
-
-        Payment payment = new Payment();
-        payment.setMethod(method);
-        payment.setTransactions(List.of(transaction));
-        return payment;
-    }
-
+    /**
+     * The gateway's IPN callback. Recording the transaction and moving the status are one
+     * operation on the aggregate now, so a callback can no longer set a status the transition
+     * table would refuse — a failed checkout returning the order to {@code PENDING} is a
+     * declared edge in that table rather than an assignment nobody checked.
+     */
     @Transactional
     public void updateOrderStatusFromMomo(String momoOrderId,
                                           String momoTransactionId,
@@ -251,21 +203,7 @@ public class CustomerOrderService {
         Order order = orderRepository.findById(ourOrderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        Payment payment = order.getPayment();
-        Transaction txn = new Transaction();
-        txn.setTransactionId(momoTransactionId);
-        txn.setStatus(resultCode == 0 ? TransactionStatus.SUCCESSFUL : TransactionStatus.FAILED);
-        txn.setAmount(order.getTotalAmount());
-        txn.setRawResponse(rawResponse);
-        txn.setCreatedAt(Instant.now());
-
-        payment.getTransactions().add(txn);
-
-        if (resultCode == 0) {
-            order.setOrderStatus(OrderStatus.PROCESSING);
-        } else {
-            order.setOrderStatus(OrderStatus.PENDING);
-        }
+        order.recordGatewayResult(momoTransactionId, resultCode == 0, rawResponse);
 
         orderRepository.save(order);
     }
