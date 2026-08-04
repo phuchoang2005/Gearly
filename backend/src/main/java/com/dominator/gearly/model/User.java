@@ -1,5 +1,6 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.shared.domain.PersonName;
 import com.dominator.gearly.shared.domain.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;

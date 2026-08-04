@@ -2,7 +2,7 @@ package com.dominator.gearly.mapper;
 
 import com.dominator.gearly.dto.AdminUserDTO;
 import com.dominator.gearly.dto.UserResponseDTO;
-import com.dominator.gearly.model.Address;
+import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.model.UserStatus;
 import com.dominator.gearly.shared.domain.Role;

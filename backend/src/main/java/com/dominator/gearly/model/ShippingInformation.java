@@ -1,5 +1,6 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.shared.domain.Address;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;

@@ -1,6 +1,6 @@
 package com.dominator.gearly.dto;
 
-import com.dominator.gearly.model.Address;
+import com.dominator.gearly.shared.domain.Address;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

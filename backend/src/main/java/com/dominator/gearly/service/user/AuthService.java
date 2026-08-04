@@ -9,7 +9,7 @@ import com.dominator.gearly.exception.ConflictException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.exception.UnauthorizedException;
 import com.dominator.gearly.mapper.UserMapper;
-import com.dominator.gearly.model.Address;
+import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.model.UserStatus;
 import com.dominator.gearly.model.VerificationToken;
