@@ -314,22 +314,149 @@ aggregates that use them are built in S10–S12. `ProductSearchDTO.minPrice/maxP
 **Goal:** `Order` becomes a real aggregate root that **cannot be put into an illegal state.** Highest-value sprint of the program.
 
 **Backlog**
-- [ ] **Move + de-anemize:** `Order`, `OrderItem`→`OrderLine`, `Payment`, `Transaction`→`PaymentTransaction`, `ShippingInformation` into `ordering/domain`. **Drop the stray `@Document`** on the embedded types (they are never standalone collections — a copy-paste artifact). Remove `@Setter`/`@AllArgsConstructor`; private no-arg constructor for Spring Data.
-- [ ] **`OrderStatus` owns the transition table:** move `ALLOWED_SOURCES` (`AdminOrderService.java:36-44`) onto the enum as `canTransitionTo(target)` / `assertCanTransitionTo(target)`; `TX_EFFECTS` moves onto `Order`.
-- [ ] **Behavior onto the aggregate:** `Order.place(UserId, List<OrderLine>, ShippingInformation, PaymentMethod, PricingPolicy)`, `cancel(reason)`, `transitionTo(status)`, `recordPayment(tx)`, `markReviewed()`, `isOwnedBy(UserId)`. `Payment.isSettled()`, `Payment.initiateRefund(Money)` — replacing the feature-envy `CustomerOrderService.initiateRefund(order, payment)` at `:125-134`.
-- [ ] **`PricingPolicy` domain service:** the four constants at `CustomerOrderService.java:41-44` become `@ConfigurationProperties("gearly.pricing")` bound into it. **Behavior preserved exactly:** 8% tax; subtotal > $30 → free shipping, else $15.
-- [ ] **Close all three bypass paths:** `patchOrder:83` and `OrderMapper.applyUpsert:38` route status changes through `order.transitionTo(...)`; `updateOrderStatusFromMomo:232` uses `recordPayment` + `transitionTo`. Also **reconcile the contradiction** — `ALLOWED_SOURCES` says `PENDING_REFUND` comes only from `DELIVERED`, but `cancelOrder:105-118` drives `PENDING`/`PROCESSING → PENDING_REFUND`. The cancel path is the real rule: widen the table and encode it **once**. *Deliberate behavior change — update the S8 characterization test in the same commit.*
-- [ ] **Also fix `patchOrder`:** it silently recomputes the order total from whatever items the client sent (`AdminOrderService.java:92-98`), with no relation to catalog prices. Route through the aggregate.
-- [ ] **Keep the API stable:** `transition` now throws instead of returning `boolean`, but the application service catches and preserves the existing `ResponseEntity<Boolean>` contract on the seven `/api/admin/orders/{id}/set-*` endpoints — **no frontend change required.**
-- [ ] **Ports:** `OrderRepository` interface in `ordering/domain`; `MongoOrderRepository` adapter in `ordering/infrastructure` wrapping Spring Data. `OrderRepositoryCustomImpl`'s criteria-building moves into the adapter.
-- [ ] **Application layer:** `PlaceOrderService`, `CancelOrderService`, `OrderQueryService`, `AdminOrderService` — take command records and a `UserId`, **never** `AuthenticatedUser` (controllers unwrap; `CartController.java:25` already does this correctly).
-- [ ] **Domain events:** an `AggregateRoot` base collects them. `OrderPlaced`, `OrderCancelled`, `OrderStatusChanged`, `PaymentRecorded`. `OrderPlaced` → `@TransactionalEventListener(BEFORE_COMMIT)` performs the stock decrement + cart clear **inside** the now-real transaction. The MoMo URL call moves to `AFTER_COMMIT`, so an external HTTP call is never inside a transaction (currently `CustomerOrderService.java:191`).
-- [ ] **Relocate `service/common/PaymentFactory`** into `ordering/domain` — it is already a domain factory, just misfiled.
-- [ ] **Tighten ArchUnit** onto `ordering..`.
+- [x] **Move + de-anemize:** `Order`, `OrderItem`→`OrderLine`, `Payment`, `Transaction`→`PaymentTransaction`, `ShippingInformation` into `ordering/domain`. **Drop the stray `@Document`** on the embedded types (they are never standalone collections — a copy-paste artifact). Remove `@Setter`/`@AllArgsConstructor`; private no-arg constructor for Spring Data.
+- [x] **`OrderStatus` owns the transition table:** move `ALLOWED_SOURCES` (`AdminOrderService.java:36-44`) onto the enum as `canTransitionTo(target)` / `assertCanTransitionTo(target)`; `TX_EFFECTS` moves onto `Order`.
+- [x] **Behavior onto the aggregate:** `Order.place(UserId, List<OrderLine>, ShippingInformation, PaymentMethod, PricingPolicy)`, `cancel(reason)`, `transitionTo(status)`, `recordPayment(tx)`, `markReviewed()`, `isOwnedBy(UserId)`. `Payment.isSettled()`, `Payment.initiateRefund(Money)` — replacing the feature-envy `CustomerOrderService.initiateRefund(order, payment)` at `:125-134`.
+- [x] **`PricingPolicy` domain service:** the four constants at `CustomerOrderService.java:41-44` become `@ConfigurationProperties("gearly.pricing")` bound into it. **Behavior preserved exactly:** 8% tax; subtotal > $30 → free shipping, else $15.
+- [x] **Close all three bypass paths:** `patchOrder:83` and `OrderMapper.applyUpsert:38` route status changes through `order.transitionTo(...)`; `updateOrderStatusFromMomo:232` uses `recordPayment` + `transitionTo`. Also **reconcile the contradiction** — `ALLOWED_SOURCES` says `PENDING_REFUND` comes only from `DELIVERED`, but `cancelOrder:105-118` drives `PENDING`/`PROCESSING → PENDING_REFUND`. The cancel path is the real rule: widen the table and encode it **once**. *Deliberate behavior change — update the S8 characterization test in the same commit.*
+- [x] **Also fix `patchOrder`:** it silently recomputes the order total from whatever items the client sent (`AdminOrderService.java:92-98`), with no relation to catalog prices. Route through the aggregate.
+- [x] **Keep the API stable:** `transition` now throws instead of returning `boolean`, but the application service catches and preserves the existing `ResponseEntity<Boolean>` contract on the seven `/api/admin/orders/{id}/set-*` endpoints — **no frontend change required.**
+- [x] **Ports:** `OrderRepository` interface in `ordering/domain`; `MongoOrderRepository` adapter in `ordering/infrastructure` wrapping Spring Data. `OrderRepositoryCustomImpl`'s criteria-building moves into the adapter.
+- [x] **Application layer:** `PlaceOrderService`, `CancelOrderService`, `OrderQueryService`, `AdminOrderService` — take command records and a `UserId`, **never** `AuthenticatedUser` (controllers unwrap; `CartController.java:25` already does this correctly).
+- [x] **Domain events:** an `AggregateRoot` base collects them. `OrderPlaced`, `OrderCancelled`, `OrderStatusChanged`, `PaymentRecorded`. `OrderPlaced` → `@TransactionalEventListener(BEFORE_COMMIT)` performs the stock decrement + cart clear **inside** the now-real transaction. The MoMo URL call moves to `AFTER_COMMIT`, so an external HTTP call is never inside a transaction (currently `CustomerOrderService.java:191`).
+- [x] **Relocate `service/common/PaymentFactory`** into `ordering/domain` — it is already a domain factory, just misfiled.
+- [x] **Tighten ArchUnit** onto `ordering..`.
 
 **Verify:** the S8 characterization tests are green — that is the proof. `grep -rn "setOrderStatus" backend/src/main` returns zero hits outside `Order`. An illegal transition returns **409 from every path**, including `PATCH`.
 
 **Risks:** **highest churn in the program** — entirely dependent on S8's safety net existing first. Split into compile-green steps: *move → encapsulate → extract policy → events*, compiling between each.
+
+### S10 outcome — shipped
+
+Branch `ddd/s10-ordering`, eight commits. **334 tests green** (267 before the sprint).
+
+| Item | Landed as |
+|---|---|
+| Move + de-anemize | `Order`, `OrderLine`, `Payment`, `PaymentTransaction`, `ShippingInformation` in `ordering/domain`; no public setters, four stray `@Document`s dropped |
+| Transition table | `OrderStatus.canTransitionTo` / `assertCanTransitionTo`, 23 tests; `TX_EFFECTS` onto `Order` |
+| Behavior | `place`, `cancel`, `transitionTo`, `recordGatewayResult`, `recordPayment`, `markReviewed`, `isOwnedBy`, `isPaid`, `replaceContent`, `amend`; `Payment.isSettled` / `initiateRefund` |
+| PricingPolicy | domain service bound from `gearly.pricing.*` by `OrderingConfiguration` |
+| Bypass paths | all three closed — `grep -rn setOrderStatus src/main` finds only the response DTO's own setter |
+| Ports | `OrderRepository` + `OrderQuery` + `OrderPage` in the domain; `MongoOrderRepository` adapter, 13 new integration tests |
+| Application + api | `PlaceOrderService`, `CancelOrderService`, `OrderQueryService`, `AdminOrderService`, `OnlinePaymentService`, all taking a `UserId` and a command record |
+| Domain events | `AggregateRoot` / `DomainEvent` in the kernel; `OrderPlaced` → `BEFORE_COMMIT` listener |
+| ArchUnit | `allowEmptyShould` removed from all ten rules, two new ones added, 12 total |
+
+**Verification actually performed**, not just asserted:
+
+- **The `BEFORE_COMMIT` phase was falsified.** Switching `OrderPlacedListener` to
+  `AFTER_COMMIT` makes the S8 rollback test fail against a real replica set — the order
+  survives a failed placement. The phase is load-bearing, not decoration. Restored, all
+  green. The positive control covers the other direction, so the rollback test cannot
+  pass by the listener simply never running.
+- **Both new ArchUnit rules were falsified** the way S8 falsified its ten: an
+  `AuthenticatedUser` field on `OrderQueryService` fails
+  `security_types_stop_at_the_api_layer`; a `MongoRepository` field on
+  `AdminOrderService` fails `spring_data_repositories_live_only_in_infrastructure`.
+- **The 409 is asserted through the real HTTP stack**, not through a service call:
+  `AdminOrderStatusEndpointTest` drives `PATCH {"orderStatus":"REFUNDED"}` through the
+  real security chain and the real `GlobalExceptionHandler` and gets a 409, and drives a
+  refused `set-ship` and gets `200 false`. Both halves in one place, because they pull in
+  opposite directions.
+- `GearlyApplicationTests.contextLoads` runs against a real Mongo, so the whole rewired
+  bean graph — five new application services, the adapter, the event listener, the
+  `@ConfigurationProperties` binding — is proven to start.
+- The stored BSON is still what it was: `DomainTypeBsonRoundTripTest` reads the **raw
+  `org.bson.Document`** and asserts `userId` is a `String`, `items[].productId` a
+  `String`, `items[].quantity` an `Integer` and `orderStatus` a `String` after adopting
+  `UserId`, `ProductId` and `Quantity` on the aggregate.
+
+**What running it for real caught that the plan did not anticipate:**
+
+Giving the aggregate behavior **silently added three fields to every order response.**
+Jackson reads `isX()` as a property, so `Order.isPaid()`, `Payment.isSettled()` and
+`PaymentTransaction.isSuccessful()` became `paid`, `settled` and `successful` on the wire.
+`ResponseDtoWireCompatTest` caught `paid` — but *not* the other two, because an order's
+`payment` is the same domain object on both sides of the DTO-equals-entity comparison, so
+a field added to a nested type appears in both trees and they stay equal. That is the S9
+lesson in a new place. All three are `@JsonIgnore`d, and a new test now pins the literal
+JSON key set of an order, its payment, its transactions, its lines and its shipping.
+
+**Deviations from the plan as written, and why:**
+
+1. **`PENDING → PROCESSING` gained a reverse edge.** The plan said the MoMo callback should
+   use `transitionTo`, and the S8 suite pins a failed callback forcing an order back to
+   `PENDING`. Those two are only compatible if the payment reversal is a declared edge of
+   the table, so it is one. The alternative — a special case inside the aggregate for the
+   gateway — is a bypass with better manners.
+2. **`initiateRefund` takes the raw-response text as a second argument.** The plan's
+   signature is `initiateRefund(Money)`, but every refund row in the collection carries the
+   `"Refund initiated for order: …"` note and dropping it would lose the order reference.
+3. **`PaymentMethod` stayed a `String`.** The stored values are inconsistent — `"cod"` from
+   the customer path, `"MOMO"` in fixtures — so an enum needs a case-folding converter and
+   would make any unrecognized legacy value unreadable. S13 introduces it with the
+   `PaymentGateway` port, where the supported set is actually decided.
+4. **The MoMo call is not on an `AFTER_COMMIT` listener.** It could not be: the endpoint
+   returns the gateway URL synchronously, and a listener has nowhere to return it to. The
+   plan's actual goal — no external HTTP call inside a transaction — is met by
+   `OnlinePaymentService` being a separate, non-transactional bean that calls the
+   transactional `PlaceOrderService`. That is also what **removes the `ObjectProvider`
+   self-reference** S8 introduced and flagged for this sprint.
+5. **`OrderPlaced` carries no order id.** Identity is assigned by MongoDB on insert, and
+   nothing that reacts to placement needs one — the stock decrement and cart clear key off
+   the lines and the buyer. Adding it means moving identity assignment into the domain,
+   which is worth doing deliberately rather than as a side effect of introducing events.
+6. **`Address` moved to `shared/domain`** (and lost its own stray `@Document`).
+   `ShippingInformation` could not enter `ordering.domain` while it referenced
+   `model.Address` — `domain_does_not_reach_back_into_legacy_packages` says so. It stays a
+   mutable Lombok bag until S12, which owns the Identity path that would have to change.
+7. **`TransactionRepository` was deleted**, an S13 item pulled forward by necessity: it was
+   injected nowhere and typed on what is now an embedded-only class.
+8. **The `MongoTemplate` ArchUnit rule was narrowed to permit `..infrastructure..`.** It
+   permitted `analytics` alone, which was too strict to be right rather than usefully
+   strict: a repository adapter is by definition the layer that knows the storage
+   technology, and the customer order search — a dozen optional regex clauses OR'd together
+   — cannot be expressed any other way. Under the old wording the only way to pass was to
+   leave the criteria in the legacy `repository/` package, i.e. to pass by not finishing the
+   move. **S13's verify step should be read as `grep -rn "MongoTemplate" backend/src/main |
+   grep -vE 'analytics|infrastructure'`.**
+
+**Deliberate behavior changes, each with its test edited in the same commit:**
+
+- **`PENDING_REFUND` reconciled** — widened to `{PENDING, PROCESSING, DELIVERED}`, as
+  planned. The cancel path was the real rule; narrowing instead would have stranded paid
+  cancellations with no way to record the refund.
+- **The total is derived, never assigned.** `PUT` used to take the client's `totalAmount`
+  and the client's `items` independently, so a payload could store lines worth $10 against
+  a total of $10,000. `PATCH` recomputed the bare line sum, silently dropping the tax and
+  shipping the order was placed with. Both re-derive through `PricingPolicy` now.
+- **The S8 `KNOWN BUG` about the immutable transaction list is fixed.** A freshly placed
+  order accepts further transactions in memory; the list it hands out is still unmodifiable,
+  now deliberately, so appending goes through the aggregate.
+- **An unrecognized `?status=` is a 400.** It used to be a 500 or an empty list depending on
+  whether a search term accompanied it, because the two query paths read the parameter
+  differently.
+- **`cancelOrder` throws `OrderCannotBeCancelledException`, not `ConflictException`.** Same
+  409 — the domain may not name `org.springframework.http`, so the aggregate states the rule
+  and `GlobalExceptionHandler` picks the code. `GlobalExceptionHandlerTest` pins that.
+
+**🔴 Companion frontend task — the one user-visible consequence.**
+`frontend_admin/gearly/src/pages/orders/create.tsx` computes `totalAmount` as the bare sum
+of the lines, shows it in a read-only field, and posts it. The server now ignores that value
+and derives the total, so an admin-created order will store **subtotal + 8% tax + shipping**
+where the form displayed just the subtotal. The stored number is the correct one — it is what
+a customer-placed order costs — but the form's label is now wrong. Fix is display-only:
+relabel the field "Subtotal", or drop it and show the server's total after creation. Nothing
+breaks in the meantime; the number shown before saving simply understates what is charged.
+The `set-*` buttons are unaffected — verified in
+`components/order/actions/index.tsx`, which reads the boolean this sprint deliberately kept.
+
+**Carried into later sprints (not S10 gaps):** the unguarded `getImages().getFirst()` in the
+catalog snapshot and the five duplicated stock checks are S11's, along with the
+`CatalogSnapshot` ACL that replaces `PlaceOrderService.snapshotFromCatalog` entirely; the
+missing ownership check on `getOrderById` is S12's IDOR item and is flagged in the code that
+has it; nothing restocks a cancelled order's units, which needs S11's
+`Product.restock(Quantity)` and an `OrderCancelled` listener.
 
 ---
 
