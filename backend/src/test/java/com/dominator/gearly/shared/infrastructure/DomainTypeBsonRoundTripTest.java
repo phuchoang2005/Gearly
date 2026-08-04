@@ -1,5 +1,6 @@
 package com.dominator.gearly.shared.infrastructure;
 
+import com.dominator.gearly.dto.BestSellerDTO;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.Category;
 import com.dominator.gearly.model.CartItem;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
@@ -443,6 +445,34 @@ class DomainTypeBsonRoundTripTest {
 
         // categoryNames is @Transient — a read-model field that must never be persisted
         assertThat(raw).doesNotContainKey("categoryNames");
+    }
+
+    /**
+     * Aggregation projections do not go through a mapper, so nothing in the mapper tests
+     * covers them. {@code BestSellerDTO} is filled straight from a {@code $project} stage;
+     * its {@code Money} field has to be populated by the same converter pair the entities
+     * use, or the admin dashboard's top-products panel quietly reports a null price.
+     */
+    @Test
+    @DisplayName("a Money field on an aggregation projection is populated from the stored double")
+    void moneyIsMappedIntoAnAggregationProjection() {
+        mongoTemplate.getCollection("products")
+                .insertOne(new Document("_id", new ObjectId(PRODUCT_HEX))
+                        .append("title", "RTX 4090")
+                        .append("price", 1599.0));
+
+        BestSellerDTO projected = mongoTemplate.aggregate(
+                        Aggregation.newAggregation(
+                                Aggregation.project()
+                                        .and("_id").as("productId")
+                                        .and("title").as("title")
+                                        .and("price").as("price")),
+                        "products", BestSellerDTO.class)
+                .getMappedResults()
+                .getFirst();
+
+        assertThat(projected.getPrice()).isEqualTo(Money.of(1599.0));
+        assertThat(projected.getProductId()).isEqualTo(PRODUCT_HEX);
     }
 
     /**
