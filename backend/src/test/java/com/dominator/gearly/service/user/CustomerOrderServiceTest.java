@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -43,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -72,10 +75,20 @@ class CustomerOrderServiceTest {
 
     private static final String USER_ID = "user-1";
 
+    /**
+     * Stands in for the Spring proxy {@code createOrderAndGetMomoUrl} routes through.
+     * Holding it here lets a test assert that the proxy was used rather than {@code this}
+     * — which is exactly the self-invocation bug S8 fixed.
+     */
+    private ObjectProvider<CustomerOrderService> selfProvider;
+
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
+        selfProvider = mock(ObjectProvider.class);
         service = new CustomerOrderService(orderRepository, productService, cartService,
-                momoService, new OrderMapper());
+                momoService, new OrderMapper(), selfProvider);
+        lenient().when(selfProvider.getObject()).thenReturn(service);
     }
 
     // ---- fixtures ----------------------------------------------------------
@@ -289,6 +302,20 @@ class CustomerOrderServiceTest {
 
         assertThat(response.getOrderId()).isEqualTo("order-9");
         assertThat(response.getPayUrl()).isEqualTo("https://momo.test/pay/order-9");
+    }
+
+    @Test
+    @DisplayName("createOrderAndGetMomoUrl places the order through the proxy, not through 'this'")
+    void createOrderAndGetMomoUrl_routesPlacementThroughTheProxy() {
+        // Regression guard for the S8 self-invocation fix. A direct this.createOrder(...)
+        // call would skip the @Transactional advice, so order placement would run with no
+        // transaction at all now that a transaction manager actually exists.
+        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
+        stubSaveReturnsArgument();
+
+        service.createOrderAndGetMomoUrl(authUser(USER_ID), orderRequest("p1", 2));
+
+        verify(selfProvider).getObject();
     }
 
     // ---- cancelOrder -------------------------------------------------------
