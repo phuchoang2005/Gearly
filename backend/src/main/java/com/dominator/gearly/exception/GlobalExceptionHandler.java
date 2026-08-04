@@ -1,6 +1,7 @@
 package com.dominator.gearly.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -53,6 +54,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Malformed request body"));
+    }
+
+    /**
+     * An optimistic-locking clash → 409, not a leaked 500.
+     *
+     * <p>Raised when a {@code @Version}ed document (Product, Order, Cart) was changed by
+     * someone else between this request reading it and writing it back — most importantly
+     * two concurrent checkouts racing on the same product's stock, which is exactly the
+     * oversell the version field exists to prevent. 409 tells the caller the request was
+     * valid but is now stale: re-read and retry.
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLocking(OptimisticLockingFailureException ex) {
+        log.warn("Optimistic locking conflict: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT.value(),
+                        "This item was modified by another request. Please refresh and try again."));
     }
 
     /** Missing static resource (e.g. an avatar/media file under /uploads/**) → 404, not 500. */

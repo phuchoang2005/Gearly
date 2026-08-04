@@ -1,11 +1,12 @@
-// In-place schema migration for the Bookify -> Gearly rename (Sprint 5) plus the
-// Sprint 7 product-timestamp type change.
+// In-place schema migration for the Bookify -> Gearly rename (Sprint 5), the
+// Sprint 7 product-timestamp type change, and the Sprint 8 optimistic-locking field.
 //
 // Renames the `books` collection -> `products` and the `bookId` reference key
 // -> `productId` everywhere it appears (top-level in reviews/blogPosts, nested
-// in carts.items[]), and converts products.addedAt/modifiedAt from ISO-8601
+// in carts.items[]), converts products.addedAt/modifiedAt from ISO-8601
 // strings to real BSON Dates (matching Product.addedAt/modifiedAt : Instant, so
-// the "newest" sort orders chronologically). Idempotent: safe to run more than once.
+// the "newest" sort orders chronologically), and backfills the `version` field that
+// Product/Order/Cart gained with @Version. Idempotent: safe to run more than once.
 //
 // Use this when you already have a populated database whose data you want to
 // keep (as opposed to re-seeding from the dumps with seed.sh). Run it against
@@ -89,6 +90,21 @@
       [{ $set: { [field]: { $toDate: "$" + field } } }]
     );
     print(`products: ${field} string -> Date in ${res.modifiedCount} docs`);
+  }
+
+  // 6. products/orders/carts: backfill the optimistic-locking version (Sprint 8).
+  //    Product, Order and Cart gained @Version. Spring Data reads a MISSING version as
+  //    null and treats a null version as "not yet persisted", so the first save() of a
+  //    pre-S8 document would be issued as an insert and fail on the duplicate _id.
+  //    Seeding 0 makes those documents update normally. Guarded on $exists, so re-runs
+  //    skip documents that already carry a version and never reset a live counter.
+  for (const c of ["products", "orders", "carts"]) {
+    if (!names.includes(c)) continue;
+    const res = db[c].updateMany(
+      { version: { $exists: false } },
+      { $set: { version: NumberLong(0) } }
+    );
+    print(`${c}: version backfilled in ${res.modifiedCount} docs`);
   }
 
   print("Migration complete.");

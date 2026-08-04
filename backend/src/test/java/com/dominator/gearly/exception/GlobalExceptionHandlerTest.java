@@ -2,6 +2,7 @@ package com.dominator.gearly.exception;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -38,6 +39,12 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/bad-request")
         void badRequest() {
             throw new BadRequestException("bad input");
+        }
+
+        @GetMapping("/boom/stale")
+        void stale() {
+            throw new OptimisticLockingFailureException(
+                    "Cannot save entity 42 with version 3 to collection products");
         }
 
         @GetMapping("/boom/generic")
@@ -95,6 +102,18 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("Malformed request body"));
+    }
+
+    @Test
+    void optimisticLockingFailure_maps409_withoutLeakingTheVersion() throws Exception {
+        // A concurrent checkout losing the race on a @Versioned Product must read as a
+        // retryable conflict, not as a server error — and must not disclose the internal
+        // version counter or collection name.
+        mvc.perform(get("/boom/stale"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error")
+                        .value("This item was modified by another request. Please refresh and try again."));
     }
 
     @Test
