@@ -3,18 +3,42 @@ services:
     image: mongo:6.0
     container_name: mongodb
     restart: no
+    # Single-node replica set. MongoDB only offers multi-document transactions on a
+    # replica set or a sharded cluster, so without --replSet every @Transactional in the
+    # application is silently inert. See backend/README.md "Transactions".
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      # Doubles as the one-shot rs.initiate(). The first probe initiates the set; every
+      # later probe just confirms this node is a writable primary, so the check is
+      # idempotent and safe against an existing data volume.
+      #
+      # The member is registered as localhost:27017 rather than mongodb:27017 so that
+      # tools on the developer's machine (mongosh, Compass, `make run`) can follow the
+      # topology. Containers therefore connect with directConnection=true, which skips
+      # topology discovery but still permits transactions.
+      test: >
+        mongosh --quiet --eval "try { rs.status() } catch (e) {
+        rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]}) }
+        quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 5s
   spring-app:
     build: .
     container_name: spring-app
     restart: no
     depends_on:
-      - mongodb
+      mongodb:
+        # Wait for the replica set to have a primary, not merely for the port to open —
+        # the app's first transactional write would otherwise fail.
+        condition: service_healthy
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/gearly
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/gearly?directConnection=true
       SPRING_PROFILES_ACTIVE: docker
       # Secrets & config injected from backend/.env (see .env.example)
       JWT_SECRET: ${JWT_SECRET}

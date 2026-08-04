@@ -3,22 +3,34 @@ services:
     image: mongo:6.0
     container_name: mongodb
     restart: no
+    # Single-node replica set — see docker-compose.yml for why, and README "Transactions".
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "try { rs.status() } catch (e) {
+        rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]}) }
+        quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 5s
   spring-app:
     image: maven:3.9.9-eclipse-temurin-21 # Sử dụng image maven để chạy lệnh run
     container_name: spring-app
     restart: no
     working_dir: /app
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     volumes:
       - .:/app # Mount toàn bộ project vào container
       - ~/.m2:/root/.m2 # Cache Maven dependencies để khởi động nhanh hơn
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/gearly
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/gearly?directConnection=true
       SPRING_PROFILES_ACTIVE: docker
       # Secrets & config injected from backend/.env (see .env.example)
       JWT_SECRET: ${JWT_SECRET}
