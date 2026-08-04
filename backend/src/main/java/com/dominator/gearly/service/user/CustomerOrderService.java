@@ -9,6 +9,7 @@ import com.dominator.gearly.model.*;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,18 @@ public class CustomerOrderService {
     private final CartService cartService;
     private final MomoService momoService;
     private final OrderMapper orderMapper;
+
+    /**
+     * This service, resolved through the Spring proxy. Needed because a plain
+     * {@code this.createOrder(...)} call would bypass the proxy and with it the
+     * {@code @Transactional} advice — see {@link #createOrderAndGetMomoUrl}. An
+     * {@code ObjectProvider} rather than a direct self-injection because the latter is a
+     * constructor cycle.
+     *
+     * <p>Temporary. S10 replaces this with an {@code OrderPlaced} event handled
+     * {@code AFTER_COMMIT}, at which point the seam disappears.
+     */
+    private final ObjectProvider<CustomerOrderService> self;
 
     private static final BigDecimal TAX_RATE = new BigDecimal("0.08");
     private static final BigDecimal SHIPPING_COST_THRESHOLD = new BigDecimal("30.00");
@@ -184,9 +197,23 @@ public class CustomerOrderService {
         cartService.removeItems(userId, null, qtyMap);
     }
 
-    @Transactional
+    /**
+     * Place an order and hand back the gateway URL the customer is redirected to.
+     *
+     * <p>Deliberately <b>not</b> {@code @Transactional}. The transaction belongs to
+     * {@link #createOrder} alone — one aggregate, one transaction — and it must be closed
+     * before the MoMo call goes out, so a slow or unreachable third party can never hold a
+     * database transaction open.
+     *
+     * <p>The call therefore has to go through {@link #self}: invoking
+     * {@code createOrder(...)} directly would resolve on {@code this} rather than on the
+     * proxy, and the {@code @Transactional} on it would never be applied. That was the
+     * behavior before this fix — with no transaction manager configured it made no
+     * difference, but now that transactions are real it would have meant order placement
+     * silently running unprotected.
+     */
     public CreateOrderResponse createOrderAndGetMomoUrl(AuthenticatedUser authenticatedUser, OrderCreationRequestDTO requestDTO) {
-        Order order = createOrder(authenticatedUser, requestDTO);
+        Order order = self.getObject().createOrder(authenticatedUser, requestDTO);
         BigDecimal amountUsd = BigDecimal.valueOf(order.getTotalAmount());
         String paymentUrl = momoService.createPaymentUrl(amountUsd, order.getId());
         return new CreateOrderResponse(order.getId(), paymentUrl);

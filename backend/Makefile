@@ -55,11 +55,18 @@ ps: ## Show stack status
 ## ---- MongoDB / data --------------------------------------------------------
 
 .PHONY: mongo-up
-mongo-up: ## Start just MongoDB and wait until it accepts connections
+mongo-up: ## Start just MongoDB and wait for the replica set to elect a primary
 	$(COMPOSE) up -d $(MONGO_CONTAINER)
-	@printf 'waiting for mongodb'
-	@until docker exec $(MONGO_CONTAINER) mongosh --quiet --eval 'db.runCommand({ping:1}).ok' >/dev/null 2>&1; do printf '.'; sleep 1; done
-	@echo ' ready'
+	@printf 'waiting for mongodb replica set'
+	@# Not just a ping: the port opens well before rs.initiate() completes, and the app's
+	@# first transactional write fails against a set with no primary. The compose
+	@# healthcheck does the initiating; this waits for it to report healthy.
+	@until docker exec $(MONGO_CONTAINER) mongosh --quiet --eval 'quit(db.hello().isWritablePrimary ? 0 : 1)' >/dev/null 2>&1; do printf '.'; sleep 1; done
+	@echo ' primary ready'
+
+.PHONY: rs-status
+rs-status: ## Show the replica-set status (rs.status().ok should print 1)
+	@docker exec $(MONGO_CONTAINER) mongosh --quiet "mongodb://localhost:27017/$(MONGO_DB)" --eval 'rs.status().ok'
 
 .PHONY: seed
 seed: mongo-up ## Seed the sample catalog (data/seed/gearly.*.json) into MongoDB
