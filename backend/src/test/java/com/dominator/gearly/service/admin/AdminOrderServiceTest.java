@@ -2,8 +2,8 @@ package com.dominator.gearly.service.admin;
 
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderStatus;
-import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.service.common.PaymentFactory;
 import org.junit.jupiter.api.Test;

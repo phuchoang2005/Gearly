@@ -10,7 +10,7 @@ import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.Transaction;
-import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;

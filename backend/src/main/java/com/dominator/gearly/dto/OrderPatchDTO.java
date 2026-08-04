@@ -2,6 +2,7 @@
 package com.dominator.gearly.dto;
 
 import com.dominator.gearly.model.*;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

@@ -9,7 +9,7 @@ import com.dominator.gearly.exception.ApiException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.ReviewMapper;
 import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.ReviewStatus;

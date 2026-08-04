@@ -6,6 +6,8 @@ import com.dominator.gearly.dto.OrderCreationRequestDTO;
 import com.dominator.gearly.dto.OrderItemRequestDTO;
 import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.*;
+import com.dominator.gearly.ordering.domain.OrderStatus;
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.Money;

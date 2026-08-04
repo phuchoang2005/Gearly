@@ -1,5 +1,6 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.shared.domain.Money;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;

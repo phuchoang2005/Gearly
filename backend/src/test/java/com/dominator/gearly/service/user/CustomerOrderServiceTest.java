@@ -12,12 +12,12 @@ import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.Image;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.model.OrderStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.ShippingInformation;
 import com.dominator.gearly.model.Transaction;
-import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
@@ -370,8 +370,11 @@ class CustomerOrderServiceTest {
         @Test
         @DisplayName("a paid order gets a PENDING_REFUND transaction for the full total and moves to PENDING_REFUND")
         void paid_initiatesRefund() {
-            // NOTE: this contradicts AdminOrderService.ALLOWED_SOURCES, which permits
-            // PENDING_REFUND only from DELIVERED. S10 reconciles the two in favour of this path.
+            // This used to contradict AdminOrderService.ALLOWED_SOURCES, which permitted
+            // PENDING_REFUND only from DELIVERED. S10 reconciled the two in favour of this
+            // path — the table now lists PENDING and PROCESSING as sources too, so the
+            // behavior pinned here is legal from every write path rather than only this one.
+            // See OrderStatusTest.pendingRefundIsReachableFromEveryPaidState.
             Order order = existingOrder(OrderStatus.PENDING, TransactionStatus.SUCCESSFUL);
             when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
 

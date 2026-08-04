@@ -4,7 +4,7 @@ import com.dominator.gearly.dto.QuantitySoldDTO;
 import com.dominator.gearly.dto.TopSellerDTO;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.model.OrderStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.TimeFrame;
 import com.dominator.gearly.shared.domain.Money;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,7 +1,7 @@
 package com.dominator.gearly.dto;
 
 import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.model.OrderStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.ShippingInformation;
 import com.dominator.gearly.shared.domain.Money;

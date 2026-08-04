@@ -3,7 +3,7 @@ package com.dominator.gearly.service.common;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.Transaction;
-import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.shared.domain.Money;
 import org.springframework.stereotype.Service;
 

@@ -5,8 +5,8 @@ import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.OrderMapper;
 import com.dominator.gearly.model.Order;
-import com.dominator.gearly.model.OrderStatus;
-import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.service.common.PaymentFactory;
 import com.dominator.gearly.shared.domain.Money;
@@ -15,10 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Admin order CRUD and the status-transition workflow. Sales analytics live in
@@ -32,17 +30,6 @@ public class AdminOrderService {
     private final OrderRepository orderRepository;
     private final PaymentFactory paymentFactory;
     private final OrderMapper orderMapper;
-
-    /** Source statuses from which each target status may be reached. */
-    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_SOURCES = Map.of(
-            OrderStatus.PROCESSING,     EnumSet.of(OrderStatus.PENDING),
-            OrderStatus.SHIPPED,        EnumSet.of(OrderStatus.PROCESSING),
-            OrderStatus.DELIVERED,      EnumSet.of(OrderStatus.SHIPPED),
-            OrderStatus.COMPLETED,      EnumSet.of(OrderStatus.DELIVERED),
-            OrderStatus.CANCELLED,      EnumSet.of(OrderStatus.PENDING, OrderStatus.PROCESSING),
-            OrderStatus.PENDING_REFUND, EnumSet.of(OrderStatus.DELIVERED),
-            OrderStatus.REFUNDED,       EnumSet.of(OrderStatus.PENDING_REFUND)
-    );
 
     /** Transitions that also record a payment transaction on the order. */
     private static final Map<OrderStatus, TxEffect> TX_EFFECTS = Map.of(
@@ -114,8 +101,7 @@ public class AdminOrderService {
     public boolean transition(String id, OrderStatus target) {
         Order order = findOrThrow(id);
 
-        Set<OrderStatus> allowedSources = ALLOWED_SOURCES.get(target);
-        if (allowedSources == null || !allowedSources.contains(order.getOrderStatus())) {
+        if (!order.getOrderStatus().canTransitionTo(target)) {
             return false;
         }
 

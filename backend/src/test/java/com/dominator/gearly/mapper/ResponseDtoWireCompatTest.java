@@ -8,7 +8,7 @@ import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.model.Image;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderItem;
-import com.dominator.gearly.model.OrderStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.User;

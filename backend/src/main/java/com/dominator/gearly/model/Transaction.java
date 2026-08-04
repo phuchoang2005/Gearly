@@ -1,5 +1,6 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.ordering.domain.TransactionStatus;
 import com.dominator.gearly.shared.domain.Money;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

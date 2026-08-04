@@ -6,7 +6,7 @@ import com.dominator.gearly.dto.OrderUpsertRequestDTO;
 import com.dominator.gearly.dto.QuantitySoldDTO;
 import com.dominator.gearly.dto.TopSellerDTO;
 import com.dominator.gearly.mapper.OrderMapper;
-import com.dominator.gearly.model.OrderStatus;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.model.TimeFrame;
 import com.dominator.gearly.service.admin.AdminOrderService;
 import com.dominator.gearly.service.admin.OrderAnalyticsService;
