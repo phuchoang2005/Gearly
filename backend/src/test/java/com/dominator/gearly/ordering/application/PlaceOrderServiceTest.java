@@ -7,13 +7,13 @@ import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.ordering.domain.OrderLine;
 import com.dominator.gearly.ordering.domain.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderPlaced;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.ordering.domain.Payment;
 import com.dominator.gearly.ordering.domain.PaymentTransaction;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.TransactionStatus;
-import com.dominator.gearly.service.user.CartService;
 import com.dominator.gearly.service.user.ProductService;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.UserId;
@@ -25,15 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,7 +52,7 @@ class PlaceOrderServiceTest {
 
     @Mock private OrderRepository orderRepository;
     @Mock private ProductService productService;
-    @Mock private CartService cartService;
+    @Mock private ApplicationEventPublisher events;
 
     private PlaceOrderService service;
 
@@ -65,7 +63,7 @@ class PlaceOrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PlaceOrderService(orderRepository, productService, cartService, pricingPolicy);
+        service = new PlaceOrderService(orderRepository, productService, pricingPolicy, events);
     }
 
     // ---- fixtures ----------------------------------------------------------
@@ -218,16 +216,31 @@ class PlaceOrderServiceTest {
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
+    /**
+     * The stock decrement and the cart clear are {@code OrderPlacedListener}'s now — see
+     * {@code OrderPlacedListenerTest}, which asserts the same two calls the S8 suite did.
+     * What this asserts is the half that belongs to placement: that the announcement carries
+     * everything a listener needs.
+     */
     @Test
-    @DisplayName("placement decrements stock and removes the ordered quantities from the cart")
-    void appliesStockAndClearsCart() {
+    @DisplayName("placement announces OrderPlaced with the buyer, the lines and the total")
+    void publishesOrderPlaced() {
         when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
         stubSaveReturnsArgument();
 
         service.place(USER_ID, order("p1", 2));
 
-        verify(productService).decreaseStock("p1", 2);
-        verify(cartService).removeItems(eq("user-1"), isNull(), eq(Map.of("p1", 2)));
+        ArgumentCaptor<OrderPlaced> captor = ArgumentCaptor.forClass(OrderPlaced.class);
+        verify(events).publishEvent(captor.capture());
+        OrderPlaced event = captor.getValue();
+
+        assertThat(event.userId()).isEqualTo(USER_ID);
+        assertThat(event.totalAmount()).isEqualTo(Money.of(36.60));
+        assertThat(event.lines()).singleElement().satisfies(line -> {
+            assertThat(line.getProductId().value()).isEqualTo("p1");
+            assertThat(line.getQuantity().toInt()).isEqualTo(2);
+        });
+        assertThat(event.occurredOn()).isNotNull();
     }
 
     @Test
@@ -240,7 +253,7 @@ class PlaceOrderServiceTest {
                 .hasMessage("Insufficient stock for product: Product p1");
 
         verify(orderRepository, never()).save(any());
-        verifyNoInteractions(cartService);
+        verifyNoInteractions(events);
     }
 
     @Test
@@ -251,7 +264,7 @@ class PlaceOrderServiceTest {
 
         service.place(USER_ID, order("p1", 2));
 
-        verify(productService).decreaseStock("p1", 2);
+        verify(events).publishEvent(any(OrderPlaced.class));
     }
 
     @Test

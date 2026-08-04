@@ -7,7 +7,9 @@ import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
+import com.dominator.gearly.shared.domain.DomainEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -37,15 +39,30 @@ public class MongoOrderRepository implements OrderRepository {
 
     private final SpringDataOrderRepository orders;
     private final MongoTemplate mongoTemplate;
+    private final ApplicationEventPublisher events;
 
     @Override
     public Optional<Order> findById(OrderId id) {
         return orders.findById(id.value());
     }
 
+    /**
+     * Writes the aggregate, then publishes whatever it recorded while it was being changed.
+     *
+     * <p>Publication lives here so that it happens in exactly one place: a use case cannot
+     * forget to announce a change, and cannot announce one that failed to persist. Draining is
+     * destructive, so an aggregate saved twice in a request does not announce itself twice.
+     *
+     * <p>After the write, not before — but still inside the caller's transaction, so a
+     * {@code BEFORE_COMMIT} listener's work commits or rolls back together with the order.
+     */
     @Override
     public Order save(Order order) {
-        return orders.save(order);
+        Order saved = orders.save(order);
+        for (DomainEvent event : saved.pullDomainEvents()) {
+            events.publishEvent(event);
+        }
+        return saved;
     }
 
     @Override

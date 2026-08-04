@@ -1,5 +1,6 @@
 package com.dominator.gearly.ordering.domain;
 
+import com.dominator.gearly.shared.domain.AggregateRoot;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
@@ -57,7 +58,7 @@ import java.util.Objects;
  */
 @Getter
 @Document(collection = "orders")
-public class Order {
+public class Order extends AggregateRoot {
 
     @Id
     private String id;
@@ -237,7 +238,8 @@ public class Order {
             throw new OrderCannotBeCancelledException(orderStatus);
         }
 
-        if (isPaid()) {
+        boolean refundOwed = isPaid();
+        if (refundOwed) {
             payment.initiateRefund(totalAmount, "Refund initiated for order: " + id);
             applyTransition(OrderStatus.PENDING_REFUND);
         } else {
@@ -246,6 +248,7 @@ public class Order {
 
         this.note = reason;
         touch();
+        registerEvent(new OrderCancelled(orderId(), userId, orderStatus, refundOwed, reason, Instant.now()));
     }
 
     /**
@@ -279,6 +282,7 @@ public class Order {
             payment = PaymentFactory.newCodPayment();
         }
         payment.record(transaction);
+        registerEvent(new PaymentRecorded(orderId(), transaction.getStatus(), transaction.getAmount(), Instant.now()));
     }
 
     /** The customer has reviewed what they bought; a second review is not another rollup. */
@@ -383,7 +387,9 @@ public class Order {
 
     private void applyTransition(OrderStatus target) {
         orderStatus.assertCanTransitionTo(target);
+        OrderStatus previous = orderStatus;
         orderStatus = target;
+        registerEvent(new OrderStatusChanged(orderId(), previous, target, Instant.now()));
     }
 
     /**
