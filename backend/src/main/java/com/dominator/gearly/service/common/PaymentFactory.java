@@ -4,6 +4,7 @@ import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.Payment;
 import com.dominator.gearly.model.Transaction;
 import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.shared.domain.Money;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -25,7 +26,7 @@ public class PaymentFactory {
         return payment;
     }
 
-    public Transaction newTransaction(TransactionStatus status, double amount, String rawResponse) {
+    public Transaction newTransaction(TransactionStatus status, Money amount, String rawResponse) {
         Transaction tx = new Transaction();
         tx.setTransactionId(UUID.randomUUID().toString());
         tx.setStatus(status);

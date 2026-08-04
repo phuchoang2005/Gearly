@@ -4,7 +4,9 @@ import com.dominator.gearly.dto.AdminReviewResponseDTO;
 import com.dominator.gearly.dto.CreateReviewRequestDTO;
 import com.dominator.gearly.dto.ReviewResponseDTO;
 import com.dominator.gearly.model.Review;
-import org.bson.types.ObjectId;
+import com.dominator.gearly.shared.domain.OrderId;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.UserId;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,9 +44,9 @@ public class ReviewMapper {
 
     public Review toEntity(CreateReviewRequestDTO dto, String orderId, String userId) {
         Review review = new Review();
-        review.setProductId(new ObjectId(dto.getProductId()));
-        review.setOrderId(new ObjectId(orderId));
-        review.setUserId(new ObjectId(userId));
+        review.setProductId(ProductId.of(dto.getProductId()));
+        review.setOrderId(OrderId.of(orderId));
+        review.setUserId(UserId.of(userId));
         review.setRating(dto.getRating());
         review.setSubject(dto.getSubject());
         review.setComment(dto.getComment());

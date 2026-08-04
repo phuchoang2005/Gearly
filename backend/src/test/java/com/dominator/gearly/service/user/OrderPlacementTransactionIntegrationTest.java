@@ -11,6 +11,7 @@ import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.shared.domain.Money;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -90,7 +91,7 @@ class OrderPlacementTransactionIntegrationTest {
     private Product savedProductWithStock(int stock) {
         Product product = new Product();
         product.setTitle("RTX 4090");
-        product.setPrice(1599.00);
+        product.setPrice(Money.of(1599.00));
         product.setStock(stock);
         product.setImages(List.of(new Image("http://img/gpu.png", "gpu")));
         return productRepository.save(product);

@@ -1,5 +1,6 @@
 package com.dominator.gearly.model;
 
+import com.dominator.gearly.shared.domain.Money;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -39,7 +40,9 @@ public class Order {
     private String userId;
     @Indexed(name = "idx_items_productId")
     private List<OrderItem> items;
-    private double totalAmount;
+
+    /** Defaults to zero so an order document without the field reads as it always did. */
+    private Money totalAmount = Money.ZERO;
     private Payment payment;
     private OrderStatus orderStatus;
     private ShippingInformation shippingInformation;

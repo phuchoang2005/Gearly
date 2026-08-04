@@ -15,6 +15,7 @@ import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.security.JwtUtil;
 import com.dominator.gearly.service.common.AddressService;
+import com.dominator.gearly.shared.domain.Role;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -53,7 +54,7 @@ class AuthServiceTest {
         u.setPasswordHash(hash);
         u.setVerified(true);
         u.setStatus(UserStatus.ACTIVE);
-        u.setRole("CUSTOMER");
+        u.setRole(Role.CUSTOMER);
         return u;
     }
 
@@ -130,6 +131,10 @@ class AuthServiceTest {
         UserRegisterRequestDTO req = new UserRegisterRequestDTO();
         req.setEmail("new@b.com");
         req.setPassword("pw");
+        // Both are @NotBlank on the request, so a real call can never reach the service
+        // without them; the stored full name is now derived from these two.
+        req.setFirstName("Ada");
+        req.setLastName("Lovelace");
         when(userRepository.findByEmail("new@b.com")).thenReturn(Optional.empty());
         when(addressService.getCountryIdByName(any())).thenReturn(1);
         when(addressService.getStateIdByName(any(), anyInt())).thenReturn(2);

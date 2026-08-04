@@ -2,6 +2,7 @@ package com.dominator.gearly.dto;
 
 import com.dominator.gearly.model.Address;
 import com.dominator.gearly.model.UserStatus;
+import com.dominator.gearly.shared.domain.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,7 @@ public class AdminUserDTO {
     private String email;
     private String phone;
     private Address address;
-    private String role;
+    private Role role;
     private boolean verified;
     private List<String> favorites;
     private Instant createdAt;

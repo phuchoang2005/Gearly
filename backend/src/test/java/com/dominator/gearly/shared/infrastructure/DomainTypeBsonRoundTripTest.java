@@ -1,0 +1,503 @@
+package com.dominator.gearly.shared.infrastructure;
+
+import com.dominator.gearly.dto.BestSellerDTO;
+import com.dominator.gearly.model.Cart;
+import com.dominator.gearly.model.Category;
+import com.dominator.gearly.model.CartItem;
+import com.dominator.gearly.model.Order;
+import com.dominator.gearly.model.OrderItem;
+import com.dominator.gearly.model.Payment;
+import com.dominator.gearly.model.Product;
+import com.dominator.gearly.model.Review;
+import com.dominator.gearly.model.Transaction;
+import com.dominator.gearly.model.TransactionStatus;
+import com.dominator.gearly.model.User;
+import com.dominator.gearly.shared.domain.CategoryId;
+import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.OrderId;
+import com.dominator.gearly.shared.domain.ProductCondition;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Role;
+import com.dominator.gearly.shared.domain.UserId;
+import org.bson.Document;
+import org.bson.types.ObjectId;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.time.Instant;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * <b>The proof that S9 needed no data migration.</b>
+ *
+ * <p>Introducing the value objects rests entirely on one claim: that every converter in
+ * {@link DomainTypeConverters} writes back the same BSON type the documents already hold.
+ * Nothing in the unit tests can check that — they exercise Java objects, and a round trip
+ * through the mapper would pass just as happily if {@code Money} were stored as a nested
+ * {@code {amount, currency}} document, because it would read back the same way.
+ *
+ * <p>So these tests read the <em>raw</em> {@link Document} straight out of Mongo, bypassing
+ * the entity mapping entirely, and assert the concrete stored class of each field. That is
+ * the difference between "it round-trips" and "the bytes on disk are unchanged".
+ *
+ * <p>Docker-gated ({@code disabledWithoutDocker}) so {@code mvn test} still passes offline;
+ * run with Colima up to actually exercise them.
+ */
+@SpringBootTest
+@ActiveProfiles("test")
+@Testcontainers(disabledWithoutDocker = true)
+@DisplayName("stored BSON types are unchanged by the value objects")
+class DomainTypeBsonRoundTripTest {
+
+    @Container
+    @ServiceConnection
+    static MongoDBContainer mongo = new MongoDBContainer(DockerImageName.parse("mongo:6.0"));
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    private static final String CATEGORY_HEX = "694ae1e055e2e3dc4b3500e6";
+    private static final String PRODUCT_HEX = "682023424a1ae581e0445357";
+    private static final String ORDER_HEX = "682f7504df103bcceb44d284";
+    private static final String USER_HEX = "68201e5b4ff90d7e8d39395c";
+
+    @BeforeEach
+    void setUp() {
+        mongoTemplate.getDb().drop();
+    }
+
+    /** The raw document, read with no entity mapping in the way. */
+    private Document rawDocument(String collection) {
+        Document raw = mongoTemplate.getCollection(collection).find().first();
+        assertThat(raw).as("a document in '%s'", collection).isNotNull();
+        return raw;
+    }
+
+    @Nested
+    @DisplayName("Money is stored as a double")
+    class MoneyStorage {
+
+        @Test
+        void onAProductAndItsOriginalPrice() {
+            Product product = new Product();
+            product.setTitle("RTX 4090");
+            product.setPrice(Money.of(109.99));
+            product.setOriginalPrice(Money.of(120.5));
+            mongoTemplate.save(product);
+
+            Document raw = rawDocument("products");
+
+            assertThat(raw.get("price")).isInstanceOf(Double.class).isEqualTo(109.99);
+            assertThat(raw.get("originalPrice")).isInstanceOf(Double.class).isEqualTo(120.5);
+        }
+
+        @Test
+        void onAnOrderTotalAndItsLines() {
+            Order order = new Order();
+            order.setUserId("u1");
+            order.setTotalAmount(Money.of(3198.0));
+            order.setItems(List.of(new OrderItem("p1", "GPU", Money.of(1599.0), "img", 2)));
+            mongoTemplate.save(order);
+
+            Document raw = rawDocument("orders");
+
+            assertThat(raw.get("totalAmount")).isInstanceOf(Double.class).isEqualTo(3198.0);
+            Document line = raw.getList("items", Document.class).getFirst();
+            assertThat(line.get("price")).isInstanceOf(Double.class).isEqualTo(1599.0);
+        }
+
+        @Test
+        void onAnEmbeddedPaymentTransaction() {
+            Transaction tx = new Transaction();
+            tx.setTransactionId("t1");
+            tx.setStatus(TransactionStatus.PENDING);
+            tx.setAmount(Money.of(36.60));
+
+            Order order = new Order();
+            order.setUserId("u1");
+            order.setPayment(new Payment("momo", List.of(tx)));
+            mongoTemplate.save(order);
+
+            Document payment = rawDocument("orders").get("payment", Document.class);
+            Document stored = payment.getList("transactions", Document.class).getFirst();
+
+            assertThat(stored.get("amount")).isInstanceOf(Double.class).isEqualTo(36.6);
+        }
+
+        @Test
+        void onACartLine() {
+            CartItem item = new CartItem();
+            item.setProductId("p1");
+            item.setPrice(Money.of(24.99));
+            item.setCondition(ProductCondition.LIKE_NEW);
+
+            Cart cart = new Cart();
+            cart.setUserId("u1");
+            cart.setItems(List.of(item));
+            mongoTemplate.save(cart);
+
+            Document line = rawDocument("carts").getList("items", Document.class).getFirst();
+
+            assertThat(line.get("price")).isInstanceOf(Double.class).isEqualTo(24.99);
+        }
+
+        /**
+         * Integral prices are in the seed data as BSON {@code int32}
+         * ({@code "originalPrice": 195}). Reading has to accept that; writing normalizes to
+         * a double, which is exactly what the previous {@code double} field already did on
+         * every save.
+         */
+        @Test
+        void readsAnIntegerPriceWrittenByOlderData() {
+            mongoTemplate.getCollection("products")
+                    .insertOne(new Document("_id", new ObjectId(PRODUCT_HEX))
+                            .append("title", "Legacy")
+                            .append("price", 195)                 // int32
+                            .append("originalPrice", 195L)        // int64
+                            .append("version", 0L));
+
+            Product loaded = mongoTemplate.findById(PRODUCT_HEX, Product.class);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getPrice()).isEqualTo(Money.of("195.00"));
+            assertThat(loaded.getOriginalPrice()).isEqualTo(Money.of("195.00"));
+        }
+    }
+
+    @Nested
+    @DisplayName("ids keep the BSON type the collection already used")
+    class IdStorage {
+
+        /** Category ids are the one id stored as an ObjectId rather than a string. */
+        @Test
+        void categoryIdIsStoredAsAnObjectId() {
+            Product product = new Product();
+            product.setTitle("RTX 4090");
+            product.setCategoryIds(List.of(CategoryId.of(CATEGORY_HEX)));
+            mongoTemplate.save(product);
+
+            Object stored = rawDocument("products").getList("categoryIds", Object.class).getFirst();
+
+            assertThat(stored).isInstanceOf(ObjectId.class);
+            assertThat(stored).isEqualTo(new ObjectId(CATEGORY_HEX));
+        }
+
+        /**
+         * The asymmetry {@code ObjectIdBackedIdConverters} exists for: the same
+         * {@code ProductId} type is an {@code ObjectId} here and a {@code String} on an
+         * order line.
+         */
+        @Test
+        void reviewIdsStayObjectIdsWhileOrderLineProductIdsStayStrings() {
+            Review review = new Review();
+            review.setProductId(ProductId.of(PRODUCT_HEX));
+            review.setOrderId(OrderId.of(ORDER_HEX));
+            review.setUserId(UserId.of(USER_HEX));
+            review.setRating(5);
+            mongoTemplate.save(review);
+
+            Document rawReview = rawDocument("reviews");
+            assertThat(rawReview.get("productId")).isInstanceOf(ObjectId.class)
+                    .isEqualTo(new ObjectId(PRODUCT_HEX));
+            assertThat(rawReview.get("orderId")).isInstanceOf(ObjectId.class);
+            assertThat(rawReview.get("userId")).isInstanceOf(ObjectId.class);
+
+            Order order = new Order();
+            order.setUserId("u1");
+            order.setItems(List.of(new OrderItem(PRODUCT_HEX, "GPU", Money.ZERO, "img", 1)));
+            mongoTemplate.save(order);
+
+            Document line = rawDocument("orders").getList("items", Document.class).getFirst();
+            assertThat(line.get("productId")).isInstanceOf(String.class).isEqualTo(PRODUCT_HEX);
+        }
+
+        /**
+         * A review written by S9 must still be findable by the queries that predate it —
+         * the rating distribution aggregation matches on an {@code ObjectId} productId.
+         */
+        @Test
+        void aReviewRemainsQueryableByRawObjectId() {
+            Review review = new Review();
+            review.setProductId(ProductId.of(PRODUCT_HEX));
+            review.setUserId(UserId.of(USER_HEX));
+            review.setRating(4);
+            mongoTemplate.save(review);
+
+            long matches = mongoTemplate.getCollection("reviews")
+                    .countDocuments(new Document("productId", new ObjectId(PRODUCT_HEX)));
+
+            assertThat(matches).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("enums keep their stored token")
+    class EnumStorage {
+
+        @Test
+        void productConditionStoresTheSpacedWireValueNotTheConstantName() {
+            Product product = new Product();
+            product.setTitle("RTX 4090");
+            product.setCondition(ProductCondition.LIKE_NEW);
+            mongoTemplate.save(product);
+
+            assertThat(rawDocument("products").get("condition"))
+                    .isInstanceOf(String.class)
+                    .isEqualTo("LIKE NEW");
+        }
+
+        @Test
+        void roleStoresItsConstantName() {
+            User user = new User();
+            user.setEmail("ada@example.com");
+            user.setRole(Role.ADMIN);
+            mongoTemplate.save(user);
+
+            assertThat(rawDocument("users").get("role")).isEqualTo("ADMIN");
+        }
+
+        /**
+         * A pre-S9 document is only readable if the stored token still parses. This is the
+         * case that would have broken had the enum relied on {@code valueOf}.
+         */
+        @Test
+        void readsAConditionWrittenBeforeTheEnumExisted() {
+            mongoTemplate.getCollection("products")
+                    .insertOne(new Document("_id", new ObjectId(PRODUCT_HEX))
+                            .append("title", "Legacy")
+                            .append("condition", "LIKE NEW")
+                            .append("version", 0L));
+
+            Product loaded = mongoTemplate.findById(PRODUCT_HEX, Product.class);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getCondition()).isEqualTo(ProductCondition.LIKE_NEW);
+        }
+    }
+
+    /**
+     * The other half of S9's storage change: timestamps that were stored as strings (or as
+     * a {@code LocalDateTime}) become real BSON dates. Unlike the value objects, this one
+     * <em>does</em> move the stored bytes — {@code data/seed/migrate.js} step 7 is what
+     * converts existing documents, and the seed dumps ship already converted.
+     */
+    @Nested
+    @DisplayName("normalized timestamps are stored as BSON dates")
+    class TimestampStorage {
+
+        @Test
+        void categoryTimestampsAreDatesNotStrings() {
+            Category category = new Category();
+            category.setName("CPU");
+            category.setAddedAt(Instant.parse("2025-12-24T00:00:00Z"));
+            category.setModifiedAt(Instant.parse("2025-12-24T00:00:00Z"));
+            mongoTemplate.save(category);
+
+            Document raw = rawDocument("categories");
+
+            assertThat(raw.get("addedAt")).isInstanceOf(java.util.Date.class);
+            assertThat(raw.get("modifiedAt")).isInstanceOf(java.util.Date.class);
+        }
+
+        @Test
+        void reviewTimestampsAreDatesNotStrings() {
+            Review review = new Review();
+            review.setProductId(ProductId.of(PRODUCT_HEX));
+            review.setUserId(UserId.of(USER_HEX));
+            review.setRating(5);
+            review.setAddedAt(Instant.parse("2025-05-23T01:57:38.580Z"));
+            mongoTemplate.save(review);
+
+            assertThat(rawDocument("reviews").get("addedAt")).isInstanceOf(java.util.Date.class);
+        }
+
+        /**
+         * Carts were already stored as BSON dates — the {@code Date} to {@code Instant}
+         * change is Java-side only, which is why no migration step covers them.
+         */
+        @Test
+        void cartTimestampsWereAlreadyDatesAndStayThatWay() {
+            Cart cart = new Cart();
+            cart.setUserId("u1");
+            cart.setCreatedAt(Instant.parse("2025-06-08T20:17:14.541Z"));
+            cart.setUpdatedAt(Instant.parse("2025-06-08T20:37:12.168Z"));
+            mongoTemplate.save(cart);
+
+            Document raw = rawDocument("carts");
+
+            // The values themselves are not asserted: @CreatedDate/@LastModifiedDate
+            // auditing overwrites them on save. The stored BSON type is the point.
+            assertThat(raw.get("createdAt")).isInstanceOf(java.util.Date.class);
+            assertThat(raw.get("updatedAt")).isInstanceOf(java.util.Date.class);
+        }
+
+        /**
+         * The migration's job in one assertion: a document written before S9, carrying the
+         * string form, still loads.
+         */
+        /**
+         * Why the migration is not optional, stated precisely.
+         *
+         * <p>A zone-qualified ISO string still coerces into an {@code Instant} on read —
+         * Spring Data's conversion service handles it — so the 10 categories and 51 reviews
+         * holding that shape would have survived the type change unnoticed. Their problem
+         * was never readability but ordering: stored as strings they sort
+         * lexicographically, which only coincides with chronological order while every
+         * value shares one format.
+         */
+        @Test
+        void aZoneQualifiedIsoStringStillCoercesOnRead() {
+            mongoTemplate.getCollection("categories")
+                    .insertOne(new Document("_id", new ObjectId(CATEGORY_HEX))
+                            .append("name", "Legacy")
+                            .append("addedAt", "2025-12-24T00:00:00.000Z"));
+
+            Category loaded = mongoTemplate.findById(CATEGORY_HEX, Category.class);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getAddedAt()).isEqualTo(Instant.parse("2025-12-24T00:00:00Z"));
+        }
+
+        /**
+         * <b>The document shape that makes migrate.js step 7 mandatory.</b>
+         *
+         * <p>40 of the 91 seeded reviews store their timestamps as an en-US
+         * {@code toLocaleString()} value — {@code "6/9/25, 3:42 AM"}. That does not coerce,
+         * so after the {@code String -> Instant} change those reviews become unreadable and
+         * every read path touching them fails. This was found by running the migration
+         * against the real dumps; the sprint plan anticipated only the two ISO shapes.
+         */
+        @Test
+        void anEnUsLocaleTimestampDoesNotCoerce_whichIsWhatTheMigrationFixes() {
+            mongoTemplate.getCollection("reviews")
+                    .insertOne(new Document("_id", new ObjectId(ORDER_HEX))
+                            .append("rating", 5)
+                            .append("addedAt", "6/9/25, 3:42 AM"));
+
+            assertThatThrownBy(() -> mongoTemplate.findById(ORDER_HEX, Review.class))
+                    .hasRootCauseInstanceOf(java.time.format.DateTimeParseException.class);
+        }
+
+        @Test
+        void migratedCategoryAndReviewDocumentsLoadCleanly() {
+            mongoTemplate.getCollection("categories")
+                    .insertOne(new Document("_id", new ObjectId(CATEGORY_HEX))
+                            .append("name", "CPU")
+                            .append("addedAt", java.util.Date.from(Instant.parse("2025-12-24T00:00:00Z"))));
+
+            Category loaded = mongoTemplate.findById(CATEGORY_HEX, Category.class);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getAddedAt()).isEqualTo(Instant.parse("2025-12-24T00:00:00Z"));
+        }
+    }
+
+    /**
+     * The end-to-end shape check: save a fully populated product, then compare the raw
+     * document field-for-field against the BSON types the pre-S9 seed dump holds.
+     */
+    @Test
+    @DisplayName("a fully populated product document matches the pre-S9 field types exactly")
+    void productDocumentShapeIsUnchanged() {
+        Product product = new Product();
+        product.setTitle("Intel Core i3-12100F");
+        product.setAuthors(List.of("Intel"));
+        product.setDescription("entry-level processor");
+        product.setPrice(Money.of(109.99));
+        product.setOriginalPrice(Money.of(120.5));
+        product.setCondition(ProductCondition.NEW);
+        product.setStock(64);
+        product.setCategoryIds(List.of(CategoryId.of(CATEGORY_HEX)));
+        product.setAverageRating(4.5);
+        product.setRatingCount(12);
+        product.setTotalRating(54);
+        mongoTemplate.save(product);
+
+        Document raw = rawDocument("products");
+
+        assertThat(raw.get("title")).isInstanceOf(String.class);
+        assertThat(raw.get("price")).isInstanceOf(Double.class);
+        assertThat(raw.get("originalPrice")).isInstanceOf(Double.class);
+        assertThat(raw.get("condition")).isInstanceOf(String.class);
+        assertThat(raw.get("stock")).isInstanceOf(Integer.class);
+        assertThat(raw.getList("categoryIds", Object.class).getFirst()).isInstanceOf(ObjectId.class);
+        assertThat(raw.get("averageRating")).isInstanceOf(Double.class);
+        assertThat(raw.get("ratingCount")).isInstanceOf(Integer.class);
+        assertThat(raw.get("totalRating")).isInstanceOf(Integer.class);
+        assertThat(raw.get("version")).isInstanceOf(Long.class);
+
+        // categoryNames is @Transient — a read-model field that must never be persisted
+        assertThat(raw).doesNotContainKey("categoryNames");
+    }
+
+    /**
+     * Aggregation projections do not go through a mapper, so nothing in the mapper tests
+     * covers them. {@code BestSellerDTO} is filled straight from a {@code $project} stage;
+     * its {@code Money} field has to be populated by the same converter pair the entities
+     * use, or the admin dashboard's top-products panel quietly reports a null price.
+     */
+    @Test
+    @DisplayName("a Money field on an aggregation projection is populated from the stored double")
+    void moneyIsMappedIntoAnAggregationProjection() {
+        mongoTemplate.getCollection("products")
+                .insertOne(new Document("_id", new ObjectId(PRODUCT_HEX))
+                        .append("title", "RTX 4090")
+                        .append("price", 1599.0));
+
+        BestSellerDTO projected = mongoTemplate.aggregate(
+                        Aggregation.newAggregation(
+                                Aggregation.project()
+                                        .and("_id").as("productId")
+                                        .and("title").as("title")
+                                        .and("price").as("price")),
+                        "products", BestSellerDTO.class)
+                .getMappedResults()
+                .getFirst();
+
+        assertThat(projected.getPrice()).isEqualTo(Money.of(1599.0));
+        assertThat(projected.getProductId()).isEqualTo(PRODUCT_HEX);
+    }
+
+    /**
+     * Queries built from value objects have to reach the same documents as the raw values
+     * they replace, or every repository method silently returns nothing.
+     */
+    @Test
+    @DisplayName("a criteria built from a value object matches the stored document")
+    void valueObjectsAreUsableInQueries() {
+        Product product = new Product();
+        product.setTitle("RTX 4090");
+        product.setPrice(Money.of(1599.0));
+        product.setCondition(ProductCondition.LIKE_NEW);
+        product.setCategoryIds(List.of(CategoryId.of(CATEGORY_HEX)));
+        mongoTemplate.save(product);
+
+        assertThat(mongoTemplate.find(
+                new Query(Criteria.where("condition").is(ProductCondition.LIKE_NEW)), Product.class))
+                .hasSize(1);
+        assertThat(mongoTemplate.find(
+                new Query(Criteria.where("categoryIds").in(List.of(CategoryId.of(CATEGORY_HEX)))),
+                Product.class))
+                .hasSize(1);
+        assertThat(mongoTemplate.find(
+                new Query(Criteria.where("price").is(Money.of(1599.0))), Product.class))
+                .hasSize(1);
+    }
+}

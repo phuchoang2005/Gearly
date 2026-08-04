@@ -1,0 +1,28 @@
+package com.dominator.gearly.shared.domain;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+/**
+ * The identity of a shopping cart, as a type the compiler can tell apart from every other id in
+ * the system.
+ *
+ * <p>Stored and serialized as the same bare string it has always been; see {@link DomainId}.
+ */
+public record CartId(String value) implements DomainId {
+
+    public CartId {
+        value = DomainId.requireId(value, "cart id");
+    }
+
+    @JsonCreator
+    public static CartId of(String value) {
+        return new CartId(value);
+    }
+
+    @JsonValue
+    @Override
+    public String toString() {
+        return value;
+    }
+}

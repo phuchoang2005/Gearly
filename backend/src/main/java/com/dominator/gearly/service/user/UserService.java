@@ -8,6 +8,7 @@ import com.dominator.gearly.model.UserStatus;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.security.JwtUtil;
+import com.dominator.gearly.shared.domain.PersonName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,9 +31,7 @@ public class UserService {
 
     public LoginResponseDTO updateProfile(AuthenticatedUser authenticatedUser, UserUpdateRequestDTO req) {
         User user = authenticatedUser.getUser();
-        user.setFirstName(req.getFirstName());
-        user.setLastName(req.getLastName());
-        user.setFullName(req.getFirstName() + " " + req.getLastName());
+        user.setName(PersonName.of(req.getFirstName(), req.getLastName()));
         user.setEmail(req.getEmail());
         user.setPhone(req.getPhone());
         user.setAddress(req.getAddress());

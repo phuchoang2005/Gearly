@@ -21,6 +21,7 @@ import com.dominator.gearly.model.TransactionStatus;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.OrderRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.shared.domain.Money;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -103,7 +104,7 @@ class CustomerOrderServiceTest {
         Product p = new Product();
         p.setId(id);
         p.setTitle("Product " + id);
-        p.setPrice(price);
+        p.setPrice(Money.of(price));
         p.setStock(stock);
         p.setImages(List.of(new Image("http://img/" + id + ".png", "alt")));
         return p;
@@ -151,7 +152,7 @@ class CustomerOrderServiceTest {
             service.createOrder(authUser(USER_ID), orderRequest("p1", 2));
 
             // subtotal 20.00 + tax 1.60 + shipping 15.00
-            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(36.60);
+            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(Money.of(36.60));
         }
 
         @Test
@@ -163,7 +164,7 @@ class CustomerOrderServiceTest {
             service.createOrder(authUser(USER_ID), orderRequest("p1", 1));
 
             // subtotal 40.00 + tax 3.20 + shipping 0.00
-            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(43.20);
+            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(Money.of(43.20));
         }
 
         @Test
@@ -175,7 +176,7 @@ class CustomerOrderServiceTest {
             service.createOrder(authUser(USER_ID), orderRequest("p1", 1));
 
             // subtotal 30.00 + tax 2.40 + shipping 15.00 — NOT free at the boundary
-            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(47.40);
+            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(Money.of(47.40));
         }
 
         @Test
@@ -187,7 +188,7 @@ class CustomerOrderServiceTest {
             service.createOrder(authUser(USER_ID), orderRequest("p1", 1));
 
             // 3.19 * 0.08 = 0.2552 -> 0.26; + 15.00 shipping = 18.45
-            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(18.45);
+            assertThat(captureSavedOrder().getTotalAmount()).isEqualTo(Money.of(18.45));
         }
     }
 
@@ -207,7 +208,7 @@ class CustomerOrderServiceTest {
         assertThat(saved.getItems()).singleElement().satisfies(item -> {
             assertThat(item.getProductId()).isEqualTo("p1");
             assertThat(item.getTitle()).isEqualTo("Product p1");
-            assertThat(item.getPrice()).isEqualTo(12.50);
+            assertThat(item.getPrice()).isEqualTo(Money.of(12.50));
             assertThat(item.getQuantity()).isEqualTo(3);
             assertThat(item.getImageUrl()).isEqualTo("http://img/p1.png");
         });
@@ -225,7 +226,7 @@ class CustomerOrderServiceTest {
         assertThat(payment.getMethod()).isEqualTo("cod");
         assertThat(payment.getTransactions()).singleElement().satisfies(tx -> {
             assertThat(tx.getStatus()).isEqualTo(TransactionStatus.PENDING);
-            assertThat(tx.getAmount()).isEqualTo(36.60);
+            assertThat(tx.getAmount()).isEqualTo(Money.of(36.60));
             assertThat(tx.getRawResponse()).isEqualTo("Pending payment: 36.6");
             assertThat(tx.getTransactionId()).isNotBlank();
             assertThat(tx.getCreatedAt()).isNotNull();
@@ -294,7 +295,10 @@ class CustomerOrderServiceTest {
             o.setId("order-9");
             return o;
         });
-        when(momoService.createPaymentUrl(new BigDecimal("36.6"), "order-9"))
+        // Money always carries scale 2, so the gateway now sees 36.60 where it used to see
+        // 36.6. MomoService scales to whole VND before signing, so the amount charged is
+        // unchanged; only the BigDecimal's scale, which equals() is sensitive to, differs.
+        when(momoService.createPaymentUrl(new BigDecimal("36.60"), "order-9"))
                 .thenReturn("https://momo.test/pay/order-9");
 
         CreateOrderResponse response =
@@ -329,7 +333,7 @@ class CustomerOrderServiceTest {
             order.setId("order-1");
             order.setUserId(USER_ID);
             order.setOrderStatus(status);
-            order.setTotalAmount(36.60);
+            order.setTotalAmount(Money.of(36.60));
 
             List<Transaction> transactions = new ArrayList<>();
             for (TransactionStatus txStatus : txStatuses) {
@@ -377,7 +381,7 @@ class CustomerOrderServiceTest {
             assertThat(order.getPayment().getTransactions()).hasSize(2);
             Transaction refund = order.getPayment().getTransactions().get(1);
             assertThat(refund.getStatus()).isEqualTo(TransactionStatus.PENDING_REFUND);
-            assertThat(refund.getAmount()).isEqualTo(36.60);
+            assertThat(refund.getAmount()).isEqualTo(Money.of(36.60));
             assertThat(refund.getRawResponse()).isEqualTo("Refund initiated for order: order-1");
         }
 
@@ -430,7 +434,7 @@ class CustomerOrderServiceTest {
             order.setId("order-1");
             order.setUserId(USER_ID);
             order.setOrderStatus(OrderStatus.PENDING);
-            order.setTotalAmount(36.60);
+            order.setTotalAmount(Money.of(36.60));
 
             Payment payment = new Payment();
             payment.setMethod("momo");
@@ -451,7 +455,7 @@ class CustomerOrderServiceTest {
             assertThat(order.getPayment().getTransactions()).singleElement().satisfies(tx -> {
                 assertThat(tx.getTransactionId()).isEqualTo("momo-tx-1");
                 assertThat(tx.getStatus()).isEqualTo(TransactionStatus.SUCCESSFUL);
-                assertThat(tx.getAmount()).isEqualTo(36.60);
+                assertThat(tx.getAmount()).isEqualTo(Money.of(36.60));
                 assertThat(tx.getRawResponse()).isEqualTo("{\"ok\":true}");
             });
             verify(orderRepository).save(order);
@@ -491,7 +495,7 @@ class CustomerOrderServiceTest {
     void initiateRefund_appendsPendingRefundTransaction() {
         Order order = new Order();
         order.setId("order-7");
-        order.setTotalAmount(99.99);
+        order.setTotalAmount(Money.of(99.99));
         Payment payment = new Payment();
         payment.setTransactions(new ArrayList<>());
 
@@ -499,7 +503,7 @@ class CustomerOrderServiceTest {
 
         assertThat(payment.getTransactions()).singleElement().satisfies(tx -> {
             assertThat(tx.getStatus()).isEqualTo(TransactionStatus.PENDING_REFUND);
-            assertThat(tx.getAmount()).isEqualTo(99.99);
+            assertThat(tx.getAmount()).isEqualTo(Money.of(99.99));
             assertThat(tx.getRawResponse()).isEqualTo("Refund initiated for order: order-7");
             assertThat(tx.getTransactionId()).isNotBlank();
         });

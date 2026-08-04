@@ -17,6 +17,8 @@ import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.security.JwtUtil;
 import com.dominator.gearly.service.common.AddressService;
+import com.dominator.gearly.shared.domain.PersonName;
+import com.dominator.gearly.shared.domain.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -80,12 +82,14 @@ public class AuthService {
 
         User user = new User();
         user.setEmail(req.getEmail());
-        user.setFirstName(req.getFirstName());
-        user.setLastName(req.getLastName());
-        user.setFullName(req.getFullName());
+        // Derived from the parts, not taken from req.getFullName(). The request still
+        // carries a fullName for backward compatibility, but honouring it is what let a
+        // registration store a display name that disagreed with its own first and last
+        // name — with nothing to ever reconcile the two. See User.setName.
+        user.setName(PersonName.of(req.getFirstName(), req.getLastName()));
         user.setPhone(req.getPhone());
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
-        user.setRole("CUSTOMER");
+        user.setRole(Role.CUSTOMER);
         user.setVerified(false);
         user.setAddress(address);
 

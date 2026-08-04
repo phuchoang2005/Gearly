@@ -3,7 +3,7 @@ package com.dominator.gearly.repository;
 import com.dominator.gearly.dto.ProductSummaryDTO;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.repository.custom.ProductRepositoryCustom;
-import org.bson.types.ObjectId;
+import com.dominator.gearly.shared.domain.CategoryId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -15,7 +15,7 @@ import java.util.List;
 public interface ProductRepository extends MongoRepository<Product, String>, ProductRepositoryCustom {
     List<ProductSummaryDTO> findByOrderByAverageRatingDesc(Pageable pageable);
     List<Product> findByTitleContainingIgnoreCase(String title);
-    List<Product> findByCategoryIdsIn(List<ObjectId> categoryIds);
+    List<Product> findByCategoryIdsIn(List<CategoryId> categoryIds);
 
     String title(String title);
 }

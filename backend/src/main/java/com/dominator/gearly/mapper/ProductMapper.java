@@ -8,7 +8,6 @@ import com.dominator.gearly.dto.ProductSummaryDTO;
 import com.dominator.gearly.dto.ProductUpdateDTO;
 import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Image;
-import org.bson.types.ObjectId;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -112,9 +111,11 @@ public class ProductMapper {
         product.setCondition(dto.getCondition());
         product.setStock(dto.getStock());
         product.setImages(dto.getImages());
-        // The update DTO carries category ids as hex strings; store them as ObjectId,
-        // consistent with create and the read path (Product.categoryIds is List<ObjectId>).
-        product.setCategoryIds(toObjectIds(dto.getCategoryIds()));
+        // Previously this had to convert hex strings to ObjectId by hand, because the
+        // update DTO and the entity disagreed about the type of a category id. CategoryId
+        // is the same type on both sides and knows its own stored form, so the conversion
+        // has moved into DomainTypeConverters and the asymmetry is gone.
+        product.setCategoryIds(dto.getCategoryIds());
     }
 
     private List<Image> copyImages(List<Image> images) {
@@ -124,12 +125,5 @@ public class ProductMapper {
         return images.stream()
                 .map(i -> new Image(i.getUrl(), i.getAlt()))
                 .collect(Collectors.toList());
-    }
-
-    private List<ObjectId> toObjectIds(List<String> ids) {
-        if (ids == null) {
-            return null;
-        }
-        return ids.stream().map(ObjectId::new).collect(Collectors.toList());
     }
 }

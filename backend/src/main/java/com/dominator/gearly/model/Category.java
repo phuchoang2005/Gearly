@@ -9,6 +9,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -21,8 +23,14 @@ public class Category {
     private String description;
     private String parentId;
 
+    /**
+     * Real BSON dates, not ISO-8601 strings — the same normalization S7 applied to
+     * {@code Product}. Stored as strings a category sorts lexicographically, which only
+     * happens to be chronological while every value shares one format.
+     * {@code data/seed/migrate.js} step 7 converts existing documents.
+     */
     @CreatedDate
-    private String addedAt;
+    private Instant addedAt;
     @LastModifiedDate
-    private String modifiedAt;
+    private Instant modifiedAt;
 }

@@ -204,18 +204,109 @@ S13; the `ObjectProvider` self-reference seam disappears in S10.
 **Goal:** Introduce the type vocabulary the aggregates will be written in, **without changing a single byte in Mongo or on the wire.**
 
 **Backlog**
-- [ ] **`shared/domain` value objects:** `Money` (BigDecimal + Currency, scale 2 HALF_UP, `plus`/`minus`/`times`/`isGreaterThan`) replacing `double` on `Order.totalAmount:27`, `OrderItem.price`, `CartItem.price`, `Product.price`/`originalPrice`, `Transaction.amount`. Plus `Quantity` (non-negative), **`Rating` (1–5, validated)** — today `CreateReviewRequestDTO` has no bounds and `applyRating` will happily fold in a rating of `900`. Plus `ProductRating` (count/total/average as one invariant), `EmailAddress`, `PhoneNumber`, `PersonName`, `Slug`.
-- [ ] **Kill the `fullName` split:** `PersonName` derives `fullName`, resolving the two sources of truth between `UserService.java:35` (computes it) and `AuthService.java:85` (takes it from the client).
-- [ ] **Typed IDs:** `ProductId`, `OrderId`, `UserId`, `CartId`, `ReviewId`, `CategoryId` as records over `String`. `CategoryId` absorbs the `ObjectId`↔`String` asymmetry currently patched in `ProductMapper.java:117`; `Review`'s three `ObjectId` fields normalize here.
-- [ ] **Enums:** `Role` (replaces the stringly-typed `User.role`, consumed at `AuthenticatedUser.java:22`), `ProductCondition` (replaces the free-text `condition` matched by string equality at `ProductRepositoryCustomImpl.java:31`).
-- [ ] **`shared/infrastructure/DomainTypeConverters`** — a `MongoCustomConversions` bean with read/write converter pairs: `Money↔Double`, `Quantity↔Integer`, `Rating↔Integer`, `ProductId↔String`, `CategoryId↔ObjectId`, `EmailAddress↔String`. **This is the load-bearing piece — document shape is unchanged.**
-- [ ] **Jackson module** with matching `@JsonValue`/`@JsonCreator` so DTO serialization is unchanged. Extend `ResponseDtoWireCompatTest` to cover the VO-carrying DTOs.
-- [ ] **Timestamp normalization** (mirroring the proven S7 `Product` pattern): `Category.addedAt/modifiedAt` and `Review.addedAt/modifiedAt` `String`→`Instant`; `Cart` `Date`→`Instant`; `VerificationToken` `LocalDateTime`→`Instant`. Add idempotent, type-guarded `$toDate` steps to `data/seed/migrate.js` and update the seed dumps. Note `ReviewService.java:61` currently sorts reviews by a *String* date.
-- [ ] **Tests:** VO unit tests (rating 0 and 6, malformed email, negative quantity all rejected); a `@DataMongoTest` round-trip asserting the **stored BSON types** are unchanged.
+- [x] **`shared/domain` value objects:** `Money` (BigDecimal + Currency, scale 2 HALF_UP, `plus`/`minus`/`times`/`isGreaterThan`) replacing `double` on `Order.totalAmount:27`, `OrderItem.price`, `CartItem.price`, `Product.price`/`originalPrice`, `Transaction.amount`. Plus `Quantity` (non-negative), **`Rating` (1–5, validated)** — today `CreateReviewRequestDTO` has no bounds and `applyRating` will happily fold in a rating of `900`. Plus `ProductRating` (count/total/average as one invariant), `EmailAddress`, `PhoneNumber`, `PersonName`, `Slug`.
+- [x] **Kill the `fullName` split:** `PersonName` derives `fullName`, resolving the two sources of truth between `UserService.java:35` (computes it) and `AuthService.java:85` (takes it from the client).
+- [x] **Typed IDs:** `ProductId`, `OrderId`, `UserId`, `CartId`, `ReviewId`, `CategoryId` as records over `String`. `CategoryId` absorbs the `ObjectId`↔`String` asymmetry currently patched in `ProductMapper.java:117`; `Review`'s three `ObjectId` fields normalize here.
+- [x] **Enums:** `Role` (replaces the stringly-typed `User.role`, consumed at `AuthenticatedUser.java:22`), `ProductCondition` (replaces the free-text `condition` matched by string equality at `ProductRepositoryCustomImpl.java:31`).
+- [x] **`shared/infrastructure/DomainTypeConverters`** — a `MongoCustomConversions` bean with read/write converter pairs: `Money↔Double`, `Quantity↔Integer`, `Rating↔Integer`, `ProductId↔String`, `CategoryId↔ObjectId`, `EmailAddress↔String`. **This is the load-bearing piece — document shape is unchanged.**
+- [x] **Jackson module** with matching `@JsonValue`/`@JsonCreator` so DTO serialization is unchanged. Extend `ResponseDtoWireCompatTest` to cover the VO-carrying DTOs.
+- [x] **Timestamp normalization** (mirroring the proven S7 `Product` pattern): `Category.addedAt/modifiedAt` and `Review.addedAt/modifiedAt` `String`→`Instant`; `Cart` `Date`→`Instant`; `VerificationToken` `LocalDateTime`→`Instant`. Add idempotent, type-guarded `$toDate` steps to `data/seed/migrate.js` and update the seed dumps. Note `ReviewService.java:61` currently sorts reviews by a *String* date.
+- [x] **Tests:** VO unit tests (rating 0 and 6, malformed email, negative quantity all rejected); a `@DataMongoTest` round-trip asserting the **stored BSON types** are unchanged.
 
 **Verify:** dump a document with `mongosh` before and after and diff — identical. Wire-compat test green. `grep -rn "double price\|double totalAmount" backend/src/main` returns nothing.
 
 **Risks:** a missed converter surfaces as a mapping exception at boot — caught by `GearlyApplicationTests.contextLoads`. The timestamp normalization touches live data; migrate.js steps must be idempotent and type-guarded like S7's.
+
+### S9 outcome — shipped
+
+Branch `ddd/s9-shared-kernel`, five commits. **267 tests green** (240 after the kernel
+landed, 147 before the sprint).
+
+| Item | Landed as |
+|---|---|
+| Value objects | `Money`, `Quantity`, `Rating`, `ProductRating`, `EmailAddress`, `PhoneNumber`, `PersonName`, `Slug` — 93 unit tests |
+| Typed IDs | `ProductId`, `OrderId`, `UserId`, `CartId`, `ReviewId`, `CategoryId` over a shared `DomainId` |
+| Enums | `Role`, `ProductCondition` |
+| Converters | `DomainTypeConverters` (14 pairs) + `ObjectIdBackedIdConverters` for the per-property cases |
+| Jackson | `@JsonValue`/`@JsonCreator` on the kernel types — no separate module needed, see below |
+| Timestamps | `Category`/`Review` `String`→`Instant`, `Cart` `Date`→`Instant`, `VerificationToken` `LocalDateTime`→`Instant`; `migrate.js` step 7 + regenerated dumps |
+| `fullName` split | `User.setName(PersonName)` writes all three fields; `AuthService` stops trusting the client's `fullName` |
+
+**Verification actually performed**, not just asserted:
+
+- `DomainTypeBsonRoundTripTest` reads the **raw `org.bson.Document`**, bypassing the entity
+  mapping, and asserts the concrete stored class of each field. A save-then-load test
+  could not do this: it would pass just as happily with `Money` stored as a nested
+  document, because it would read back the same way.
+- Shown **non-vacuous** the way S8 proved its rollback test — removing
+  `MoneyToDoubleConverter` from the registration makes 5 of them fail with the value
+  stored as `{amount, currency}`. Restored, all green.
+- The wire format is pinned by **literal JSON assertions**, not by the DTO-equals-entity
+  tests. Those compare the two representations to *each other*, so they stayed green
+  through the whole `double`→`Money` change and would have stayed green even if `Money`
+  had serialized as an object. `price` is still `1599.0`, a `DoubleNode` — a `BigDecimal`
+  `@JsonValue` would have written `1599.00`.
+- The migration was run against a **real `mongo:6.0` with the actual seed dumps**: 10
+  categories and 91 reviews converted, zero warnings, second run a no-op, no date outside
+  2020–2030 (which would betray a month/day transposition), dumps re-exported and
+  re-imported clean.
+- `grep -rn "double price\|double totalAmount" backend/src/main` returns nothing.
+
+**What running it for real caught that the plan did not anticipate:**
+
+`reviews` holds a **third** timestamp format — `"6/9/25, 3:42 AM"`, an en-US
+`toLocaleString()` value, in 40 of 91 documents. It matters twice over:
+
+1. Unlike the two ISO shapes, it does **not** coerce into an `Instant` on read. Without
+   the migration, 44% of the reviews collection becomes unreadable the moment the field
+   type changes. Both facts are pinned as tests.
+2. It forced the implementation. The first version of step 7 was an aggregation pipeline
+   and **aborted mid-collection** on the first such document: `$dateFromString` has no
+   specifier for a 12-hour clock or an AM/PM marker (no `%I`, no `%p`). Step 7 is now a
+   client-side pass that assembles values with `Date.UTC`, which also makes the result
+   independent of the operator's timezone — for a zone-less string, `new Date(str)` would
+   silently shift it by the local offset.
+
+**Deviations from the plan as written, and why:**
+
+1. **No separate Jackson module.** The plan asked for one "with matching
+   `@JsonValue`/`@JsonCreator`". Every type needing it is ours, so the annotations live on
+   the kernel types directly. A module would have been a second place to keep in sync with
+   no behavior it could add.
+2. **`Rating` and `ProductRating` ship without adopting a field.** `Review.rating` stays an
+   `int` until S12: a legacy document holding the out-of-range rating the S8 suite pins as
+   a `KNOWN BUG` must not become unreadable in the meantime. Folding `Product`'s three
+   rating fields into one VO would change the stored shape, which S9 forbids — S11 does it.
+3. **`EmailAddress` validates but does not normalize case.** `User.email` carries a unique
+   index and is the login identifier, so lower-casing stored addresses is a migration with
+   a duplicate-key failure mode, not a type change. Deferred to S12.
+4. **`Role` and `ProductCondition` live in `shared/domain`,** not in `identity/` and
+   `catalog/`. `DomainTypeConverters` needs both, and ArchUnit's
+   `shared_kernel_depends_on_no_context` forbids the shared kernel importing a context.
+5. **`ObjectIdBackedIdConverters` was not in the plan.** `ProductId` is stored as a
+   `String` on an order line but as an `ObjectId` in `reviews.productId` — one Java type,
+   two BSON forms. `MongoCustomConversions` registers per *type* and cannot express that;
+   `@ValueConverter` applies per *property* and can.
+
+**Two deliberate changes, both evidenced:**
+
+- **`Product.categoryIds` on the wire.** A raw `ObjectId` serialized as
+  `{"timestamp":…,"date":…}` — an unusable shape. It is now the hex string. Verified by
+  grep across both frontends that neither reads `categoryIds`: they consume
+  `categoryNames` and send category ids back as the `genres` query parameter, already
+  as hex.
+- **An unrecognized `condition` filter is now a 400** rather than a string-equality match
+  that could only ever return nothing. The storefront only sends values from its own fixed
+  list.
+
+Review timestamps gain a `Z` suffix, which is a **fix**: `ProductReviews.jsx` parses them
+with `new Date(addedAt)`, and a zone-less string is read as local time, so the displayed
+date was shifted by the viewer's UTC offset.
+
+**Carried into later sprints (not S9 gaps):** `Quantity`, `EmailAddress`, `PhoneNumber`
+and `Slug` ship as vocabulary with converters and tests but no adopted field yet — the
+aggregates that use them are built in S10–S12. `ProductSearchDTO.minPrice/maxPrice` stay
+`double`, being range bounds on a query string rather than persisted money.
 
 ---
 

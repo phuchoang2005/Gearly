@@ -3,6 +3,8 @@ package com.dominator.gearly.dto;
 
 import com.dominator.gearly.model.ReviewStatus;
 import lombok.AllArgsConstructor;
+
+import java.time.Instant;
 import lombok.Data;
 
 @Data
@@ -20,6 +22,6 @@ public class AdminReviewResponseDTO {
     private String subject;
     private String comment;
     private ReviewStatus status;
-    private String addedAt;
-    private String modifiedAt;
+    private Instant addedAt;
+    private Instant modifiedAt;
 }

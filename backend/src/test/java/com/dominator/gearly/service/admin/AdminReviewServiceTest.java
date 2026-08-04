@@ -10,6 +10,8 @@ import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.UserId;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,8 +50,8 @@ class AdminReviewServiceTest {
     private Review pendingReview() {
         Review r = new Review();
         r.setId("r1");
-        r.setProductId(new ObjectId(productHex));
-        r.setUserId(new ObjectId(userHex));
+        r.setProductId(ProductId.of(productHex));
+        r.setUserId(UserId.of(userHex));
         r.setRating(5);
         r.setSubject("Great");
         r.setComment("Runs cool");
