@@ -1,6 +1,7 @@
 package com.dominator.gearly.shared.infrastructure;
 
 import com.dominator.gearly.model.Cart;
+import com.dominator.gearly.model.Category;
 import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.model.Order;
 import com.dominator.gearly.model.OrderItem;
@@ -35,9 +36,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * <b>The proof that S9 needed no data migration.</b>
@@ -284,6 +287,123 @@ class DomainTypeBsonRoundTripTest {
 
             assertThat(loaded).isNotNull();
             assertThat(loaded.getCondition()).isEqualTo(ProductCondition.LIKE_NEW);
+        }
+    }
+
+    /**
+     * The other half of S9's storage change: timestamps that were stored as strings (or as
+     * a {@code LocalDateTime}) become real BSON dates. Unlike the value objects, this one
+     * <em>does</em> move the stored bytes — {@code data/seed/migrate.js} step 7 is what
+     * converts existing documents, and the seed dumps ship already converted.
+     */
+    @Nested
+    @DisplayName("normalized timestamps are stored as BSON dates")
+    class TimestampStorage {
+
+        @Test
+        void categoryTimestampsAreDatesNotStrings() {
+            Category category = new Category();
+            category.setName("CPU");
+            category.setAddedAt(Instant.parse("2025-12-24T00:00:00Z"));
+            category.setModifiedAt(Instant.parse("2025-12-24T00:00:00Z"));
+            mongoTemplate.save(category);
+
+            Document raw = rawDocument("categories");
+
+            assertThat(raw.get("addedAt")).isInstanceOf(java.util.Date.class);
+            assertThat(raw.get("modifiedAt")).isInstanceOf(java.util.Date.class);
+        }
+
+        @Test
+        void reviewTimestampsAreDatesNotStrings() {
+            Review review = new Review();
+            review.setProductId(ProductId.of(PRODUCT_HEX));
+            review.setUserId(UserId.of(USER_HEX));
+            review.setRating(5);
+            review.setAddedAt(Instant.parse("2025-05-23T01:57:38.580Z"));
+            mongoTemplate.save(review);
+
+            assertThat(rawDocument("reviews").get("addedAt")).isInstanceOf(java.util.Date.class);
+        }
+
+        /**
+         * Carts were already stored as BSON dates — the {@code Date} to {@code Instant}
+         * change is Java-side only, which is why no migration step covers them.
+         */
+        @Test
+        void cartTimestampsWereAlreadyDatesAndStayThatWay() {
+            Cart cart = new Cart();
+            cart.setUserId("u1");
+            cart.setCreatedAt(Instant.parse("2025-06-08T20:17:14.541Z"));
+            cart.setUpdatedAt(Instant.parse("2025-06-08T20:37:12.168Z"));
+            mongoTemplate.save(cart);
+
+            Document raw = rawDocument("carts");
+
+            // The values themselves are not asserted: @CreatedDate/@LastModifiedDate
+            // auditing overwrites them on save. The stored BSON type is the point.
+            assertThat(raw.get("createdAt")).isInstanceOf(java.util.Date.class);
+            assertThat(raw.get("updatedAt")).isInstanceOf(java.util.Date.class);
+        }
+
+        /**
+         * The migration's job in one assertion: a document written before S9, carrying the
+         * string form, still loads.
+         */
+        /**
+         * Why the migration is not optional, stated precisely.
+         *
+         * <p>A zone-qualified ISO string still coerces into an {@code Instant} on read —
+         * Spring Data's conversion service handles it — so the 10 categories and 51 reviews
+         * holding that shape would have survived the type change unnoticed. Their problem
+         * was never readability but ordering: stored as strings they sort
+         * lexicographically, which only coincides with chronological order while every
+         * value shares one format.
+         */
+        @Test
+        void aZoneQualifiedIsoStringStillCoercesOnRead() {
+            mongoTemplate.getCollection("categories")
+                    .insertOne(new Document("_id", new ObjectId(CATEGORY_HEX))
+                            .append("name", "Legacy")
+                            .append("addedAt", "2025-12-24T00:00:00.000Z"));
+
+            Category loaded = mongoTemplate.findById(CATEGORY_HEX, Category.class);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getAddedAt()).isEqualTo(Instant.parse("2025-12-24T00:00:00Z"));
+        }
+
+        /**
+         * <b>The document shape that makes migrate.js step 7 mandatory.</b>
+         *
+         * <p>40 of the 91 seeded reviews store their timestamps as an en-US
+         * {@code toLocaleString()} value — {@code "6/9/25, 3:42 AM"}. That does not coerce,
+         * so after the {@code String -> Instant} change those reviews become unreadable and
+         * every read path touching them fails. This was found by running the migration
+         * against the real dumps; the sprint plan anticipated only the two ISO shapes.
+         */
+        @Test
+        void anEnUsLocaleTimestampDoesNotCoerce_whichIsWhatTheMigrationFixes() {
+            mongoTemplate.getCollection("reviews")
+                    .insertOne(new Document("_id", new ObjectId(ORDER_HEX))
+                            .append("rating", 5)
+                            .append("addedAt", "6/9/25, 3:42 AM"));
+
+            assertThatThrownBy(() -> mongoTemplate.findById(ORDER_HEX, Review.class))
+                    .hasRootCauseInstanceOf(java.time.format.DateTimeParseException.class);
+        }
+
+        @Test
+        void migratedCategoryAndReviewDocumentsLoadCleanly() {
+            mongoTemplate.getCollection("categories")
+                    .insertOne(new Document("_id", new ObjectId(CATEGORY_HEX))
+                            .append("name", "CPU")
+                            .append("addedAt", java.util.Date.from(Instant.parse("2025-12-24T00:00:00Z"))));
+
+            Category loaded = mongoTemplate.findById(CATEGORY_HEX, Category.class);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getAddedAt()).isEqualTo(Instant.parse("2025-12-24T00:00:00Z"));
         }
     }
 

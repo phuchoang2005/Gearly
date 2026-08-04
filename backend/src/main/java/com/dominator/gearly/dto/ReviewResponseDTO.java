@@ -3,6 +3,8 @@ package com.dominator.gearly.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 import lombok.Setter;
 
 @Getter
@@ -14,6 +16,6 @@ public class ReviewResponseDTO {
     private int rating;
     private String subject;
     private String comment;
-    private String addedAt;
+    private Instant addedAt;
     private String userName;
 }

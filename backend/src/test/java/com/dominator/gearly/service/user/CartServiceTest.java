@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,8 +88,8 @@ class CartServiceTest {
         cart.setId("cart-1");
         cart.setUserId(USER_ID);
         cart.setItems(new ArrayList<>(List.of(items)));
-        cart.setCreatedAt(new Date());
-        cart.setUpdatedAt(new Date());
+        cart.setCreatedAt(Instant.now());
+        cart.setUpdatedAt(Instant.now());
         return cart;
     }
 
@@ -616,14 +617,14 @@ class CartServiceTest {
     @DisplayName("every write path refreshes updatedAt")
     void writePathsTouchUpdatedAt() {
         Cart cart = userCart(cartItem("p1", 1, 5));
-        cart.setUpdatedAt(new Date(0L));
+        cart.setUpdatedAt(Instant.EPOCH);
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
         when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
         stubSaveReturnsArgument();
 
         service.clearCart(USER_ID, null);
 
-        assertThat(cart.getUpdatedAt()).isAfter(new Date(0L));
+        assertThat(cart.getUpdatedAt()).isAfter(Instant.EPOCH);
     }
 
     @Test

@@ -14,6 +14,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.convert.ValueConverter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -50,8 +52,14 @@ public class Review {
     private String subject;
     private String comment;
     private ReviewStatus status = ReviewStatus.PENDING;
+    /**
+     * Real BSON dates. {@code ReviewService.getSixBestReviews} sorts on {@code addedAt};
+     * as a string that was a lexicographic sort that only coincided with chronological
+     * order because every stored value happened to share one format.
+     * {@code data/seed/migrate.js} step 7 converts existing documents.
+     */
     @CreatedDate
-    private String addedAt;
+    private Instant addedAt;
     @LastModifiedDate
-    private String modifiedAt;
+    private Instant modifiedAt;
 }

@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,8 +86,8 @@ class ResponseDtoWireCompatTest {
         cart.setUserId("u1");
         cart.setGuestId(null);
         cart.setItems(List.of(new CartItem("p1", "RTX 4090", "NVIDIA", Money.of(1599.0), 1, "http://img/a.png", ProductCondition.NEW, 5)));
-        cart.setCreatedAt(new Date(1_700_000_000_000L));
-        cart.setUpdatedAt(new Date(1_700_000_100_000L));
+        cart.setCreatedAt(Instant.ofEpochMilli(1_700_000_000_000L));
+        cart.setUpdatedAt(Instant.ofEpochMilli(1_700_000_100_000L));
 
         CartResponseDTO dto = cartMapper.toResponseDto(cart);
 

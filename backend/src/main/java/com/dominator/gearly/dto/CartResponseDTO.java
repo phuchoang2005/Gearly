@@ -4,7 +4,7 @@ import com.dominator.gearly.model.CartItem;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -19,6 +19,6 @@ public class CartResponseDTO {
     private String userId;
     private String guestId;
     private List<CartItem> items;
-    private Date createdAt;
-    private Date updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

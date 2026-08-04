@@ -10,6 +10,7 @@ import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,13 +64,13 @@ public class CartService {
         c.setUserId(userId);
         c.setGuestId(guestId);
         c.setItems(new ArrayList<>());
-        c.setCreatedAt(new Date());
-        c.setUpdatedAt(new Date());
+        c.setCreatedAt(Instant.now());
+        c.setUpdatedAt(Instant.now());
         return cartRepository.save(c);
     }
 
     private Cart saveCart(Cart c) {
-        c.setUpdatedAt(new Date());
+        c.setUpdatedAt(Instant.now());
         return cartRepository.save(c);
     }
 

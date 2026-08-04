@@ -10,8 +10,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Document(collection = "carts")
@@ -40,8 +40,13 @@ public class Cart {
 
     private List<CartItem> items = new ArrayList<>();
 
+    /**
+     * {@link Instant}, consistent with every other timestamp in the model. These were
+     * already stored as BSON dates, so unlike the category and review timestamps this is
+     * a pure Java-type change with no migration behind it.
+     */
     @CreatedDate
-    private Date createdAt;
+    private Instant createdAt;
     @LastModifiedDate
-    private Date updatedAt;
+    private Instant updatedAt;
 }

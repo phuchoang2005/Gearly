@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -363,7 +364,7 @@ class ReviewServiceTest {
             review.setSubject("s-" + id);
             review.setComment("c-" + id);
             review.setStatus(ReviewStatus.APPROVED);
-            review.setAddedAt("2026-01-01T00:00:00Z");
+            review.setAddedAt(Instant.parse("2026-01-01T00:00:00Z"));
             return review;
         }
 

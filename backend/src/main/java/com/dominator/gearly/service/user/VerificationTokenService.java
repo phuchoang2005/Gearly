@@ -10,7 +10,8 @@ import com.dominator.gearly.repository.VerificationTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -25,13 +26,20 @@ public class VerificationTokenService {
     private final UserRepository userRepository;
     private final EmailService emailService;
 
+    /**
+     * How long a verification or reset token stays usable. S12 moves this to
+     * configuration along with the rest of the identity context.
+     */
+    private static final Duration TOKEN_TTL = Duration.ofMinutes(30);
+
     /** Issue a fresh token for the user and send the matching email. */
     public void createAndSend(User user, VerificationToken.TokenType type) {
         VerificationToken vt = new VerificationToken();
         vt.setUserId(user.getId());
         vt.setToken(UUID.randomUUID().toString());
-        vt.setCreatedAt(LocalDateTime.now());
-        vt.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        Instant now = Instant.now();
+        vt.setCreatedAt(now);
+        vt.setExpiresAt(now.plus(TOKEN_TTL));
         vt.setType(type);
         verificationTokenRepo.save(vt);
 
@@ -47,7 +55,7 @@ public class VerificationTokenService {
         VerificationToken vt = verificationTokenRepo.findByTokenAndType(token, type)
                 .orElseThrow(() -> new BadRequestException("Invalid or expired token"));
 
-        if (vt.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (vt.getExpiresAt().isBefore(Instant.now())) {
             throw new BadRequestException("Token expired!");
         }
         return vt;

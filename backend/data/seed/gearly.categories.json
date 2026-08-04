@@ -1,100 +1,141 @@
 [{
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500e6"
-  },
-  "name": "CPU",
-  "description": "Category for CPU",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500e6"
+	},
+	"name": "CPU",
+	"description": "Category for CPU",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500e7"
-  },
-  "name": "GPU",
-  "description": "Category for GPU",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500e7"
+	},
+	"name": "GPU",
+	"description": "Category for GPU",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500e8"
-  },
-  "name": "RAM",
-  "description": "Category for RAM",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500e8"
+	},
+	"name": "RAM",
+	"description": "Category for RAM",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500e9"
-  },
-  "name": "Motherboard",
-  "description": "Category for Motherboard",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500e9"
+	},
+	"name": "Motherboard",
+	"description": "Category for Motherboard",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500ea"
-  },
-  "name": "Power Supply",
-  "description": "Category for Power Supply",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500ea"
+	},
+	"name": "Power Supply",
+	"description": "Category for Power Supply",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500eb"
-  },
-  "name": "SSD",
-  "description": "Category for SSD",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500eb"
+	},
+	"name": "SSD",
+	"description": "Category for SSD",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500ec"
-  },
-  "name": "HDD",
-  "description": "Category for HDD",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500ed"
+	},
+	"name": "PC Case",
+	"description": "Category for PC Case",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500ed"
-  },
-  "name": "PC Case",
-  "description": "Category for PC Case",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500ef"
+	},
+	"name": "Monitor",
+	"description": "Category for Monitor",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500ee"
-  },
-  "name": "Cooling",
-  "description": "Category for Cooling",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500ec"
+	},
+	"name": "HDD",
+	"description": "Category for HDD",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 },
 {
-  "_id": {
-    "$oid": "694ae1e055e2e3dc4b3500ef"
-  },
-  "name": "Monitor",
-  "description": "Category for Monitor",
-  "parentId": null,
-  "addedAt": "2025-12-24T00:00:00.000Z",
-  "modifiedAt": "2025-12-24T00:00:00.000Z"
+	"_id": {
+		"$oid": "694ae1e055e2e3dc4b3500ee"
+	},
+	"name": "Cooling",
+	"description": "Category for Cooling",
+	"parentId": null,
+	"addedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	},
+	"modifiedAt": {
+		"$date": "2025-12-24T00:00:00Z"
+	}
 }]
+
