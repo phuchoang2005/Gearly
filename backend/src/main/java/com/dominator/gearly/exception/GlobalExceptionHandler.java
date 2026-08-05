@@ -1,5 +1,6 @@
 package com.dominator.gearly.exception;
 
+import com.dominator.gearly.shared.domain.DomainConflictException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -71,6 +72,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of(HttpStatus.CONFLICT.value(),
                         "This item was modified by another request. Please refresh and try again."));
+    }
+
+    /**
+     * A domain rule refused the requested state change → 409.
+     *
+     * <p>An illegal order-status transition, or cancelling an order that has already shipped.
+     * The request was well-formed and the caller was entitled to make it; the aggregate is
+     * simply not in a state where it makes sense.
+     *
+     * <p>One handler covers every context because {@link DomainConflictException} lives in the
+     * shared kernel. An aggregate states the rule that broke and names no web type — it may
+     * not, since {@code org.springframework.http} is banned from a domain package — so
+     * choosing the status code is this class's job. That is what keeps the response identical
+     * to the {@code ConflictException} these replaced.
+     */
+    @ExceptionHandler(DomainConflictException.class)
+    public ResponseEntity<ErrorResponse> handleDomainConflict(DomainConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT.value(), ex.getMessage()));
     }
 
     /** Missing static resource (e.g. an avatar/media file under /uploads/**) → 404, not 500. */

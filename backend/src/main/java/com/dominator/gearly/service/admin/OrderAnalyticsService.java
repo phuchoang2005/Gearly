@@ -2,7 +2,7 @@ package com.dominator.gearly.service.admin;
 
 import com.dominator.gearly.dto.QuantitySoldDTO;
 import com.dominator.gearly.dto.TopSellerDTO;
-import com.dominator.gearly.model.Order;
+import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.model.TimeFrame;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;

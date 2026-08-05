@@ -3,8 +3,11 @@ package com.dominator.gearly.service.user;
 import com.dominator.gearly.dto.*;
 import com.dominator.gearly.mapper.ReviewMapper;
 import com.dominator.gearly.model.*;
+import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.shared.domain.OrderId;
+import com.dominator.gearly.shared.domain.UserId;
 import com.dominator.gearly.repository.ProductRepository;
-import com.dominator.gearly.repository.OrderRepository;
+import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
@@ -129,15 +132,15 @@ public class ReviewService {
 
         productRepository.saveAll(productsToSave);
         reviewRepository.saveAll(reviewsToSave);
-        order.setReviewed(true);
+        order.markReviewed();
         orderRepository.save(order);
     }
 
     private Order requireOwnedOrder(User user, String orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Order not found, you cannot create review on this."));
-        if (!order.getUserId().equals(user.getId())) {
+        if (!order.isOwnedBy(UserId.of(user.getId()))) {
             throw new ApiException(HttpStatus.FORBIDDEN,
                     "You are not allowed to review the items in this order");
         }

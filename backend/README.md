@@ -11,12 +11,27 @@ WebSocket · springdoc/OpenAPI · langchain4j (GitHub Models).
 
 ## Architecture
 
-Conventional layered Spring app under `com.dominator.gearly`:
+Mid-migration from a conventional layered app to bounded contexts (see
+`DDD_REFACTORING_PLAN.md`). **`ordering/` is the first context fully moved across**; the
+other contexts' packages exist with a `package-info.java` each and fill up in S11–S13.
+
+A migrated context has four packages, and `ArchitectureFitnessTest` enforces what may
+depend on what:
+
+| Package | Responsibility |
+|---|---|
+| `<context>/domain/` | Aggregates, value objects, domain services, events and the repository/external-system **ports**. Plain Java — no web, security, HTTP or Spring Data repository types. |
+| `<context>/application/` | Use cases. Take a command record plus a typed id, never a Spring Security principal. One aggregate per transaction. |
+| `<context>/infrastructure/` | Adapters implementing the domain's ports. The only layer that may name `MongoTemplate` or a Spring Data repository. |
+| `<context>/api/` | Controllers and their DTOs. Unwraps the authenticated principal into a typed id before calling in. |
+| `shared/domain/` | The shared kernel: `Money`, `Quantity`, `Rating`, typed ids, `AggregateRoot`, `DomainEvent`. Depends on no context. |
+
+The pre-refactor packages below still hold everything not yet migrated:
 
 | Package | Responsibility |
 |---|---|
 | `controller/` (`admin/`, `user/`) | Thin HTTP layer — returns typed `ResponseEntity<DTO>`, never entities. |
-| `service/` (`admin/`, `user/`, `common/`) | Business logic; one responsibility per service. |
+| `service/` (`admin/`, `user/`) | Business logic; one responsibility per service. |
 | `mapper/` | Hand-written `@Component` entity ↔ DTO mappers. |
 | `repository/` (`custom/`) | Spring Data Mongo repositories + custom aggregation impls. |
 | `model/` | MongoDB documents (`products`, `orders`, `carts`, `users`, …). |
@@ -200,8 +215,9 @@ make test        # mvn test, pinned to JDK 21
 The suite is safe to run **offline**: unit tests (services, mappers), the ArchUnit
 fitness functions, and `@WebMvcTest` slices (security + `GlobalExceptionHandler`) need
 no infrastructure. The context-load test (`GearlyApplicationTests`), the analytics
-aggregation test (`OrderAnalyticsServiceIntegrationTest`) and the transaction /
-optimistic-locking test (`OrderPlacementTransactionIntegrationTest`) spin up a
+aggregation test (`OrderAnalyticsServiceIntegrationTest`), the order-repository adapter
+test (`MongoOrderRepositoryIntegrationTest`) and the transaction / optimistic-locking
+test (`OrderPlacementTransactionIntegrationTest`) spin up a
 throwaway MongoDB via **Testcontainers** and are **Docker-gated**
 (`@Testcontainers(disabledWithoutDocker = true)`) — they self-skip when no Docker
 daemon is reachable, and run for real when Docker/Colima is up (`Skipped: 0` then).
@@ -209,8 +225,10 @@ Ryuk is disabled in the Surefire config (it can't bind-mount Colima's socket).
 
 Two suites are load-bearing for the ongoing refactor and must stay green:
 
-- **The characterization suites** — `CustomerOrderServiceTest`, `CartServiceTest`,
-  `ReviewServiceTest`. These lock the *current* behavior of the three services S10–S12
+- **The characterization suites** — `CartServiceTest`, `ReviewServiceTest`, and the four
+  suites S10 split `CustomerOrderServiceTest` into (`PlaceOrderServiceTest`,
+  `CancelOrderServiceTest`, `OrderQueryServiceTest`, `OnlinePaymentServiceTest`, plus
+  `OrderPlacedListenerTest`). These lock the *current* behavior of the services S10–S12
   rewrite, **bugs included**; the pinned bugs are labelled `KNOWN BUG` with the sprint
   expected to change them. A deliberate behavior change means editing the assertion **in
   the same commit**, with the rationale in the commit message.

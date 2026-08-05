@@ -24,14 +24,19 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
  * <i>strict</i> rather than aspirational: the layer rules from the DDD plan, expressed as
  * failing tests instead of as a convention people are asked to remember.
  *
- * <h2>Scoping, and why every rule allows an empty match</h2>
- * S8 creates the context packages but moves no code into them, so most of these rules
- * currently match zero classes — hence {@code allowEmptyShould(true)} throughout. That is
- * deliberate: the rules are written in full <em>now</em>, against packages that fill up
- * later, so a violation cannot be introduced unnoticed during S9–S13.
+ * <h2>Scoping, and the empty-match escape hatch</h2>
+ * S8 wrote these rules in full against packages that were still empty, so every one of them
+ * carried {@code allowEmptyShould(true)} — otherwise ArchUnit fails a rule that matches
+ * nothing. That was the right call then and a liability afterwards: a rule matching zero
+ * classes passes, so it proves nothing, and nothing would have told us.
+ *
+ * <p><b>S10 removed it.</b> The ordering context populates {@code domain},
+ * {@code application}, {@code infrastructure} and {@code api}, so every rule below now has
+ * real classes to check and says so by failing if it ever stops having them. A rule here can
+ * no longer pass by vacuity.
  *
  * <p>Rules that would fail against the <em>legacy</em> packages
- * ({@code model}, {@code service}, {@code controller}, …) are scoped to the new packages
+ * ({@code model}, {@code service}, {@code controller}, …) are still scoped to the new packages
  * with {@link #NEW_PACKAGES}. Those scopes come off in S13, at which point every rule here
  * applies repo-wide. Each such rule carries a {@code SCOPE:} note saying so.
  */
@@ -97,7 +102,7 @@ class ArchitectureFitnessTest {
                             "jakarta.persistence..")
                     .because("the domain must be testable with a plain constructor call: "
                             + "no web, no security, no HTTP, no Spring Data repositories")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     /**
      * A domain package must not reach back into the pre-refactor code. This is what stops a
@@ -109,7 +114,7 @@ class ArchitectureFitnessTest {
             noClasses().that().resideInAPackage(ROOT + "..domain..")
                     .should().dependOnClassesThat().resideInAnyPackage(LEGACY_PACKAGES)
                     .because("a migrated aggregate that still imports the old model is not migrated")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     /**
      * The inbound HTTP edge talks to the application layer, never to an adapter. A
@@ -120,7 +125,7 @@ class ArchitectureFitnessTest {
             noClasses().that().resideInAPackage(ROOT + "..api..")
                     .should().dependOnClassesThat().resideInAPackage(ROOT + "..infrastructure..")
                     .because("controllers depend on use cases, not on adapters")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     /** Dependencies point inward: an adapter implements a port, a port never names an adapter. */
     @ArchTest
@@ -129,7 +134,48 @@ class ArchitectureFitnessTest {
                     .should().dependOnClassesThat().resideInAnyPackage(
                             ROOT + "..infrastructure..", ROOT + "..api..", ROOT + "..application..")
                     .because("the dependency rule points inward — the domain is the innermost layer")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
+
+    /**
+     * The authenticated principal stops at the controller.
+     *
+     * <p>An application service that takes an {@code AuthenticatedUser} — a Spring Security
+     * {@code UserDetails} — cannot be constructed in a test without a security context, and
+     * has quietly made "who is calling" part of a use case's input rather than a decision the
+     * edge already made. Controllers unwrap it into a {@code UserId} and pass that.
+     *
+     * <p>Both the framework's package and this codebase's own {@code security} package are
+     * banned, because {@code AuthenticatedUser} lives in the latter. S12 moves the whole
+     * access boundary; this rule is what stops it drifting back in the meantime.
+     */
+    @ArchTest
+    static final ArchRule security_types_stop_at_the_api_layer =
+            noClasses().that().resideInAnyPackage(CONTEXT_PACKAGES)
+                    .and().resideOutsideOfPackage(ROOT + "..api..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.springframework.security..", ROOT + ".security..")
+                    .because("controllers unwrap the principal into a typed id; "
+                            + "a use case never sees a security type")
+                    .allowEmptyShould(false);
+
+    /**
+     * A Spring Data repository is an implementation detail of one adapter.
+     *
+     * <p>The domain declares a port ({@code OrderRepository}); {@code infrastructure}
+     * implements it in terms of whatever the database offers. An application service holding a
+     * {@code MongoRepository} has skipped the port and pinned the use case to MongoDB — which
+     * is precisely the state {@code CustomerOrderService} was in before S10.
+     */
+    @ArchTest
+    static final ArchRule spring_data_repositories_live_only_in_infrastructure =
+            noClasses().that().resideInAnyPackage(CONTEXT_PACKAGES)
+                    .and().resideOutsideOfPackage(ROOT + "..infrastructure..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("org.springframework.data.mongodb.repository..",
+                            "org.springframework.data.repository..")
+                    .because("the domain declares a port and an adapter implements it; "
+                            + "no other layer names a Spring Data repository")
+                    .allowEmptyShould(false);
 
     // ------------------------------------------------------------------------
     // Persistence rules
@@ -149,7 +195,7 @@ class ArchitectureFitnessTest {
                     .and().resideInAnyPackage(NEW_PACKAGES)
                     .should().resideInAPackage(ROOT + "..domain..")
                     .because("a persistence document is an aggregate, and aggregates live in the domain")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     /**
      * An aggregate root with a public setter is not an aggregate root — every invariant it
@@ -168,23 +214,35 @@ class ArchitectureFitnessTest {
                     .andShould().haveNameMatching("set[A-Z].*")
                     .because("an aggregate changes state through named behavior, not field assignment "
                             + "(this also catches Lombok @Setter/@Data on a domain class)")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     /**
-     * {@code MongoTemplate} is the query side's privilege and nobody else's. Aggregations
-     * belong in {@code analytics}; everything else goes through a repository port.
+     * {@code MongoTemplate} is for the query side and for repository adapters. Nobody else.
+     * A domain, application or api class that names it has skipped a port.
      *
-     * <p>SCOPE: the new packages only — {@code service.admin} still injects it today. The
-     * scope comes off in S13, when the analytics package is the last holder.
+     * <p>S10 narrowed this: it used to permit {@code analytics} alone. That was too strict to
+     * be right rather than usefully strict. A repository adapter in {@code ..infrastructure..}
+     * is <em>by definition</em> the layer that knows the storage technology — it exists to
+     * implement a domain port in terms of it — and the customer order search cannot be
+     * expressed any other way: it is a dozen optional regex clauses OR'd together, which the
+     * derived-query DSL cannot build. Under the old wording the only way to satisfy the rule
+     * was to leave the criteria behind in the legacy {@code repository/} package, i.e. to
+     * pass the rule by not completing the move. The exemption is by layer, not by class name,
+     * so it cannot be borrowed by an application service.
+     *
+     * <p>SCOPE: the new packages only — {@code service.admin} still injects it today. That
+     * scope comes off in S13, when analytics and the adapters are the last holders.
      */
     @ArchTest
-    static final ArchRule mongo_template_is_reserved_for_analytics =
+    static final ArchRule mongo_template_is_reserved_for_analytics_and_adapters =
             noClasses().that().resideInAnyPackage(NEW_PACKAGES)
                     .and().resideOutsideOfPackage(ROOT + ".analytics..")
+                    .and().resideOutsideOfPackage(ROOT + "..infrastructure..")
                     .should().dependOnClassesThat()
                     .haveFullyQualifiedName("org.springframework.data.mongodb.core.MongoTemplate")
-                    .because("analytics is the read side and the only package allowed raw Mongo access")
-                    .allowEmptyShould(true);
+                    .because("raw Mongo access belongs to the read side and to repository adapters; "
+                            + "everything else goes through a port")
+                    .allowEmptyShould(false);
 
     // ------------------------------------------------------------------------
     // Context-boundary rules
@@ -230,7 +288,7 @@ class ArchitectureFitnessTest {
             noClasses().that().resideInAnyPackage(CONTEXT_PACKAGES)
                     .should().dependOnClassesThat().resideInAPackage(ROOT + ".platform..")
                     .because("platform knows about the contexts; the contexts do not know about it")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     /** The shared kernel is upstream of everything, so it may know nothing about anything. */
     @ArchTest
@@ -240,7 +298,7 @@ class ArchitectureFitnessTest {
                             Stream.concat(Stream.of(CONTEXT_PACKAGES), Stream.of(ROOT + ".platform.."))
                                     .toArray(String[]::new))
                     .because("a shared kernel that depends on a context is not shared")
-                    .allowEmptyShould(true);
+                    .allowEmptyShould(false);
 
     // ------------------------------------------------------------------------
     // The published-language condition

@@ -1,6 +1,6 @@
 package com.dominator.gearly.dto;
 
-import com.dominator.gearly.model.Address;
+import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.model.UserStatus;
 import com.dominator.gearly.shared.domain.Role;
 import lombok.AllArgsConstructor;

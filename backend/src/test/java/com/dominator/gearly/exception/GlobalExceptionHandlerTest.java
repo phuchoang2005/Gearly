@@ -1,5 +1,8 @@
 package com.dominator.gearly.exception;
 
+import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
+import com.dominator.gearly.ordering.domain.OrderCannotBeCancelledException;
+import com.dominator.gearly.ordering.domain.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -39,6 +42,16 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/bad-request")
         void badRequest() {
             throw new BadRequestException("bad input");
+        }
+
+        @GetMapping("/boom/illegal-transition")
+        void illegalTransition() {
+            throw new IllegalOrderTransitionException(OrderStatus.PENDING, OrderStatus.REFUNDED);
+        }
+
+        @GetMapping("/boom/uncancellable")
+        void uncancellable() {
+            throw new OrderCannotBeCancelledException(OrderStatus.SHIPPED);
         }
 
         @GetMapping("/boom/stale")
@@ -114,6 +127,30 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error")
                         .value("This item was modified by another request. Please refresh and try again."));
+    }
+
+    /**
+     * The aggregate's own conflicts must come out as the 409 the services used to return by
+     * throwing {@code ConflictException}. This is the assertion the S8 characterization suite
+     * points at when it stopped expecting that type: an order refusing an illegal transition
+     * or an uncancellable cancellation is the same HTTP response it always was, just decided
+     * here rather than in the domain.
+     */
+    @Test
+    void anIllegalOrderTransition_maps409() throws Exception {
+        mvc.perform(get("/boom/illegal-transition"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("An order cannot go from PENDING to REFUNDED"));
+    }
+
+    @Test
+    void cancellingAnOrderThatHasShipped_maps409() throws Exception {
+        mvc.perform(get("/boom/uncancellable"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error")
+                        .value("This order already has status that cannot be cancelled: SHIPPED"));
     }
 
     @Test

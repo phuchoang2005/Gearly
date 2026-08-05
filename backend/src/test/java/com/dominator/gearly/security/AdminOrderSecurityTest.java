@@ -2,10 +2,10 @@ package com.dominator.gearly.security;
 
 import com.dominator.gearly.config.CorsConfig;
 import com.dominator.gearly.config.SecurityConfig;
-import com.dominator.gearly.controller.admin.AdminOrderController;
-import com.dominator.gearly.mapper.OrderMapper;
+import com.dominator.gearly.ordering.api.AdminOrderController;
+import com.dominator.gearly.ordering.api.OrderResponseMapper;
 import com.dominator.gearly.repository.UserRepository;
-import com.dominator.gearly.service.admin.AdminOrderService;
+import com.dominator.gearly.ordering.application.AdminOrderService;
 import com.dominator.gearly.service.admin.OrderAnalyticsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ class AdminOrderSecurityTest {
     @MockBean
     private OrderAnalyticsService orderAnalyticsService;
     @MockBean
-    private OrderMapper orderMapper;
+    private OrderResponseMapper orderResponseMapper;
 
     // Collaborators of the real JwtAuthenticationFilter (unused without a Bearer header).
     @MockBean
