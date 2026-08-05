@@ -37,15 +37,25 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Cart
+        //
+        // Folding the guest basket in is best-effort, and has to be: guest ids are signed as of
+        // S12, so a visitor whose browser still holds a bare UUID from before that gets a 403
+        // here. Letting it propagate would abort login before setAuth below — the sign-in would
+        // look broken because of a basket the visitor may not even have anything in. The stale
+        // id is dropped either way; at worst an unmergeable basket is lost.
         const guestId = localStorage.getItem("guestId");
         if (guestId) {
-            const res = await getGuestCart(guestId);
-            const guestItems = res.data.items || [];
+            try {
+                const res = await getGuestCart(guestId);
+                const guestItems = res.data.items || [];
 
-            if (guestItems.length) {
-                await mergeCart(guestId, guestItems);
-            } else {
-                await deleteGuestCart(guestId);
+                if (guestItems.length) {
+                    await mergeCart(guestId, guestItems);
+                } else {
+                    await deleteGuestCart(guestId);
+                }
+            } catch (err) {
+                if (err?.response?.status !== 403) throw err;
             }
 
             localStorage.removeItem("guestId");
