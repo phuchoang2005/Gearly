@@ -1,10 +1,10 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ApiException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderCannotBeCancelledException;
 import com.dominator.gearly.ordering.domain.OrderFixture;
+import com.dominator.gearly.ordering.domain.OrderNotYoursException;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.ordering.domain.PaymentTransaction;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
@@ -131,10 +130,11 @@ class CancelOrderServiceTest {
         Order order = existingOrder(OrderStatus.PENDING, TransactionStatus.PENDING);
         findsOrder(order);
 
+        // S12: the refusal is a domain type mapped to 403 centrally, not an ApiException
+        // carrying the status itself. Same status, same message — see OrderNotYoursException.
         assertThatThrownBy(() -> service.cancel(UserId.of("someone-else"), cancelRequest()))
-                .isInstanceOf(ApiException.class)
-                .extracting(ex -> ((ApiException) ex).getStatus())
-                .isEqualTo(HttpStatus.FORBIDDEN);
+                .isInstanceOf(OrderNotYoursException.class)
+                .hasMessage("You are not allowed to cancel this order");
 
         verify(orderRepository, never()).save(any());
     }

@@ -1,13 +1,12 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ApiException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderNotYoursException;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Ownership is checked here rather than in the aggregate because it decides an HTTP 403,
  * and the domain may not name a status code. {@code order.isOwnedBy(userId)} is the aggregate
- * answering the question; turning "no" into a 403 is this layer's job. S12 replaces the
- * {@code ApiException} with an {@code AccessDeniedDomainException} mapped centrally, the same
- * shape the {@code DomainConflictException} mapping already has.
+ * answering the question; turning "no" into a 403 is this layer's job. S12 replaced the
+ * {@code ApiException(HttpStatus.FORBIDDEN, …)} with {@link OrderNotYoursException}, mapped
+ * centrally, the same shape the {@code DomainConflictException} mapping already has — so this
+ * class no longer names {@code org.springframework.http} and the refusal reads the same way
+ * here as it does on the read path {@code OrderQueryService.findById} guards. The message is
+ * unchanged.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,7 +39,7 @@ public class CancelOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (!order.isOwnedBy(userId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "You are not allowed to cancel this order");
+            throw OrderNotYoursException.toCancel();
         }
 
         order.cancel(command.reason());

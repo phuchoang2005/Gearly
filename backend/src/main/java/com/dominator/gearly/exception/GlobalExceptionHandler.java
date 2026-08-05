@@ -1,5 +1,6 @@
 package com.dominator.gearly.exception;
 
+import com.dominator.gearly.shared.domain.AccessDeniedDomainException;
 import com.dominator.gearly.shared.domain.DomainConflictException;
 import com.dominator.gearly.shared.domain.DomainNotFoundException;
 import com.dominator.gearly.shared.domain.DomainRuleViolationException;
@@ -124,6 +125,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDomainRuleViolation(DomainRuleViolationException ex) {
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    }
+
+    /**
+     * The caller is authenticated, but this is not theirs → 403.
+     *
+     * <p>The fourth and last of the shared-kernel bases to get a handler, and the one whose
+     * absence was visible: {@code ReviewNotYoursException} already extended
+     * {@link AccessDeniedDomainException}, so without this it fell to {@link #handleGeneric}
+     * and answered <b>500 with "Internal server error"</b> — the caller was told the server
+     * was broken when in fact their request had been correctly refused.
+     *
+     * <p>403 rather than 404: the two {@code ApiException(HttpStatus.FORBIDDEN, …)} throws this
+     * base replaced both answered 403, and hiding the resource's existence is a decision worth
+     * making deliberately rather than as a side effect of adding a handler.
+     */
+    @ExceptionHandler(AccessDeniedDomainException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedDomainException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
     }
 
     /** Missing static resource (e.g. an avatar/media file under /uploads/**) → 404, not 500. */

@@ -4,10 +4,12 @@ import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
+import com.dominator.gearly.ordering.domain.OrderNotYoursException;
 import com.dominator.gearly.ordering.domain.OrderPage;
 import com.dominator.gearly.ordering.domain.OrderQuery;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.ordering.domain.OrderStatus;
+import com.dominator.gearly.shared.domain.AccessDeniedDomainException;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,18 +77,36 @@ class OrderQueryServiceTest {
     // ---- findById ----------------------------------------------------------
 
     @Test
-    void findById_returnsTheOrder() {
-        Order order = OrderFixture.anOrder().withId("order-1").build();
+    void findById_returnsTheCallersOwnOrder() {
+        Order order = OrderFixture.anOrder().withId("order-1").ownedBy(USER_ID.value()).build();
         when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
-        assertThat(service.findById("order-1")).isSameAs(order);
+        assertThat(service.findById(USER_ID, "order-1")).isSameAs(order);
+    }
+
+    /**
+     * <b>The S12 IDOR.</b> Until this sprint {@code findById} took an id and nothing else, so
+     * this call returned somebody else's order in full — delivery address, phone number and
+     * payment ledger included — to any authenticated caller who guessed an id. The assertion
+     * is on the type rather than on a status because the domain does not name one;
+     * {@code GlobalExceptionHandler} maps {@code AccessDeniedDomainException} to 403, and
+     * {@code CustomerOrderAccessTest} asserts that end of it through the real HTTP stack.
+     */
+    @Test
+    void findById_someoneElsesOrder_isRefused() {
+        Order order = OrderFixture.anOrder().withId("order-1").ownedBy("someone-else").build();
+        when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.findById(USER_ID, "order-1"))
+                .isInstanceOf(OrderNotYoursException.class)
+                .isInstanceOf(AccessDeniedDomainException.class);
     }
 
     @Test
     void findById_missing_is404() {
         when(orderRepository.findById(OrderId.of("nope"))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.findById("nope"))
+        assertThatThrownBy(() -> service.findById(USER_ID, "nope"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
