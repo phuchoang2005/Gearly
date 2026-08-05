@@ -8,7 +8,8 @@ import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.catalog.domain.ProductFixture;
-import com.dominator.gearly.model.Review;
+import com.dominator.gearly.reviews.domain.Review;
+import com.dominator.gearly.reviews.domain.ReviewFixture;
 import com.dominator.gearly.identity.domain.UserFixture;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;
@@ -206,18 +207,16 @@ class DomainTypeBsonRoundTripTest {
          */
         @Test
         void reviewIdsStayObjectIdsWhileOrderLineProductIdsStayStrings() {
-            Review review = new Review();
-            review.setProductId(ProductId.of(PRODUCT_HEX));
-            review.setOrderId(OrderId.of(ORDER_HEX));
-            review.setUserId(UserId.of(USER_HEX));
-            review.setRating(5);
-            mongoTemplate.save(review);
+            mongoTemplate.save(ReviewFixture.aReview()
+                    .of(PRODUCT_HEX).from(ORDER_HEX).by(USER_HEX).rated(5).build());
 
             Document rawReview = rawDocument("reviews");
             assertThat(rawReview.get("productId")).isInstanceOf(ObjectId.class)
                     .isEqualTo(new ObjectId(PRODUCT_HEX));
             assertThat(rawReview.get("orderId")).isInstanceOf(ObjectId.class);
             assertThat(rawReview.get("userId")).isInstanceOf(ObjectId.class);
+            // S12 adopted the Rating value object on this field; it still writes as an int32.
+            assertThat(rawReview.get("rating")).isInstanceOf(Integer.class).isEqualTo(5);
 
             Order order = OrderFixture.anOrder()
                     .withLines(OrderFixture.line(PRODUCT_HEX, "GPU", 0.0, 1))
@@ -234,11 +233,8 @@ class DomainTypeBsonRoundTripTest {
          */
         @Test
         void aReviewRemainsQueryableByRawObjectId() {
-            Review review = new Review();
-            review.setProductId(ProductId.of(PRODUCT_HEX));
-            review.setUserId(UserId.of(USER_HEX));
-            review.setRating(4);
-            mongoTemplate.save(review);
+            mongoTemplate.save(ReviewFixture.aReview()
+                    .of(PRODUCT_HEX).by(USER_HEX).rated(4).build());
 
             long matches = mongoTemplate.getCollection("reviews")
                     .countDocuments(new Document("productId", new ObjectId(PRODUCT_HEX)));
@@ -335,12 +331,10 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void reviewTimestampsAreDatesNotStrings() {
-            Review review = new Review();
-            review.setProductId(ProductId.of(PRODUCT_HEX));
-            review.setUserId(UserId.of(USER_HEX));
-            review.setRating(5);
-            review.setAddedAt(Instant.parse("2025-05-23T01:57:38.580Z"));
-            mongoTemplate.save(review);
+            mongoTemplate.save(ReviewFixture.aReview()
+                    .of(PRODUCT_HEX).by(USER_HEX).rated(5)
+                    .persistedAs(null, Instant.parse("2025-05-23T01:57:38.580Z"))
+                    .build());
 
             assertThat(rawDocument("reviews").get("addedAt")).isInstanceOf(java.util.Date.class);
         }

@@ -1,7 +1,7 @@
-// src/main/java/com/dominator/gearly/dto/ReviewResponseDTO.java
-package com.dominator.gearly.dto;
 
-import com.dominator.gearly.model.ReviewStatus;
+package com.dominator.gearly.reviews.api;
+
+import com.dominator.gearly.reviews.domain.ReviewStatus;
 import lombok.AllArgsConstructor;
 
 import java.time.Instant;
