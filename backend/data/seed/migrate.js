@@ -1,8 +1,8 @@
 // In-place schema migration for the Bookify -> Gearly rename (Sprint 5), the
 // Sprint 7 product-timestamp type change, the Sprint 8 optimistic-locking field,
 // the Sprint 9 category/review timestamp normalization, the Sprint 11
-// product rating-rollup repair, and the Sprint 12 review-rating clamp and
-// rating-rollup recompute.
+// product rating-rollup repair, and the Sprint 12 review-rating clamp,
+// rating-rollup recompute and review-id normalization.
 //
 // Renames the `books` collection -> `products` and the `bookId` reference key
 // -> `productId` everywhere it appears (top-level in reviews/blogPosts, nested
@@ -373,6 +373,40 @@
     print(
       `products: rating rollup recomputed from APPROVED reviews in ${ops.length} docs`
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 11 (S12) - reviews.productId/orderId/userId: ObjectId -> String.
+  //
+  // The last place in the database where a typed id had two BSON forms. The same
+  // ProductId is a plain string in orders.items[].productId and carts.items[],
+  // and Order.userId is a string, but all three ids on a review were stored as
+  // ObjectIds. S9 could not fix it - it was forbidden from moving stored bytes -
+  // so it absorbed the asymmetry behind per-property @ValueConverters and left a
+  // note saying S12 owned the decision. This is that decision.
+  //
+  // What forced it: moving Review into reviews/domain/ put it under the ArchUnit
+  // rule domain_does_not_depend_on_its_own_infrastructure, and
+  // @ValueConverter(ObjectIdBackedIdConverters...) is a domain field naming an
+  // infrastructure class. The alternatives were to relocate a class that exists
+  // to describe a storage encoding into the domain, or to exempt annotation
+  // members from the rule. Normalizing removes the asymmetry instead of
+  // annotating around it, and it is what S9 anticipated.
+  //
+  // Run this before starting the application: with the converters gone, a stored
+  // ObjectId no longer maps onto a ProductId/OrderId/UserId field and the
+  // document fails to read.
+  //
+  // Type-guarded on $type: "objectId" and reported per field, so a re-run is a
+  // no-op and a collection already holding strings is left alone.
+  if (names.includes("reviews")) {
+    for (const field of ["productId", "orderId", "userId"]) {
+      const res = db.reviews.updateMany(
+        { [field]: { $type: "objectId" } },
+        [{ $set: { [field]: { $toString: "$" + field } } }]
+      );
+      print(`reviews: ${field} ObjectId -> String in ${res.modifiedCount} docs`);
+    }
   }
 
   print("Migration complete.");

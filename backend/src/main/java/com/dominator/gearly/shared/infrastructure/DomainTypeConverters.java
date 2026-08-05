@@ -38,6 +38,12 @@ import java.util.List;
  * refactor collapses; {@code DomainTypeBsonRoundTripTest} is what holds the line, by
  * asserting the stored BSON types directly rather than trusting the round trip.
  *
+ * <p><b>S12:</b> {@link CategoryId} is now genuinely the only one. S9 shipped a companion
+ * {@code ObjectIdBackedIdConverters} because {@code reviews} stored its three ids as
+ * {@code ObjectId}s — one Java type with two BSON forms, which a per-<em>type</em> registration
+ * like this one cannot express. S12 normalized those three to strings, so the per-property
+ * converters are gone and every pair a document needs is registered here.
+ *
  * <h2>Two things worth knowing</h2>
  * <b>Registering a writing converter is also what makes a type "simple".</b> Without one,
  * Spring Data would treat {@code Money} as an entity and store it as a nested document

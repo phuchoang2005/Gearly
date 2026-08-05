@@ -2,12 +2,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d285"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445358"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445358",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Good CPU, loud stock cooler",
 	"comment": "The i5-12400F performance is solid for gaming, but the included stock cooler gets noisy under load. I recommend buying a budget air cooler.",
@@ -23,12 +19,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d286"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445359"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445359",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Decent 1080p card",
 	"comment": "The RTX 3060 12GB is okay for 1080p gaming, but it struggles a bit with newer titles on high settings. The 12GB VRAM is nice for productivity though.",
@@ -44,12 +36,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d287"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535a"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044535a",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Powerhouse for tasks",
 	"comment": "The Ryzen 7 5800X is a beast. Multitasking is seamless and frame rates in games are stable. Runs a bit warm, so get a good cooler.",
@@ -65,12 +53,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d288"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535b"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044535b",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Fast but hot",
 	"comment": "The i7-13700K is incredibly fast, but it runs extremely hot. You definitely need a 360mm AIO liquid cooler to keep this thing from throttling.",
@@ -86,12 +70,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d289"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535c"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044535c",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Best value CPU",
 	"comment": "Ryzen 5 5600 is the sweet spot for budget gamers. Low power consumption and great performance per dollar. Stock cooler is sufficient.",
@@ -107,12 +87,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d28b"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535e"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044535e",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Efficiency king",
 	"comment": "The RTX 4070 runs cool and quiet. DLSS 3 Frame Generation is like magic for increasing FPS in supported games. Highly recommended.",
@@ -128,12 +104,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d28c"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535f"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044535f",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Great 1440p value",
 	"comment": "RX 6700 XT offers amazing performance for the price. The extra VRAM helps a lot in modern textures. Drivers have been stable so far.",
@@ -149,12 +121,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d28d"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445360"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445360",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Absolute monster",
 	"comment": "The RTX 4090 eats 4K gaming for breakfast. It is huge though, make sure your case fits it. The price is steep but performance is unmatched.",
@@ -170,12 +138,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d28e"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445361"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445361",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Reliable bulk storage",
 	"comment": "Got this Seagate 2TB for my game library backups. It's a mechanical drive so it makes some noise, but it's cheap and reliable.",
@@ -191,12 +155,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d28f"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445362"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445362",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Solid raster performance",
 	"comment": "The RX 7800 XT is great for non-raytracing games. 16GB VRAM is plenty for future proofing. Runs cooler than expected.",
@@ -212,12 +172,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d290"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445363"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445363",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Standard DDR4 kit",
 	"comment": "Corsair Vengeance LPX just works. Enabled XMP in BIOS and it ran at rated speeds instantly. Low profile fits under my big cooler.",
@@ -233,12 +189,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d284"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445357"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445357",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Great budget CPU",
 	"comment": "Ideally suited for office work and light gaming. The i3-12100F runs very cool and handles daily tasks without any lag. Best bang for the buck.",
@@ -254,12 +206,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d292"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445365"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445365",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Beautiful RAM",
 	"comment": "The G.Skill Trident Z5 looks amazing in my build. The RGB diffusion is perfect. Performance is top notch at 6000MHz.",
@@ -275,12 +223,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d293"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445366"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445366",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Massive capacity",
 	"comment": "Needed 64GB for video editing. This Kingston Fury kit handles 4K scrubbing with ease. Very stable, no crashes.",
@@ -296,12 +240,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d294"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445367"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445367",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Blazing fast SSD",
 	"comment": "The Samsung 990 Pro is incredible. Windows boots in seconds and game load times are instant. Expensive but worth it.",
@@ -317,12 +257,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d295"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445368"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445368",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Solid Gen4 performance",
 	"comment": "Crucial P5 Plus is a great alternative to more expensive drives. Speeds are consistent and installation was easy.",
@@ -338,12 +274,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d28a"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535d"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044535d",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Overkill for gaming",
 	"comment": "The Ryzen 9 7950X destroys multi-core workloads. Rendering videos is lightning fast. Probably too much power for just gaming.",
@@ -359,12 +291,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d291"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445364"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445364",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Fast DDR5",
 	"comment": "Upgraded to this 32GB DDR5 kit. The speed difference in productivity apps is noticeable. Stable and looks clean without RGB.",
@@ -380,12 +308,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d299"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044536c"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044536c",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Smooth 240Hz",
 	"comment": "The ASUS PG279QM is the best monitor I've used. 240Hz at 1440p is buttery smooth for esports. Colors are vibrant out of the box.",
@@ -401,12 +325,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d29a"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044536d"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044536d",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Heavy but precise",
 	"comment": "The G502 X Plus has an amazing sensor and endless buttons, but it feels a bit heavy for FPS gaming. Great for productivity though.",
@@ -422,12 +342,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d297"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044536a"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044536a",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Top tier gaming drive",
 	"comment": "The WD SN850X is super snappy. DirectStorage support means it's ready for future games. Runs a bit warm.",
@@ -443,12 +359,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d29c"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044536f"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044536f",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Good AM4 Board",
 	"comment": "ASUS B550-F has great VRMs and audio. The WiFi works well. However, the price is a bit high for a previous gen socket now.",
@@ -464,12 +376,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d29d"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445370"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445370",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Reliable Power",
 	"comment": "Seasonic Focus series is legendary for a reason. Stable voltages and compact size. Cables are a bit stiff but manageable.",
@@ -485,12 +393,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d29e"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445371"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445371",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Premium Price Tag",
 	"comment": "The Dominator Titanium looks stunning, but you are paying a huge premium for the aesthetics. Performance is similar to cheaper kits.",
@@ -506,12 +410,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d29b"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044536e"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044536e",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Expensive but fast",
 	"comment": "The adjustable actuation on the Apex Pro is a cool gimmick, but for the price, the typing feel could be better. Very fast for gaming.",
@@ -527,12 +427,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d296"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445369"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445369",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Reliable workhorse",
 	"comment": "Have used the 970 EVO Plus in multiple builds. It's not Gen4, but it's fast enough for almost everyone. Never had one fail.",
@@ -548,12 +444,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a0"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445373"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445373",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Feature rich board",
 	"comment": "Gigabyte Z790 AORUS Elite has tons of USB ports and 4 M.2 slots. Overclocking my CPU was easy with the BIOS interface.",
@@ -569,12 +461,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a1"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445374"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445374",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Great budget NVMe",
 	"comment": "Kingston NV2 is unbeatable for the price. Not the fastest Gen4 drive, but way better than SATA SSDs. Perfect for a secondary game drive.",
@@ -590,12 +478,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a2"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445375"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445375",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Solid mid-range",
 	"comment": "MSI B660 Tomahawk is a reliable board. Good VRM cooling and plenty of fan headers. The black stealth look fits any build.",
@@ -611,12 +495,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a3"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445376"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445376",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Good panel, bad stand",
 	"comment": "The TUF VG27AQ display is crisp and fast, but the stand is a bit wobbly. ELMB Sync works well to reduce blur.",
@@ -632,12 +512,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a4"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445377"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445377",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Plenty of power",
 	"comment": "850W is the sweet spot for modern GPUs. The RM850x is high quality and handles transient spikes from my 3080 with no issues.",
@@ -653,12 +529,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a5"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445378"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445378",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Improved airflow",
 	"comment": "The H510 Flow is much better than the original version, but still only supports one top fan. Cable management bar is iconic and helpful.",
@@ -674,12 +546,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d298"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044536b"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044536b",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Silent PSU",
 	"comment": "The Corsair RM650x is dead silent. The fan doesn't even spin during normal browsing. Modular cables make building easy.",
@@ -695,12 +563,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a8"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537b"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044537b",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "King of air cooling",
 	"comment": "Noctua NH-D15 is massive but it cools as well as many liquid coolers. Extremely quiet fans. The mounting system is the best in the industry.",
@@ -716,12 +580,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a7"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537a"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044537a",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Easy to build in",
 	"comment": "Corsair 4000D Airflow is the standard for a reason. Great cable routing channels and simple aesthetic. The front mesh is easy to clean.",
@@ -737,12 +597,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a9"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537c"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044537c",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Great value cooler",
 	"comment": "DeepCool AK620 performs similarly to much more expensive coolers. The blocky design looks modern and it handles my i7 nicely.",
@@ -758,12 +614,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2aa"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537d"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044537d",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Good budget AIO",
 	"comment": "Cooler Master ML240L is affordable and gets the job done. The RGB fans are a nice touch for the price. Installation was straightforward.",
@@ -779,12 +631,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2ab"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537e"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044537e",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Fast but low contrast",
 	"comment": "The LG 27GP850 is super fast for gaming, but like all IPS panels, the contrast is mediocre. Blacks look grey in a dark room.",
@@ -800,12 +648,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2a6"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445379"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445379",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Best airflow case",
 	"comment": "Lian Li Lancool 216 comes with massive fans that move a ton of air. My temps dropped significantly. Building in it was a breeze.",
@@ -821,12 +665,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2ac"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537f"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e044537f",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Amazing performance",
 	"comment": "Arctic Liquid Freezer II has a thick radiator that cools incredibly well. The VRM fan is a nice bonus. Just be careful, it's hard to fit in smaller cases.",
@@ -842,12 +682,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2ad"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445380"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445380",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Deep immersion",
 	"comment": "The 1000R curve on the Odyssey G7 is intense but immersive for gaming. The contrast is much better than IPS panels. No ghosting noticed.",
@@ -863,12 +699,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2ae"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445381"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445381",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Nuclear performance",
 	"comment": "The i9-13900K is unbeatable for raw power. It handles everything you throw at it. Just make sure you have high-end cooling.",
@@ -884,12 +716,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2af"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445382"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445382",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Great AM5 CPU",
 	"comment": "Ryzen 7 7700X is extremely fast for gaming. The Eco mode is a lifesaver for keeping temperatures down without losing much performance.",
@@ -905,12 +733,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d29f"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445372"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445372",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Slow but big",
 	"comment": "WD Blue 4TB is fine for storing movies, but don't try to run games off it. It's a 5400RPM drive so it's quite slow.",
@@ -926,12 +750,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b3"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445386"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445386",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "4K beast",
 	"comment": "The RX 7900 XTX trades blows with the 4080 and wins in rasterization. Drivers have improved a lot since launch. Coil whine is minimal.",
@@ -947,12 +767,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b1"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445384"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445384",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Top tier board",
 	"comment": "The Z790 Hero is expensive but the build quality is insane. It has every port you could ever need and overclocking is super stable.",
@@ -968,12 +784,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b4"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445387"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445387",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Beautiful but pricey",
 	"comment": "The H9 Elite looks stunning with all that glass, but for the price, thermal performance could be better. It's definitely a showpiece case.",
@@ -989,12 +801,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b5"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445388"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445388",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 5,
 	"subject": "Incredibly light",
 	"comment": "The DeathAdder V3 Pro feels like holding nothing. The optical switches are snappy and tracking is perfect. Best ergonomic mouse I've used.",
@@ -1010,12 +818,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b6"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445389"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445389",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Massive card",
 	"comment": "This 4080 Super is huge, barely fit in my case. Performance is great for 4K but the price is still hard to swallow compared to the XTX.",
@@ -1031,15 +835,9 @@
 	"_id": {
 		"$oid": "6845f5c1f6159c1e348dcc76"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445358"
-	},
-	"orderId": {
-		"$oid": "6845f478f6159c1e348dcc75"
-	},
-	"userId": {
-		"$oid": "6845ef85f6159c1e348dcc64"
-	},
+	"productId": "682023424a1ae581e0445358",
+	"orderId": "6845f478f6159c1e348dcc75",
+	"userId": "6845ef85f6159c1e348dcc64",
 	"rating": 5,
 	"subject": "Excellent Mid-Range CPU",
 	"comment": "The i5-12400F arrived quickly and works perfectly. It's the best value gaming processor I've bought. Great packaging and fast shipping!",
@@ -1056,15 +854,9 @@
 	"_id": {
 		"$oid": "6845f5c1f6159c1e348dcc77"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445359"
-	},
-	"orderId": {
-		"$oid": "6845f478f6159c1e348dcc75"
-	},
-	"userId": {
-		"$oid": "6845ef85f6159c1e348dcc64"
-	},
+	"productId": "682023424a1ae581e0445359",
+	"orderId": "6845f478f6159c1e348dcc75",
+	"userId": "6845ef85f6159c1e348dcc64",
 	"rating": 5,
 	"subject": "Solid 1080p GPU",
 	"comment": "This RTX 3060 handles all my games at 1080p Ultra settings. Customer support helped me check if my PSU was enough. 5 star service!",
@@ -1081,12 +873,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b0"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445383"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445383",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 3,
 	"subject": "Bad value",
 	"comment": "The RTX 4060 Ti performs okay, but the 8GB VRAM is limiting in modern games. Price to performance ratio is disappointing compared to older cards.",
@@ -1102,12 +890,8 @@
 	"_id": {
 		"$oid": "682f7504df103bcceb44d2b2"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445385"
-	},
-	"userId": {
-		"$oid": "68201e5b4ff90d7e8d39395c"
-	},
+	"productId": "682023424a1ae581e0445385",
+	"userId": "68201e5b4ff90d7e8d39395c",
 	"rating": 4,
 	"subject": "Future proof PSU",
 	"comment": "Bought the RM1000x for my new 4090 build. It's whisper quiet and delivers stable power. Only downside is the cables are a bit bulky.",
@@ -1123,15 +907,9 @@
 	"_id": {
 		"$oid": "6845f95ef6159c1e348dcc7d"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535a"
-	},
-	"orderId": {
-		"$oid": "6845f75cf6159c1e348dcc7b"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e044535a",
+	"orderId": "6845f75cf6159c1e348dcc7b",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 4,
 	"subject": "Rendering Beast",
 	"comment": "The Ryzen 7 5800X chews through video exports. It runs a bit hot, but performance is undeniable. arrived safely.",
@@ -1148,15 +926,9 @@
 	"_id": {
 		"$oid": "6845f95ef6159c1e348dcc7e"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535b"
-	},
-	"orderId": {
-		"$oid": "6845f75cf6159c1e348dcc7b"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e044535b",
+	"orderId": "6845f75cf6159c1e348dcc7b",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 4,
 	"subject": "High Performance CPU",
 	"comment": "Upgraded to the i7-13700K and saw massive gains in FPS. Just ensure you have a beefy cooler! Delivery was super quick.",
@@ -1173,15 +945,9 @@
 	"_id": {
 		"$oid": "6845f95ef6159c1e348dcc7f"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535c"
-	},
-	"orderId": {
-		"$oid": "6845f75cf6159c1e348dcc7b"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e044535c",
+	"orderId": "6845f75cf6159c1e348dcc7b",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 5,
 	"subject": "Best Value Upgrade",
 	"comment": "Dropped this Ryzen 5600 into my B450 board and it works like a charm. Smooth gaming experience for a great price.",
@@ -1198,15 +964,9 @@
 	"_id": {
 		"$oid": "6845f95ef6159c1e348dcc80"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535f"
-	},
-	"orderId": {
-		"$oid": "6845f75cf6159c1e348dcc7b"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e044535f",
+	"orderId": "6845f75cf6159c1e348dcc7b",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 4,
 	"subject": "Great AMD GPU",
 	"comment": "The RX 6700 XT is perfect for 1440p gaming. Beats the competition in pure rasterization. Packaging was very secure.",
@@ -1223,15 +983,9 @@
 	"_id": {
 		"$oid": "6845fcc3f6159c1e348dcc83"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537c"
-	},
-	"orderId": {
-		"$oid": "6845fb99f6159c1e348dcc81"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e044537c",
+	"orderId": "6845fb99f6159c1e348dcc81",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 4,
 	"subject": "Great Air Cooler",
 	"comment": "DeepCool AK620 is fantastic. Keeps my CPU cool and fits my aesthetic perfectly. Fan installation was easy.",
@@ -1248,15 +1002,9 @@
 	"_id": {
 		"$oid": "6845fcc3f6159c1e348dcc82"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537d"
-	},
-	"orderId": {
-		"$oid": "6845fb99f6159c1e348dcc81"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e044537d",
+	"orderId": "6845fb99f6159c1e348dcc81",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 4,
 	"subject": "Nice AIO Cooler",
 	"comment": "The ML240L keeps my CPU temps in check. The pump had a little bubbling noise at first but it went away. RGB looks nice.",
@@ -1273,15 +1021,9 @@
 	"_id": {
 		"$oid": "6845f715f6159c1e348dcc78"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445357"
-	},
-	"orderId": {
-		"$oid": "6845f462f6159c1e348dcc74"
-	},
-	"userId": {
-		"$oid": "6845ef85f6159c1e348dcc64"
-	},
+	"productId": "682023424a1ae581e0445357",
+	"orderId": "6845f462f6159c1e348dcc74",
+	"userId": "6845ef85f6159c1e348dcc64",
 	"rating": 4,
 	"subject": "Perfect Budget Chip",
 	"comment": "Bought the i3-12100F for a basic home office build. It's snappy and runs cool. Shipping was secure and the box was in perfect condition.",
@@ -1298,15 +1040,9 @@
 	"_id": {
 		"$oid": "6845fe58f6159c1e348dcc89"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535b"
-	},
-	"orderId": {
-		"$oid": "6845fd28f6159c1e348dcc86"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e044535b",
+	"orderId": "6845fd28f6159c1e348dcc86",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Incredible Speeds",
 	"comment": "This i7-13700K is blazing fast. Compiling code takes half the time compared to my old CPU. Worth every penny.",
@@ -1323,15 +1059,9 @@
 	"_id": {
 		"$oid": "6845fe58f6159c1e348dcc88"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445358"
-	},
-	"orderId": {
-		"$oid": "6845fd28f6159c1e348dcc86"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e0445358",
+	"orderId": "6845fd28f6159c1e348dcc86",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Gaming Workhorse",
 	"comment": "The i5-12400F handles everything I throw at it. Paired with a 3060, it's a 1080p beast. Highly recommend.",
@@ -1348,15 +1078,9 @@
 	"_id": {
 		"$oid": "6845fe58f6159c1e348dcc8a"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535c"
-	},
-	"orderId": {
-		"$oid": "6845fd28f6159c1e348dcc86"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e044535c",
+	"orderId": "6845fd28f6159c1e348dcc86",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "AMD Value King",
 	"comment": "Ryzen 5 5600 is still the best budget CPU. Easy to install and runs cool. Perfect for my mini-ITX build.",
@@ -1373,15 +1097,9 @@
 	"_id": {
 		"$oid": "6845fe58f6159c1e348dcc8b"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445360"
-	},
-	"orderId": {
-		"$oid": "6845fd28f6159c1e348dcc86"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e0445360",
+	"orderId": "6845fd28f6159c1e348dcc86",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Ultimate 4K Experience",
 	"comment": "The RTX 4090 is simply unmatched. Ray tracing at 4K 120fps is mind blowing. Just make sure your PSU can handle it!",
@@ -1398,15 +1116,9 @@
 	"_id": {
 		"$oid": "68460096f6159c1e348dcc8d"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445361"
-	},
-	"orderId": {
-		"$oid": "6845fe87f6159c1e348dcc8c"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e0445361",
+	"orderId": "6845fe87f6159c1e348dcc8c",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 4,
 	"subject": "Good Backup Drive",
 	"comment": "Installed this 2TB HDD for my Plex server media. It works reliably. Not fast, but great for storage.",
@@ -1423,15 +1135,9 @@
 	"_id": {
 		"$oid": "68460096f6159c1e348dcc8e"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535d"
-	},
-	"orderId": {
-		"$oid": "6845fe87f6159c1e348dcc8c"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e044535d",
+	"orderId": "6845fe87f6159c1e348dcc8c",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Productivity Monster",
 	"comment": "Ryzen 9 7950X crushes compilation times. If you do professional work, this is the CPU to get. A bit overkill for just gaming.",
@@ -1448,15 +1154,9 @@
 	"_id": {
 		"$oid": "68460096f6159c1e348dcc8f"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445362"
-	},
-	"orderId": {
-		"$oid": "6845fe87f6159c1e348dcc8c"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e0445362",
+	"orderId": "6845fe87f6159c1e348dcc8c",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Great alternative to NVIDIA",
 	"comment": "The 7800 XT offers amazing performance without the premium price tag. Drivers have been stable and games run smooth.",
@@ -1473,15 +1173,9 @@
 	"_id": {
 		"$oid": "6845fe58f6159c1e348dcc87"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445357"
-	},
-	"orderId": {
-		"$oid": "6845fd28f6159c1e348dcc86"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e0445357",
+	"orderId": "6845fd28f6159c1e348dcc86",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Works perfectly",
 	"comment": "Small, efficient, and cheap. The i3-12100F is exactly what I needed for my media server. No complaints.",
@@ -1498,15 +1192,9 @@
 	"_id": {
 		"$oid": "6846027ef6159c1e348dcc96"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445386"
-	},
-	"orderId": {
-		"$oid": "684601e2f6159c1e348dcc94"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e0445386",
+	"orderId": "684601e2f6159c1e348dcc94",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 4,
 	"subject": "Top tier AMD card",
 	"comment": "The 7900 XTX is a beast at 4K. Raster performance is incredible. Ray tracing is okay but not on par with 4080 yet.",
@@ -1523,15 +1211,9 @@
 	"_id": {
 		"$oid": "6846027ef6159c1e348dcc97"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445387"
-	},
-	"orderId": {
-		"$oid": "684601e2f6159c1e348dcc94"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e0445387",
+	"orderId": "684601e2f6159c1e348dcc94",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 4,
 	"subject": "Beautiful Showcase",
 	"comment": "The H9 Elite is gorgeous. Building in it was fun, but be prepared to manage a lot of RGB cables in the back!",
@@ -1548,15 +1230,9 @@
 	"_id": {
 		"$oid": "684602e2f6159c1e348dcc98"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044535b"
-	},
-	"orderId": {
-		"$oid": "68460132f6159c1e348dcc93"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e044535b",
+	"orderId": "68460132f6159c1e348dcc93",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 3,
 	"subject": "Runs too hot",
 	"comment": "The i7-13700K performs well, but thermal throttling is real. Even with a 240mm AIO, it hits 90C+ instantly in Cinebench.",
@@ -1573,15 +1249,9 @@
 	"_id": {
 		"$oid": "684602e2f6159c1e348dcc99"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537c"
-	},
-	"orderId": {
-		"$oid": "68460132f6159c1e348dcc93"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e044537c",
+	"orderId": "68460132f6159c1e348dcc93",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 4,
 	"subject": "Solid Cooler",
 	"comment": "DeepCool AK620 looks great and performs well. A bit bulky, so check your RAM clearance before buying.",
@@ -1598,15 +1268,9 @@
 	"_id": {
 		"$oid": "6846027ef6159c1e348dcc95"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445385"
-	},
-	"orderId": {
-		"$oid": "684601e2f6159c1e348dcc94"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e0445385",
+	"orderId": "684601e2f6159c1e348dcc94",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 3,
 	"subject": "Good but stiff cables",
 	"comment": "The RM1000x provides great power stability, but the included cables are very stiff and hard to manage in tight spaces.",
@@ -1623,15 +1287,9 @@
 	"_id": {
 		"$oid": "684602e2f6159c1e348dcc9a"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537f"
-	},
-	"orderId": {
-		"$oid": "68460132f6159c1e348dcc93"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e044537f",
+	"orderId": "68460132f6159c1e348dcc93",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 5,
 	"subject": "Excellent Cooling",
 	"comment": "The Arctic Liquid Freezer II is hands down the best AIO I've used. My CPU temps dropped by 10 degrees compared to my old cooler.",
@@ -1648,15 +1306,9 @@
 	"_id": {
 		"$oid": "6845f95ef6159c1e348dcc7c"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445357"
-	},
-	"orderId": {
-		"$oid": "6845f75cf6159c1e348dcc7b"
-	},
-	"userId": {
-		"$oid": "6845f24ef6159c1e348dcc6a"
-	},
+	"productId": "682023424a1ae581e0445357",
+	"orderId": "6845f75cf6159c1e348dcc7b",
+	"userId": "6845f24ef6159c1e348dcc6a",
 	"rating": 5,
 	"subject": "Great for Starter PC",
 	"comment": "For an entry level CPU, this i3 is impressive. It pairs well with my budget GPU. Fast delivery as always.",
@@ -1673,15 +1325,9 @@
 	"_id": {
 		"$oid": "684602e2f6159c1e348dcc9b"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e044537e"
-	},
-	"orderId": {
-		"$oid": "68460132f6159c1e348dcc93"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e044537e",
+	"orderId": "68460132f6159c1e348dcc93",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 4,
 	"subject": "Fast Panel",
 	"comment": "The LG monitor is super responsive. 165Hz makes FPS gaming feel great. The IPS glow is noticeable in dark scenes though.",
@@ -1698,15 +1344,9 @@
 	"_id": {
 		"$oid": "684604c0f6159c1e348dcca2"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445358"
-	},
-	"orderId": {
-		"$oid": "68460334f6159c1e348dcc9f"
-	},
-	"userId": {
-		"$oid": "6845f366f6159c1e348dcc70"
-	},
+	"productId": "682023424a1ae581e0445358",
+	"orderId": "68460334f6159c1e348dcc9f",
+	"userId": "6845f366f6159c1e348dcc70",
 	"rating": 4,
 	"subject": "Solid Performer",
 	"comment": "The i5-12400F is a reliable workhorse. Does everything I need for work and gaming without breaking the bank.",
@@ -1723,15 +1363,9 @@
 	"_id": {
 		"$oid": "684604c0f6159c1e348dcca3"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445359"
-	},
-	"orderId": {
-		"$oid": "68460334f6159c1e348dcc9f"
-	},
-	"userId": {
-		"$oid": "6845f366f6159c1e348dcc70"
-	},
+	"productId": "682023424a1ae581e0445359",
+	"orderId": "68460334f6159c1e348dcc9f",
+	"userId": "6845f366f6159c1e348dcc70",
 	"rating": 5,
 	"subject": "Good entry card",
 	"comment": "RTX 3060 12GB is great for editing thanks to the VRAM. Gaming performance is solid at 1080p high settings.",
@@ -1748,15 +1382,9 @@
 	"_id": {
 		"$oid": "684604c0f6159c1e348dcca4"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445361"
-	},
-	"orderId": {
-		"$oid": "68460334f6159c1e348dcc9f"
-	},
-	"userId": {
-		"$oid": "6845f366f6159c1e348dcc70"
-	},
+	"productId": "682023424a1ae581e0445361",
+	"orderId": "68460334f6159c1e348dcc9f",
+	"userId": "6845f366f6159c1e348dcc70",
 	"rating": 4,
 	"subject": "Cheap Storage",
 	"comment": "Seagate 2TB HDD is perfect for storing old photos and games I don't play often. It works as expected.",
@@ -1773,15 +1401,9 @@
 	"_id": {
 		"$oid": "684602e2f6159c1e348dcc9c"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445383"
-	},
-	"orderId": {
-		"$oid": "68460132f6159c1e348dcc93"
-	},
-	"userId": {
-		"$oid": "6845f327f6159c1e348dcc6e"
-	},
+	"productId": "682023424a1ae581e0445383",
+	"orderId": "68460132f6159c1e348dcc93",
+	"userId": "6845f327f6159c1e348dcc6e",
 	"rating": 5,
 	"subject": "Decent 1080p card",
 	"comment": "RTX 4060 Ti runs very cool and efficient. DLSS 3 helps a lot in Cyberpunk. Good upgrade from my old 1060.",
@@ -1798,15 +1420,9 @@
 	"_id": {
 		"$oid": "684604c0f6159c1e348dcca1"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445357"
-	},
-	"orderId": {
-		"$oid": "68460334f6159c1e348dcc9f"
-	},
-	"userId": {
-		"$oid": "6845f366f6159c1e348dcc70"
-	},
+	"productId": "682023424a1ae581e0445357",
+	"orderId": "68460334f6159c1e348dcc9f",
+	"userId": "6845f366f6159c1e348dcc70",
 	"rating": 5,
 	"subject": "Great budget CPU",
 	"comment": "i3-12100F is unbeatable for the price. Built a budget gaming PC for my brother and it runs everything he plays.",
@@ -1823,15 +1439,9 @@
 	"_id": {
 		"$oid": "684609b6f6159c1e348dccaf"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445358"
-	},
-	"orderId": {
-		"$oid": "684605d6f6159c1e348dccaa"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445358",
+	"orderId": "684605d6f6159c1e348dccaa",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 5,
 	"subject": "Great Mid-Range CPU",
 	"comment": "Upgraded from an old i5-7400 to this 12400F. The difference is night and day. Games are so much smoother now.",
@@ -1848,15 +1458,9 @@
 	"_id": {
 		"$oid": "684609b6f6159c1e348dccb0"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445359"
-	},
-	"orderId": {
-		"$oid": "684605d6f6159c1e348dccaa"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445359",
+	"orderId": "684605d6f6159c1e348dccaa",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 5,
 	"subject": "Good for the price",
 	"comment": "RTX 3060 works great for my needs. I play Apex and Valorant and get high FPS constantly. RGB on the card is nice too.",
@@ -1873,15 +1477,9 @@
 	"_id": {
 		"$oid": "684609e7f6159c1e348dccb1"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445381"
-	},
-	"orderId": {
-		"$oid": "68460530f6159c1e348dcca9"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445381",
+	"orderId": "68460530f6159c1e348dcca9",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 4,
 	"subject": "Too hot to handle",
 	"comment": "The i9-13900K is a beast performance-wise, but cooling it is a nightmare. Make sure you invest in a top-tier AIO.",
@@ -1898,15 +1496,9 @@
 	"_id": {
 		"$oid": "684609e7f6159c1e348dccb2"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445384"
-	},
-	"orderId": {
-		"$oid": "68460530f6159c1e348dcca9"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445384",
+	"orderId": "68460530f6159c1e348dcca9",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 4,
 	"subject": "Expensive but good",
 	"comment": "The ASUS Z790 Hero has excellent features and build quality, but the price tag is hard to justify unless you are an enthusiast.",
@@ -1923,15 +1515,9 @@
 	"_id": {
 		"$oid": "684609e7f6159c1e348dccb3"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445389"
-	},
-	"orderId": {
-		"$oid": "68460530f6159c1e348dcca9"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445389",
+	"orderId": "68460530f6159c1e348dcca9",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 4,
 	"subject": "4K Gaming Ready",
 	"comment": "The 4080 Super handles every game at max settings easily. It's large and power hungry, but the performance is stellar.",
@@ -1948,15 +1534,9 @@
 	"_id": {
 		"$oid": "684609e7f6159c1e348dccb4"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445365"
-	},
-	"orderId": {
-		"$oid": "68460530f6159c1e348dcca9"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445365",
+	"orderId": "68460530f6159c1e348dcca9",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 4,
 	"subject": "Fast and Pretty",
 	"comment": "G.Skill Trident Z5 RGB looks fantastic and runs stable at 6000MHz. A bit tall for some air coolers, so check clearance.",
@@ -1973,15 +1553,9 @@
 	"_id": {
 		"$oid": "68460b87f6159c1e348dccb6"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445357"
-	},
-	"orderId": {
-		"$oid": "68460b09f6159c1e348dccb5"
-	},
-	"userId": {
-		"$oid": "6845f3caf6159c1e348dcc72"
-	},
+	"productId": "682023424a1ae581e0445357",
+	"orderId": "68460b09f6159c1e348dccb5",
+	"userId": "6845f3caf6159c1e348dcc72",
 	"rating": 2,
 	"subject": "Not enough for me",
 	"comment": "The i3-12100F is okay for basic tasks, but it stutters in CPU heavy games like Warzone. Should have saved up for an i5.",
@@ -1998,15 +1572,9 @@
 	"_id": {
 		"$oid": "684604c0f6159c1e348dcca5"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445362"
-	},
-	"orderId": {
-		"$oid": "68460334f6159c1e348dcc9f"
-	},
-	"userId": {
-		"$oid": "6845f366f6159c1e348dcc70"
-	},
+	"productId": "682023424a1ae581e0445362",
+	"orderId": "68460334f6159c1e348dcc9f",
+	"userId": "6845f366f6159c1e348dcc70",
 	"rating": 5,
 	"subject": "Excellent Card",
 	"comment": "The RX 7800 XT runs quiet and fast. Adrenalin software has gotten much better. Very happy with my switch to AMD.",
@@ -2023,15 +1591,9 @@
 	"_id": {
 		"$oid": "684604e7f6159c1e348dcca6"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445380"
-	},
-	"orderId": {
-		"$oid": "684603b8f6159c1e348dcca0"
-	},
-	"userId": {
-		"$oid": "6845f366f6159c1e348dcc70"
-	},
+	"productId": "682023424a1ae581e0445380",
+	"orderId": "684603b8f6159c1e348dcca0",
+	"userId": "6845f366f6159c1e348dcc70",
 	"rating": 5,
 	"subject": "Immersive Curve",
 	"comment": "The Odyssey G7's curve takes some getting used to, but now I can't go back to flat screens. 240Hz is incredibly smooth.",
@@ -2048,15 +1610,9 @@
 	"_id": {
 		"$oid": "68460096f6159c1e348dcc90"
 	},
-	"productId": {
-		"$oid": "682023424a1ae581e0445363"
-	},
-	"orderId": {
-		"$oid": "6845fe87f6159c1e348dcc8c"
-	},
-	"userId": {
-		"$oid": "6845f2a2f6159c1e348dcc6c"
-	},
+	"productId": "682023424a1ae581e0445363",
+	"orderId": "6845fe87f6159c1e348dcc8c",
+	"userId": "6845f2a2f6159c1e348dcc6c",
 	"rating": 5,
 	"subject": "Reliable RAM",
 	"comment": "Corsair 16GB kit did the job perfectly. XMP profile worked immediately on my B550 board. No instability issues.",

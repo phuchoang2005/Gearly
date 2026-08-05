@@ -9,7 +9,6 @@ import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Rating;
 import com.dominator.gearly.shared.domain.ReviewId;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,8 +23,8 @@ import java.util.Optional;
 
 /**
  * The MongoDB adapter behind {@link ReviewRepository}. The only class in the reviews context
- * that knows a review is stored in MongoDB, that its three ids are {@code ObjectId}s, or that
- * the star histogram is an aggregation pipeline.
+ * that knows a review is stored in MongoDB, what BSON type its three ids take, or that the
+ * star histogram is an aggregation pipeline.
  */
 @Repository
 @RequiredArgsConstructor
@@ -77,12 +76,11 @@ public class MongoReviewRepository implements ReviewRepository {
     public ReviewPage findApproved(ProductId productId, Rating rating,
                                    int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
-        ObjectId storedProductId = new ObjectId(productId.value());
 
         Page<Review> result = rating == null
-                ? reviews.findByProductIdAndStatus(storedProductId, ReviewStatus.APPROVED, pageable)
+                ? reviews.findByProductIdAndStatus(productId.value(), ReviewStatus.APPROVED, pageable)
                 : reviews.findByProductIdAndStatusAndRating(
-                        storedProductId, ReviewStatus.APPROVED, rating.toInt(), pageable);
+                        productId.value(), ReviewStatus.APPROVED, rating.toInt(), pageable);
 
         return new ReviewPage(result.getContent(), page, size, result.getTotalElements());
     }
@@ -111,7 +109,7 @@ public class MongoReviewRepository implements ReviewRepository {
     @Override
     public Map<Rating, Long> ratingTally(ProductId productId) {
         Map<Rating, Long> tally = new LinkedHashMap<>();
-        for (Map<String, Object> row : reviews.getRatingDistribution(new ObjectId(productId.value()))) {
+        for (Map<String, Object> row : reviews.getRatingDistribution(productId.value())) {
             int stars = ((Number) row.get("_id")).intValue();
             if (stars < Rating.MIN || stars > Rating.MAX) {
                 continue;

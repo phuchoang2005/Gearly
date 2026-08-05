@@ -6,12 +6,10 @@ import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Rating;
 import com.dominator.gearly.shared.domain.ReviewId;
 import com.dominator.gearly.shared.domain.UserId;
-import com.dominator.gearly.shared.infrastructure.ObjectIdBackedIdConverters;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.convert.ValueConverter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -44,11 +42,16 @@ import java.util.Objects;
  * rather than a bug in the arithmetic.
  *
  * <h2>Persistence</h2>
- * Still a {@code @Document}, and the stored shape is byte-identical: {@code rating} writes as a
- * BSON {@code int32} through the S9 converter, and the three id fields keep the
- * {@code ObjectId} form the rating-distribution aggregation joins on — see
- * {@link ObjectIdBackedIdConverters} for why those three are per-property converters rather
- * than global ones.
+ * Still a {@code @Document}. {@code rating} writes as a BSON {@code int32} through the S9
+ * converter, so that field's bytes are unchanged.
+ *
+ * <p>The three id fields <b>did</b> move. They were the last place in the database where a
+ * {@code ProductId} was stored as a BSON {@code ObjectId} while the same Java type is a plain
+ * string on an order line and a cart line, and S9 absorbed that asymmetry behind per-property
+ * {@code @ValueConverter}s because it was forbidden from changing stored bytes. Its own note
+ * said "S12 owns the reviews context and can decide whether to normalize the stored form".
+ * S12 normalized it: the ids are strings here too, the converters are gone, and
+ * {@code data/seed/migrate.js} step 11 converts existing documents.
  */
 @Getter
 @Document(collection = "reviews")
@@ -58,18 +61,14 @@ public class Review extends AggregateRoot {
     private String id;
 
     /**
-     * These three are the id asymmetry the shared kernel absorbs: they are stored as BSON
-     * {@code ObjectId} while the same id types are stored as plain strings everywhere else
-     * (an order's {@code items[].productId}, a cart's line, {@code Order.userId}). The
-     * {@code @ValueConverter}s keep the stored form exactly as it is.
+     * Stored as plain strings, the same as an order's {@code items[].productId}, a cart line's,
+     * and {@code Order.userId}. See the class note: until S12 these three were the one place
+     * that stored them as {@code ObjectId}s.
      */
-    @ValueConverter(ObjectIdBackedIdConverters.ProductIdAsObjectId.class)
     private ProductId productId;
 
-    @ValueConverter(ObjectIdBackedIdConverters.OrderIdAsObjectId.class)
     private OrderId orderId;
 
-    @ValueConverter(ObjectIdBackedIdConverters.UserIdAsObjectId.class)
     private UserId userId;
 
     /** 1–5 by construction. See the class note for why this was an {@code int} until S12. */
