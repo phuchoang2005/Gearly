@@ -464,18 +464,154 @@ has it; nothing restocks a cancelled order's units, which needs S11's
 **Goal:** One stock rule, one cart rule, and an anti-corruption layer between Catalog and the contexts that snapshot from it.
 
 **Backlog**
-- [ ] **`Product` root:** `reserve(Quantity)` / `restock(Quantity)` throwing `InsufficientStockException`; `addRating(Rating)` on a `ProductRating` VO; `changePrice(Money)`. This collapses **five duplicated stock checks** — `ProductService.java:52-59`, `CustomerOrderService.java:164`, and `CartService` at `:86-93`, `:106-113`, `:210-217` — into one rule on the aggregate.
-- [ ] **Stop returning `null`:** `ProductService.getProductById:43` returns `null` on a miss, so `getStock` and `decreaseStock` NPE. Throw `ResourceNotFoundException`.
-- [ ] **`Category`** into `catalog/domain`. The `@Transient categoryNames` read-model leak on `Product` moves to an application-layer projection. `ProductsInStockRepository`'s hard-coded `$lt: 10` **business rule in an annotation** becomes a `LowStockThreshold` config value.
-- [ ] **`Cart` root:** `addLine`, `changeQuantity`, `removeLine`, `merge(Cart)`, `reconcileWith(List<CatalogSnapshot>)` — absorbing `syncCartWithStock` (`CartService.java:32-58`), `mergeCart` (`:169-191`), and the triplicated clamp. `CartItem`→`CartLine`. Enforce the `userId` XOR `guestId` rule that is currently unenforced.
-- [ ] **ACL:** `CatalogSnapshot` + `ProductSnapshotPort`. Cart and Ordering never touch `Product` directly. `OrderMapper.toOrderItem` becomes `OrderLine.fromSnapshot(...)` — which also fixes its unguarded `getImages().getFirst()` (`OrderMapper.java:21`), a crash on any image-less product that `CartMapper.java:39-41` already guards against.
-- [ ] **🔒 Security — price tampering.** `CartController.java:30`, `CartController.java:59`, and `GuestCartController.java:35` bind `@RequestBody CartItem` — a **persistence document** whose `price`, `title`, `stock`, and `condition` are client-controlled and persisted without re-reading the catalog. Replace with `AddCartItemRequestDTO { productId, quantity }` and hydrate from the catalog snapshot. *Frontend contract change: the body shrinks, extra fields are ignored — verify the storefront's add-to-cart call.*
-- [ ] **Wishlist:** stays inside `User.favorites` for now, **documented as a deliberate aggregate choice**; splitting it into its own aggregate is logged as a follow-up.
-- [ ] **Tighten ArchUnit** onto `catalog..` and `cart..`.
+- [x] **`Product` root:** `reserve(Quantity)` / `restock(Quantity)` throwing `InsufficientStockException`; `addRating(Rating)` on a `ProductRating` VO; `changePrice(Money)`. This collapses **five duplicated stock checks** — `ProductService.java:52-59`, `CustomerOrderService.java:164`, and `CartService` at `:86-93`, `:106-113`, `:210-217` — into one rule on the aggregate.
+- [x] **Stop returning `null`:** `ProductService.getProductById:43` returns `null` on a miss, so `getStock` and `decreaseStock` NPE. Throw `ResourceNotFoundException`.
+- [x] **`Category`** into `catalog/domain`. The `@Transient categoryNames` read-model leak on `Product` moves to an application-layer projection. `ProductsInStockRepository`'s hard-coded `$lt: 10` **business rule in an annotation** becomes a `LowStockThreshold` config value.
+- [x] **`Cart` root:** `addLine`, `changeQuantity`, `removeLine`, `merge(Cart)`, `reconcileWith(List<CatalogSnapshot>)` — absorbing `syncCartWithStock` (`CartService.java:32-58`), `mergeCart` (`:169-191`), and the triplicated clamp. `CartItem`→`CartLine`. Enforce the `userId` XOR `guestId` rule that is currently unenforced.
+- [x] **ACL:** `CatalogSnapshot` + `ProductSnapshotPort`. Cart and Ordering never touch `Product` directly. `OrderMapper.toOrderItem` becomes `OrderLine.fromSnapshot(...)` — which also fixes its unguarded `getImages().getFirst()` (`OrderMapper.java:21`), a crash on any image-less product that `CartMapper.java:39-41` already guards against.
+- [x] **🔒 Security — price tampering.** `CartController.java:30`, `CartController.java:59`, and `GuestCartController.java:35` bind `@RequestBody CartItem` — a **persistence document** whose `price`, `title`, `stock`, and `condition` are client-controlled and persisted without re-reading the catalog. Replace with `AddCartItemRequestDTO { productId, quantity }` and hydrate from the catalog snapshot. *Frontend contract change: the body shrinks, extra fields are ignored — verify the storefront's add-to-cart call.*
+- [x] **Wishlist:** stays inside `User.favorites` for now, **documented as a deliberate aggregate choice**; splitting it into its own aggregate is logged as a follow-up.
+- [x] **Tighten ArchUnit** onto `catalog..` and `cart..`.
 
 **Verify:** characterization + wire-compat tests green. A concurrent-checkout integration test proves `@Version` prevents overselling. Posting a tampered `price` in an add-to-cart body has no effect on what is stored.
 
 **Risks:** Med — the cart request-DTO change is the one frontend-visible item in this sprint.
+
+### S11 outcome — shipped
+
+Branch `ddd/s11-catalog-cart`, four commits. **371 tests green** (334 before the sprint).
+
+| Item | Landed as |
+|---|---|
+| `Product` root | `reserve` / `restock` / `assertCanSupply` / `changePrice` / `addRating` / `removeRating` / `snapshot` in `catalog/domain`; no public setters, two more stray `@Document`s dropped (`Image`, `CartItem`) |
+| One stock rule | `InsufficientStockException.requireAtLeast` — the only comparison of a wanted quantity against an available one left in the codebase; `Product` and `CatalogSnapshot` both call it |
+| Stop returning `null` | `ProductNotFoundException` (a `DomainNotFoundException`) mapped centrally to 404 |
+| `Category` | `catalog/domain`; `categoryNames` is `CategoryNameProjection`; `$lt: 10` is `LowStockThreshold` bound from `gearly.catalog.low-stock-threshold` |
+| `Cart` root | `addLine`, `changeQuantity`, `removeLine`, `removeUnits`, `merge`, `reconcileWith`, `clear`; `CartLine`; userId XOR guestId enforced |
+| ACL | `CatalogSnapshot` + `ProductSnapshotPort`; `OrderLine.fromSnapshot`; neither Cart nor Ordering names `Product` |
+| Price tampering | `AddCartItemRequestDTO` / `MergeCartLineDTO` on the three endpoints; a line is constructible only from a snapshot |
+| Ports | `ProductRepository`, `CategoryRepository`, `CartRepository` in the domain; three Mongo adapters |
+| ArchUnit | two new rules, 14 total, both falsified |
+
+**Verification actually performed**, not just asserted:
+
+- **The price-tampering fix is proven through the HTTP stack**, not through a service
+  call. `CartPriceTamperingIntegrationTest` posts the storefront's real eight-field
+  body with `price: 0.01` against a real Mongo and asserts the catalog's $1,599 is
+  what gets stored. Every layer between is part of the claim — Jackson has to *ignore*
+  the extra fields rather than reject them, which is the whole basis of "no frontend
+  change required", so that half is asserted too.
+- **Both new ArchUnit rules were falsified before being trusted**, and one of them
+  failed its falsification. `published_events_carry_only_shared_kernel_types` passed
+  against a planted event carrying `List<OrderLine>`, because
+  `JavaField.getRawType()` erases it to `java.util.List`. `getType()` sees the type
+  argument — which is the entire case the rule exists for. The rule as first written
+  would have been decoration.
+- **The concurrency positive control failed on the first run**, and was worth more
+  than the test it was controlling. Two placements were losing to a MongoDB
+  `WriteConflict` from implicitly creating a collection the `@BeforeEach` had just
+  dropped — nothing to do with stock. So "exactly one winner" had been passing for
+  the wrong reason. With the collections pre-created, independent checkouts both
+  commit and the oversell test means what it says.
+- **The rating repair was run against a real `mongo:6.0` with the actual seed dump**:
+  3 planted corrupt rollups repaired, 0 inconsistent left of 54, second run a no-op,
+  all 51 seed products untouched.
+- The stored BSON is still what it was: `DomainTypeBsonRoundTripTest` reads the raw
+  `org.bson.Document` and asserts a cart line's `productId` is a `String` and its
+  `quantity` and `stock` `Integer`s after adopting `ProductId` and `Quantity`, and
+  that the cart's `userId` is still a bare string.
+
+**What running it for real caught that the plan did not anticipate:**
+
+**Two concurrent checkouts of the same product conflict even when stock covers both.**
+Optimistic locking is conservative: both read the product document, both write it, and
+the second loses on the version whether or not there was stock. Nothing retries, so the
+loser gets a 409. That is the correct trade — refusing a sale is recoverable and
+overselling is not — but it means a popular product under simultaneous load turns away
+checkouts that had stock. Pinned as a test rather than left to be discovered; a retry on
+`OptimisticLockingFailureException` belongs to whoever owns throughput.
+
+**Deviations from the plan as written, and why:**
+
+1. **`Product`'s rating stays three flat fields rather than folding into `ProductRating`.**
+   S9 deferred the fold to this sprint; running it showed why it should not happen.
+   `averageRating` is not only displayed, it is *queried* — the catalog sorts by it
+   (the best-seller list and the `sortBy` switch) and filters on it (`minRating`). A
+   `ProductRating` keeps the average **derived**, which is its entire point, so folding
+   would either break three queries or force the derived value to be stored beside its
+   own inputs. The invariant is enforced at the only place that can change the fields
+   instead, and `Product.rating()` is the seam S12's `ReviewApproved` handler uses.
+2. **`InsufficientStockException` builds its own message.** The plan said "collapse five
+   duplicated stock checks"; five call sites each composing their own string is five
+   rules again, and it showed — `CartService.addItems` produced the truncated
+   `"Only 2 Left for "`, naming neither the product nor anything after the preposition.
+   One phrasing, built from what the aggregate already knows.
+3. **The ArchUnit published-language rule now recognizes a domain event by its
+   `DomainEvent` interface, not by an `…Event` name suffix.** This is a loosening and
+   worth saying so. The naming clause was never exercised while every listener lived in
+   its event's own context; S11 exercised it, and a rule satisfied by a rename teaches
+   people to rename things. The marker interface is the real signal, and everything the
+   event *carries* is checked independently.
+4. **`OrderPlaced` and `OrderCancelled` carry `Map<ProductId, Quantity>`.** Forced by
+   item 3: `OrderLine` is ordering's internal type and the new listeners live in
+   `catalog` and `cart`. It also fixed a live bug — the listener built that map with
+   `Collectors.toMap`, which throws on a duplicate key, so an order carrying two lines
+   for the same product (which the admin `PUT` path can create) failed placement with an
+   opaque 500.
+5. **`OrderPlacedListener` split in two.** One class holding a `ProductService` *and* a
+   `CartService` made ordering the place that knew how to change two other contexts'
+   state — a distributed monolith with events bolted on the front. `CatalogStockListener`
+   and `CartOrderListener` each react for their own context.
+6. **Cancelling an order restocks its units.** Not in the S11 backlog as such, but S10
+   flagged it as "a real bug, deliberately not fixed" and named `Product.restock` and an
+   `OrderCancelled` listener as what it needed. Both exist now.
+7. **`CategoryController` and `AdminCategoryController` merged into one class with two
+   mappings.** An S13 dead-code item pulled forward by necessity: they were byte-identical
+   and both had to move, so keeping two meant writing the duplicate again. Both URLs
+   unchanged.
+8. **`DomainNotFoundException` (404) and `DomainRuleViolationException` (400) joined the
+   shared kernel**, alongside S10's `DomainConflictException` (409). A domain package may
+   not name `org.springframework.http`, and three contexts now need to say "missing" and
+   "the request cannot be satisfied".
+9. **A cart line's price is deliberately *not* refreshed on load**, only its stock hint.
+   Snapshot semantics are the working agreement, and a price that rewrites itself under a
+   customer is what they exist to prevent. This does leave a cart able to display a price
+   the order will not charge, since placement re-reads the catalog — pre-existing, noted
+   in `CartLine`, and a product decision rather than a refactor.
+
+**Deliberate behavior changes, each with its test edited in the same commit:**
+
+- **A review rating outside 1–5 is a 400**, where the S8 suite pinned 900 stars being
+  folded into a product's average. Forced by `addRating(Rating)` — the value object makes
+  it unrepresentable. S12 still owns the field-level validation message.
+- **`updateQuantity(…, 0)` removes the line** instead of leaving a dead one behind.
+- **An out-of-stock guest line is skipped on merge** instead of being folded in at
+  quantity zero.
+- **Every line's stock hint is refreshed on load**, not only the clamped ones. The
+  storefront caps its quantity stepper with that number and was capping against a figure
+  that could be months stale.
+- **One database write per cart request.** The old code saved in `syncCartWithStock` and
+  again in the operation that followed.
+- **The over-stock message names the product** from every path.
+- **An unrecognized `genres` value is a 400** rather than reaching `new ObjectId(...)`
+  inside the repository and surfacing as a 500.
+- **The cart's stock check no longer runs before the cart is loaded.** Same 400 either
+  way; what differs is that a refused request now leaves behind a cart that has been
+  reconciled with the catalog.
+
+**No frontend task.** The one contract change — the add-to-cart and merge bodies
+shrinking to `{productId, quantity}` — is backward compatible: Spring Boot ignores unknown
+properties, so the storefront's existing eight-field payload keeps working untouched.
+Verified by grep across both apps (`ProductCard.jsx`, `ProductDetails.jsx`,
+`AuthContext.jsx` are the only callers) and asserted against the app's real `ObjectMapper`
+rather than assumed.
+
+**Carried into later sprints (not S11 gaps):** the review lifecycle and the rating rollup
+moving to a `ReviewApproved` event are S12's, and `Product.removeRating` is already there
+waiting for `ReviewRejected`; the IDOR on `getOrderById` and the unbound `guestId` on
+`/api/guest-cart/**` are S12's and are both flagged in the code that has them; a retry on
+optimistic-lock conflict, and the unbounded `User.favorites` array, are logged as scaling
+follow-ups rather than modelling faults.
 
 ---
 
