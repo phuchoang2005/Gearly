@@ -6,7 +6,7 @@ import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.catalog.domain.ProductRepository;
-import com.dominator.gearly.service.user.CartService;
+import com.dominator.gearly.cart.application.CartService;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.ProductCondition;
 import com.dominator.gearly.shared.domain.ProductId;

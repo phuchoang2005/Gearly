@@ -1,13 +1,15 @@
 package com.dominator.gearly.mapper;
 
-import com.dominator.gearly.dto.CartResponseDTO;
+import com.dominator.gearly.cart.api.AddCartItemRequestDTO;
+import com.dominator.gearly.cart.api.CartResponseDTO;
+import com.dominator.gearly.cart.api.CartResponseMapper;
+import com.dominator.gearly.cart.domain.Cart;
+import com.dominator.gearly.cart.domain.CartFixture;
 import com.dominator.gearly.ordering.api.OrderResponseDTO;
 import com.dominator.gearly.ordering.api.OrderResponseMapper;
 import com.dominator.gearly.catalog.api.ProductResponseDTO;
 import com.dominator.gearly.catalog.api.ProductResponseMapper;
 import com.dominator.gearly.catalog.domain.ProductFixture;
-import com.dominator.gearly.model.Cart;
-import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.catalog.domain.Image;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * Guards the S7 "entity -> response DTO" change: each response DTO must serialize
@@ -56,7 +59,7 @@ class ResponseDtoWireCompatTest {
     private ObjectMapper json;
 
     private final OrderResponseMapper orderMapper = new OrderResponseMapper();
-    private final CartMapper cartMapper = new CartMapper();
+    private final CartResponseMapper cartMapper = new CartResponseMapper();
     private final ProductResponseMapper productMapper = new ProductResponseMapper();
 
     @Test
@@ -82,19 +85,51 @@ class ResponseDtoWireCompatTest {
 
     @Test
     void cartResponseDto_matchesEntityWire() {
-        Cart cart = new Cart();
-        cart.setId("c1");
-        cart.setUserId("u1");
-        cart.setGuestId(null);
-        cart.setItems(List.of(new CartItem("p1", "RTX 4090", "NVIDIA", Money.of(1599.0), 1, "http://img/a.png", ProductCondition.NEW, 5)));
-        cart.setCreatedAt(Instant.ofEpochMilli(1_700_000_000_000L));
-        cart.setUpdatedAt(Instant.ofEpochMilli(1_700_000_100_000L));
-
-        CartResponseDTO dto = cartMapper.toResponseDto(cart);
-
-        JsonNode dtoNode = json.valueToTree(dto);
-        JsonNode entityNode = json.valueToTree(cart);
+        JsonNode dtoNode = json.valueToTree(cartMapper.toResponseDto(aCart()));
+        JsonNode entityNode = json.valueToTree(aCart());
         assertThat(dtoNode).isEqualTo(entityNode);
+    }
+
+    /**
+     * The half the test above cannot catch, and the reason it is here.
+     *
+     * <p>A cart's {@code items} are the <em>same</em> {@code CartLine} objects on both sides of
+     * the DTO-equals-entity comparison, so a field added to or removed from the line appears in
+     * both trees and they stay equal. That is precisely how S10 shipped three unintended
+     * properties on an order before a literal key-set assertion caught them, and S11 rewrote
+     * this line type from scratch.
+     */
+    @Test
+    void aCartCarriesExactlyTheFieldsItAlwaysHas() {
+        JsonNode node = json.valueToTree(cartMapper.toResponseDto(aCart()));
+
+        assertThat(fieldsOf(node)).containsExactlyInAnyOrder(
+                "id", "userId", "guestId", "items", "createdAt", "updatedAt");
+        assertThat(fieldsOf(node.get("items").get(0))).containsExactlyInAnyOrder(
+                "productId", "title", "author", "price", "quantity", "image", "condition", "stock");
+
+        JsonNode line = node.get("items").get(0);
+        assertThat(node.get("userId").isTextual()).as("UserId is still a bare string").isTrue();
+        assertThat(node.get("userId").asText()).isEqualTo("u1");
+        assertThat(line.get("productId").asText()).isEqualTo("p1");
+        assertThat(line.get("price").isDouble()).as("Money is still a bare double").isTrue();
+        assertThat(line.get("price").asText()).isEqualTo("1599.0");
+        assertThat(line.get("quantity").isInt()).as("Quantity is still a bare int").isTrue();
+        assertThat(line.get("quantity").intValue()).isEqualTo(1);
+        assertThat(line.get("stock").intValue()).isEqualTo(5);
+        assertThat(line.get("condition").asText()).isEqualTo("NEW");
+    }
+
+    private Cart aCart() {
+        return CartFixture.aCart()
+                .ownedBy("u1")
+                .holding(new com.dominator.gearly.catalog.domain.CatalogSnapshot(
+                        com.dominator.gearly.shared.domain.ProductId.of("p1"),
+                        "RTX 4090", "NVIDIA", Money.of(1599.0), "http://img/a.png",
+                        ProductCondition.NEW, com.dominator.gearly.shared.domain.Quantity.of(5)), 1)
+                .persistedAs("c1", Instant.ofEpochMilli(1_700_000_000_000L),
+                        Instant.ofEpochMilli(1_700_000_100_000L))
+                .build();
     }
 
     /**
@@ -311,18 +346,31 @@ class ResponseDtoWireCompatTest {
             assertThat(node.has("name")).as("the value object must not reach the wire").isFalse();
         }
 
+        /**
+         * <b>The frontend-compatibility claim for the price-tampering fix, checked.</b>
+         *
+         * <p>The storefront posts all eight fields to {@code /api/cart/add} and this sprint
+         * shrank the bound type to two. The claim "no frontend change is required" rests
+         * entirely on Spring Boot leaving {@code FAIL_ON_UNKNOWN_PROPERTIES} disabled, so it
+         * is asserted against the app's real {@code ObjectMapper} rather than assumed —
+         * flipping that property is a one-line change in {@code application.properties} that
+         * would otherwise turn every add-to-cart into a 400.
+         */
         @Test
-        void requestBodiesStillBindFromTheSameJsonTheyAlwaysDid() throws Exception {
+        void theStorefrontsAddToCartBodyStillBinds_andItsExtraFieldsAreIgnored() {
             String body = """
-                    {"productId":"p1","title":"GPU","author":"NVIDIA","price":24.99,
+                    {"productId":"p1","title":"GPU","author":"NVIDIA","price":0.01,
                      "quantity":2,"image":"http://img/a.png","condition":"LIKE NEW","stock":5}
                     """;
 
-            CartItem item = json.readValue(body, CartItem.class);
+            AddCartItemRequestDTO request = assertDoesNotThrow(
+                    () -> json.readValue(body, AddCartItemRequestDTO.class));
 
-            assertThat(item.getPrice()).isEqualTo(Money.of(24.99));
-            assertThat(item.getCondition()).isEqualTo(ProductCondition.LIKE_NEW);
-            assertThat(item.getQuantity()).isEqualTo(2);
+            assertThat(request.getProductId()).isEqualTo("p1");
+            assertThat(request.getQuantity()).isEqualTo(2);
+            // and there is nowhere for the $0.01 to land — the type has no price at all
+            assertThat(fieldsOf(json.valueToTree(request)))
+                    .containsExactlyInAnyOrder("productId", "quantity");
         }
 
         private ProductResponseDTO productWithValueObjects() {

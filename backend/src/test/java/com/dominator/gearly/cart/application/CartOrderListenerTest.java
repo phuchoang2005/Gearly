@@ -1,7 +1,6 @@
 package com.dominator.gearly.cart.application;
 
 import com.dominator.gearly.ordering.domain.OrderPlaced;
-import com.dominator.gearly.service.user.CartService;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Quantity;
@@ -50,9 +49,11 @@ class CartOrderListenerTest {
                 Money.of(100.0), Instant.now()));
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Integer>> captor = ArgumentCaptor.forClass(Map.class);
-        verify(cartService).removeItems(eq(BUYER.value()), isNull(), captor.capture());
+        ArgumentCaptor<Map<ProductId, Quantity>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(cartService).removeItems(eq(BUYER), isNull(), captor.capture());
 
-        assertThat(captor.getValue()).containsOnly(entry("p1", 2), entry("p2", 1));
+        assertThat(captor.getValue()).containsOnly(
+                entry(ProductId.of("p1"), Quantity.of(2)),
+                entry(ProductId.of("p2"), Quantity.of(1)));
     }
 }

@@ -1,9 +1,9 @@
 package com.dominator.gearly.shared.infrastructure;
 
 import com.dominator.gearly.dto.BestSellerDTO;
-import com.dominator.gearly.model.Cart;
+import com.dominator.gearly.cart.domain.Cart;
+import com.dominator.gearly.cart.domain.CartFixture;
 import com.dominator.gearly.catalog.domain.Category;
-import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.catalog.domain.Product;
@@ -144,19 +144,19 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void onACartLine() {
-            CartItem item = new CartItem();
-            item.setProductId("p1");
-            item.setPrice(Money.of(24.99));
-            item.setCondition(ProductCondition.LIKE_NEW);
-
-            Cart cart = new Cart();
-            cart.setUserId("u1");
-            cart.setItems(List.of(item));
+            Cart cart = CartFixture.aCart().ownedBy("u1")
+                    .holding("p1", 24.99, 5, 1)
+                    .build();
             mongoTemplate.save(cart);
 
             Document line = rawDocument("carts").getList("items", Document.class).getFirst();
 
             assertThat(line.get("price")).isInstanceOf(Double.class).isEqualTo(24.99);
+            // The typed id and the two quantities are as bare as they ever were.
+            assertThat(line.get("productId")).isInstanceOf(String.class).isEqualTo("p1");
+            assertThat(line.get("quantity")).isInstanceOf(Integer.class).isEqualTo(1);
+            assertThat(line.get("stock")).isInstanceOf(Integer.class).isEqualTo(5);
+            assertThat(rawDocument("carts").get("userId")).isInstanceOf(String.class).isEqualTo("u1");
         }
 
         /**
@@ -330,10 +330,7 @@ class DomainTypeBsonRoundTripTest {
          */
         @Test
         void cartTimestampsWereAlreadyDatesAndStayThatWay() {
-            Cart cart = new Cart();
-            cart.setUserId("u1");
-            cart.setCreatedAt(Instant.parse("2025-06-08T20:17:14.541Z"));
-            cart.setUpdatedAt(Instant.parse("2025-06-08T20:37:12.168Z"));
+            Cart cart = CartFixture.aCart().ownedBy("u1").build();
             mongoTemplate.save(cart);
 
             Document raw = rawDocument("carts");

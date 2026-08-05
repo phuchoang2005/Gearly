@@ -1,14 +1,10 @@
 package com.dominator.gearly.cart.application;
 
 import com.dominator.gearly.ordering.domain.OrderPlaced;
-import com.dominator.gearly.service.user.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * What the cart does when an order is placed: the units the customer just bought come out of
@@ -17,6 +13,10 @@ import java.util.Map;
  * <p>The other half of what {@code ordering.application.OrderPlacedListener} used to be — see
  * {@code CatalogStockListener} for why one class holding both was the wrong shape, and for the
  * reasoning behind {@code BEFORE_COMMIT}.
+ *
+ * <p>The event's {@code Map<ProductId, Quantity>} is exactly the shape {@code Cart.removeUnits}
+ * wants, so nothing is translated on the way through. It used to be built here from the
+ * order's lines with a {@code Collectors.toMap} that threw on a product appearing twice.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,10 +26,6 @@ public class CartOrderListener {
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void on(OrderPlaced event) {
-        Map<String, Integer> bought = new LinkedHashMap<>();
-        event.quantities().forEach((productId, quantity) ->
-                bought.put(productId.value(), quantity.toInt()));
-
-        cartService.removeItems(event.userId().value(), null, bought);
+        cartService.removeItems(event.userId(), null, event.quantities());
     }
 }
