@@ -10,6 +10,7 @@ import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.service.admin.OrderAnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,10 +26,17 @@ import java.util.List;
  * <p>The two analytics endpoints below still call {@code OrderAnalyticsService} in the legacy
  * {@code service.admin} package. Moving the read side into {@code analytics} is S13's item;
  * they stay here so this sprint changes no URL.
+ *
+ * <p><b>Defence in depth.</b> {@code @PreAuthorize("hasRole('ADMIN')")} repeats the
+ * {@code /api/admin/**} URL rule from {@code SecurityConfig} at the class level rather than
+ * replacing it, for the reason {@code AdminUserController} spells out: the URL rule is a prefix
+ * match on a string, and every endpoint that has ever escaped one did so by being mounted
+ * somewhere the pattern did not reach. The annotation travels with the code.
  */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/admin/orders")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminOrderController {
 
     private final AdminOrderService orderService;

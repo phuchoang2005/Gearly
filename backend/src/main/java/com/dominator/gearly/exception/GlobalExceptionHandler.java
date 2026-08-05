@@ -9,6 +9,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -144,6 +145,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedDomainException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
+    }
+
+    /**
+     * A {@code @PreAuthorize} refusal → back to Spring Security, which decides 401 vs 403.
+     *
+     * <p><b>This handler exists to get out of the way, and it is not optional.</b> Method
+     * security throws {@code AuthorizationDeniedException} from inside the dispatcher, so it
+     * passes through this advice before it reaches {@code ExceptionTranslationFilter} — and
+     * {@link #handleGeneric}, matching on {@code Exception}, was catching it and answering
+     * <b>500 "Internal server error"</b>. Rethrowing lets the filter do its job: 403 for a
+     * signed-in caller without the role, 401 for an anonymous one, which is a distinction this
+     * class has no way to make.
+     *
+     * <p>Found by {@code AdminMethodSecurityTest}, which is the only test in the suite where a
+     * {@code @PreAuthorize} denial is not also covered by the {@code /api/admin/**} URL rule.
+     * Behind that rule the filter chain refuses the request before any handler runs, so every
+     * other admin test was green while this path answered 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public void rethrowAccessDenied(AccessDeniedException ex) {
+        throw ex;
     }
 
     /** Missing static resource (e.g. an avatar/media file under /uploads/**) → 404, not 500. */

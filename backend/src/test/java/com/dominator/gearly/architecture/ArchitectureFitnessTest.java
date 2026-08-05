@@ -1,7 +1,9 @@
 package com.dominator.gearly.architecture;
 
 import com.dominator.gearly.shared.domain.DomainEvent;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaField;
@@ -9,6 +11,7 @@ import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaParameter;
 import com.tngtech.archunit.core.domain.JavaParameterizedType;
 import com.tngtech.archunit.core.domain.JavaType;
+import com.tngtech.archunit.core.domain.properties.HasAnnotations;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -17,9 +20,19 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -408,6 +421,37 @@ class ArchitectureFitnessTest {
                             + "the platform has")
                     .allowEmptyShould(true);
 
+    /**
+     * <b>Every admin route carries {@code @PreAuthorize}, not only the URL rule.</b>
+     *
+     * <p>{@code SecurityConfig} locks {@code /api/admin/**}, and that is the primary guard. It
+     * is also a prefix match on a string held in one file, a long way from the handler it
+     * protects — and every endpoint that has ever escaped such a rule did so by being mounted
+     * somewhere the pattern did not reach: a controller moved package, a mapping edited, a new
+     * method added under a path that merely looked similar. S12 put the annotation on all seven
+     * admin controllers so the guarantee travels with the code; this rule is what stops the
+     * eighth from shipping without it.
+     *
+     * <p>Class-level or method-level both satisfy it. {@code CategoryController} is why the rule
+     * has to accept the method form: it serves {@code /api/categories} to anonymous shoppers and
+     * {@code /api/admin/categories} to the console from one class, so a class-level annotation
+     * would take the storefront's category menu away. {@code AdminMethodSecurityTest} is the
+     * companion that proves the annotations actually refuse a caller rather than merely being
+     * present — this rule checks presence, and presence alone is not a security property.
+     *
+     * <p>SCOPE: repo-wide, deliberately. {@code controller/admin} is legacy but its routes are
+     * exactly as exposed as the new ones.
+     */
+    @ArchTest
+    static void admin_routes_carry_method_level_authorization(JavaClasses classes) {
+        classes().that(areMappedUnderTheAdminPrefix())
+                .should(requireTheAdminRoleOnEveryAdminHandler())
+                .because("a URL prefix rule in one file is not where an endpoint's authorization "
+                        + "should live alone")
+                .allowEmptyShould(false)
+                .check(classes);
+    }
+
     /** The shared kernel is upstream of everything, so it may know nothing about anything. */
     @ArchTest
     static final ArchRule shared_kernel_depends_on_no_context =
@@ -447,6 +491,107 @@ class ArchitectureFitnessTest {
                 }
             }
         };
+    }
+
+    // ------------------------------------------------------------------------
+    // The admin-authorization condition
+    // ------------------------------------------------------------------------
+
+    private static final String ADMIN_PREFIX = "/api/admin";
+
+    /** Any controller with at least one mapping under {@code /api/admin}, at either level. */
+    private static DescribedPredicate<JavaClass> areMappedUnderTheAdminPrefix() {
+        return new DescribedPredicate<>("are mapped under " + ADMIN_PREFIX) {
+            @Override
+            public boolean test(JavaClass type) {
+                if (mappedPathsOf(type).stream().anyMatch(path -> path.startsWith(ADMIN_PREFIX))) {
+                    return true;
+                }
+                return type.getMethods().stream().anyMatch(ArchitectureFitnessTest::isAnAdminHandler);
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> requireTheAdminRoleOnEveryAdminHandler() {
+        return new ArchCondition<>("require the ADMIN role on every admin handler") {
+            @Override
+            public void check(JavaClass type, ConditionEvents events) {
+                if (type.isAnnotatedWith(PreAuthorize.class)) {
+                    return;   // the whole controller is admin-only
+                }
+                for (JavaMethod handler : type.getMethods()) {
+                    if (!isAnAdminHandler(handler) || handler.isAnnotatedWith(PreAuthorize.class)) {
+                        continue;
+                    }
+                    events.add(SimpleConditionEvent.violated(type, String.format(
+                            "%s answers under %s with no @PreAuthorize on the class or the "
+                                    + "method — it is guarded only by the URL rule (%s)",
+                            handler.getFullName(), ADMIN_PREFIX, handler.getSourceCodeLocation())));
+                }
+            }
+        };
+    }
+
+    /**
+     * A handler whose full path — the class mapping joined with the method's — reaches under
+     * {@code /api/admin}. Both halves matter: {@code AdminOrderController} puts the prefix on
+     * the class, {@code CategoryController} puts it on one method.
+     */
+    private static boolean isAnAdminHandler(JavaMethod method) {
+        List<String> classPaths = mappedPathsOf(method.getOwner());
+        List<String> methodPaths = mappedPathsOf(method);
+        if (methodPaths.isEmpty() && !isAMapping(method)) {
+            return false;
+        }
+        if (methodPaths.isEmpty()) {
+            methodPaths = List.of("");
+        }
+        List<String> prefixes = classPaths.isEmpty() ? List.of("") : classPaths;
+
+        for (String prefix : prefixes) {
+            for (String path : methodPaths) {
+                if ((prefix + path).startsWith(ADMIN_PREFIX)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** The Spring MVC mapping annotations, read uniformly through their meta-annotation. */
+    private static final List<Class<? extends Annotation>> MAPPINGS = List.of(
+            RequestMapping.class, GetMapping.class, PostMapping.class,
+            PutMapping.class, PatchMapping.class, DeleteMapping.class);
+
+    private static boolean isAMapping(JavaMethod method) {
+        return MAPPINGS.stream().anyMatch(mapping ->
+                method.tryGetAnnotationOfType(mapping.getName()).isPresent());
+    }
+
+    /**
+     * The paths a mapping annotation declares, read off the raw annotation properties.
+     *
+     * <p>{@code value} and {@code path} are aliases; a source may use either, and ArchUnit
+     * reports only the member that was written, so both are looked at.
+     */
+    private static List<String> mappedPathsOf(HasAnnotations<?> element) {
+        for (Class<? extends Annotation> mapping : MAPPINGS) {
+            Optional<? extends JavaAnnotation<?>> declared =
+                    element.tryGetAnnotationOfType(mapping.getName());
+            if (declared.isEmpty()) {
+                continue;
+            }
+            List<String> paths = new ArrayList<>();
+            for (String member : List.of("value", "path")) {
+                if (declared.get().get(member).orElse(null) instanceof String[] values) {
+                    paths.addAll(List.of(values));
+                }
+            }
+            if (!paths.isEmpty()) {
+                return paths;
+            }
+        }
+        return List.of();
     }
 
     /**
