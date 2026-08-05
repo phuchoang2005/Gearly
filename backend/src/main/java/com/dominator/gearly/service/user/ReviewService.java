@@ -12,9 +12,8 @@ import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Rating;
 import com.dominator.gearly.exception.BadRequestException;
+import com.dominator.gearly.identity.domain.UserDirectory;
 import com.dominator.gearly.repository.ReviewRepository;
-import com.dominator.gearly.repository.UserRepository;
-import com.dominator.gearly.security.AuthenticatedUser;
 import lombok.AllArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
@@ -39,7 +38,7 @@ import java.util.stream.Collectors;
 @Service
 public class ReviewService {
     private final ReviewRepository reviewRepository;
-    private final UserRepository userRepository;
+    private final UserDirectory users;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final ReviewMapper reviewMapper;
@@ -55,11 +54,7 @@ public class ReviewService {
                         pageable);
 
         return reviewPage.map(review -> {
-            String userName = userRepository.findById(review.getUserId().toString())
-                    .map(User::getFullName)
-                    .orElse("Unknown User");
-
-            return reviewMapper.toResponseDto(review, userName);
+            return reviewMapper.toResponseDto(review, displayNameOf(review));
         });
     }
 
@@ -78,11 +73,7 @@ public class ReviewService {
         }
 
         return uniqueUsers.values().stream().map(review -> {
-            String userName = userRepository.findById(review.getUserId().toString())
-                    .map(User::getFullName)
-                    .orElse("Unknown User");
-
-            return reviewMapper.toResponseDto(review, userName);
+            return reviewMapper.toResponseDto(review, displayNameOf(review));
         }).collect(Collectors.toList());
     }
 
@@ -115,9 +106,8 @@ public class ReviewService {
     }
 
     @Transactional
-    public void createReview(AuthenticatedUser authUser, CreateReviewsRequestDTO dto) {
-        User user = authUser.getUser();
-        Order order = requireOwnedOrder(user, dto.getOrderId());
+    public void createReview(UserId caller, CreateReviewsRequestDTO dto) {
+        Order order = requireOwnedOrder(caller, dto.getOrderId());
         Map<String, Product> productMap = loadProducts(dto.getReviews());
 
         List<Product> productsToSave = new ArrayList<>();
@@ -131,7 +121,7 @@ public class ReviewService {
             }
             product.addRating(ratingOf(rdto.getRating()));
             productsToSave.add(product);
-            reviewsToSave.add(reviewMapper.toEntity(rdto, dto.getOrderId(), user.getId()));
+            reviewsToSave.add(reviewMapper.toEntity(rdto, dto.getOrderId(), caller.value()));
         }
 
         productRepository.saveAll(productsToSave);
@@ -140,11 +130,11 @@ public class ReviewService {
         orderRepository.save(order);
     }
 
-    private Order requireOwnedOrder(User user, String orderId) {
+    private Order requireOwnedOrder(UserId caller, String orderId) {
         Order order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Order not found, you cannot create review on this."));
-        if (!order.isOwnedBy(UserId.of(user.getId()))) {
+        if (!order.isOwnedBy(caller)) {
             throw new ApiException(HttpStatus.FORBIDDEN,
                     "You are not allowed to review the items in this order");
         }
@@ -174,6 +164,11 @@ public class ReviewService {
      * answer than the bug was. S12 replaces this with bean validation on the request DTO,
      * which additionally names the offending field.
      */
+    /** The author's name, or the phrase the storefront has always shown when there is none. */
+    private String displayNameOf(Review review) {
+        return users.displayNameOf(review.getUserId()).orElse("Unknown User");
+    }
+
     private Rating ratingOf(int value) {
         try {
             return Rating.of(value);

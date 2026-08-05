@@ -10,9 +10,9 @@ import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.catalog.domain.CatalogSnapshot;
 import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.mapper.ReviewMapper;
-import com.dominator.gearly.model.User;
-import com.dominator.gearly.repository.UserRepository;
+import com.dominator.gearly.identity.domain.UserDirectory;
 import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.UserId;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
@@ -29,9 +29,12 @@ public class AdminReviewService {
      * Reviews reads the catalog through its published port rather than through its
      * repository. All this screen needs is a title beside each review, and a snapshot carries
      * one — so the reviews context no longer holds a handle on the {@code Product} aggregate.
+     * S12 does the same on the identity side: {@link UserDirectory} hands out a display name,
+     * where this used to inject the Spring Data {@code UserRepository} and receive whole
+     * {@code User} aggregates, password hashes included, to read one field off each.
      */
     private final ProductSnapshotPort catalog;
-    private final UserRepository   userRepo;
+    private final UserDirectory    users;
     private final ReviewMapper     reviewMapper;
 
     public List<AdminReviewResponseDTO> getAllReviews() {
@@ -64,38 +67,36 @@ public class AdminReviewService {
                 .map(Review::getProductId)
                 .distinct()
                 .collect(Collectors.toList());
-        Set<String> userIds = reviews.stream()
-                .map(r -> r.getUserId().value())
+        Set<UserId> userIds = reviews.stream()
+                .map(Review::getUserId)
                 .collect(Collectors.toSet());
 
         // batch-fetch catalog snapshots and users
         Map<String, CatalogSnapshot> productMap = catalog.snapshotsOf(productIds)
                 .stream()
                 .collect(Collectors.toMap(s -> s.productId().value(), s -> s));
-        Map<String, User> userMap = userRepo.findAllById(userIds)
-                .stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+        Map<UserId, String> userNames = users.displayNamesOf(userIds);
 
         return reviews.stream()
                 .map(r -> reviewMapper.toAdminDto(
                         r,
                         titleOf(productMap.get(r.getProductId().value())),
-                        nameOf(userMap.get(r.getUserId().value()))))
+                        nameOf(userNames.get(r.getUserId()))))
                 .collect(Collectors.toList());
     }
 
     /** Single-review variant that resolves the product/user directly. */
     private AdminReviewResponseDTO toDto(Review review) {
         CatalogSnapshot product = catalog.findSnapshot(review.getProductId()).orElse(null);
-        User user = userRepo.findById(review.getUserId().value()).orElse(null);
-        return reviewMapper.toAdminDto(review, titleOf(product), nameOf(user));
+        String userName = users.displayNameOf(review.getUserId()).orElse(null);
+        return reviewMapper.toAdminDto(review, titleOf(product), nameOf(userName));
     }
 
     private String titleOf(CatalogSnapshot product) {
         return product != null ? product.title() : "—";
     }
 
-    private String nameOf(User user) {
-        return user != null ? user.getFullName() : "—";
+    private String nameOf(String userName) {
+        return userName != null ? userName : "—";
     }
 }

@@ -14,15 +14,13 @@ import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.ReviewStatus;
-import com.dominator.gearly.model.User;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.catalog.domain.ProductFixture;
 import com.dominator.gearly.catalog.domain.ProductRepository;
 import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.repository.ReviewRepository;
-import com.dominator.gearly.repository.UserRepository;
-import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.identity.domain.UserDirectory;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.UserId;
 import com.dominator.gearly.shared.domain.OrderId;
@@ -67,7 +65,7 @@ import static org.mockito.Mockito.when;
 class ReviewServiceTest {
 
     @Mock private ReviewRepository reviewRepository;
-    @Mock private UserRepository userRepository;
+    @Mock private UserDirectory users;
     @Mock private OrderRepository orderRepository;
     @Mock private ProductRepository productRepository;
 
@@ -79,16 +77,14 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ReviewService(reviewRepository, userRepository, orderRepository,
+        service = new ReviewService(reviewRepository, users, orderRepository,
                 productRepository, new ReviewMapper());
     }
 
     // ---- fixtures ----------------------------------------------------------
 
-    private AuthenticatedUser authUser(String userId) {
-        User user = new User();
-        user.setId(userId);
-        return new AuthenticatedUser(user);
+    private UserId authUser(String userId) {
+        return UserId.of(userId);
     }
 
     /**
@@ -381,13 +377,6 @@ class ReviewServiceTest {
             return review;
         }
 
-        private User namedUser(String id, String fullName) {
-            User user = new User();
-            user.setId(id);
-            user.setFullName(fullName);
-            return user;
-        }
-
         @Test
         @DisplayName("a rating filter of 0 means 'any rating'")
         void ratingZeroMeansUnfiltered() {
@@ -395,7 +384,7 @@ class ReviewServiceTest {
             when(reviewRepository.findByProductIdAndStatus(
                     eq(new ObjectId(PRODUCT_ID)), eq(ReviewStatus.APPROVED), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(approvedReview("r1", USER_ID, 5))));
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(namedUser(USER_ID, "Ada Lovelace")));
+            when(users.displayNameOf(UserId.of(USER_ID))).thenReturn(Optional.of("Ada Lovelace"));
 
             Page<ReviewResponseDTO> page = service.getApprovedReviews(dto);
 
@@ -425,7 +414,7 @@ class ReviewServiceTest {
             ProductReviewsDTO dto = new ProductReviewsDTO(PRODUCT_ID, 10, 0, 0, "addedAt");
             when(reviewRepository.findByProductIdAndStatus(any(), any(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(approvedReview("r1", USER_ID, 5))));
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+            when(users.displayNameOf(UserId.of(USER_ID))).thenReturn(Optional.empty());
 
             assertThat(service.getApprovedReviews(dto).getContent())
                     .singleElement()
@@ -444,8 +433,8 @@ class ReviewServiceTest {
                             approvedReview("r1", userA, 5),
                             approvedReview("r2", userA, 5),
                             approvedReview("r3", userB, 5)));
-            when(userRepository.findById(userA)).thenReturn(Optional.of(namedUser(userA, "A")));
-            when(userRepository.findById(userB)).thenReturn(Optional.of(namedUser(userB, "B")));
+            when(users.displayNameOf(UserId.of(userA))).thenReturn(Optional.of("A"));
+            when(users.displayNameOf(UserId.of(userB))).thenReturn(Optional.of("B"));
 
             List<ReviewResponseDTO> result = service.getSixBestReviews();
 

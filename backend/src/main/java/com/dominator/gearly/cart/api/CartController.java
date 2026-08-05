@@ -1,7 +1,7 @@
 package com.dominator.gearly.cart.api;
 
 import com.dominator.gearly.cart.application.CartService;
-import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.platform.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.UserId;
@@ -91,7 +91,7 @@ public class CartController {
     }
 
     private static UserId buyer(AuthenticatedUser authUser) {
-        return UserId.of(authUser.getUser().getId());
+        return authUser.id();
     }
 
     /**

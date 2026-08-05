@@ -8,7 +8,7 @@ import com.dominator.gearly.ordering.application.OrderQueryService;
 import com.dominator.gearly.ordering.application.PlaceOrderCommand;
 import com.dominator.gearly.ordering.application.PlaceOrderService;
 import com.dominator.gearly.ordering.domain.Order;
-import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.platform.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -97,7 +97,7 @@ public class OrderController {
     }
 
     private UserId callerId(AuthenticatedUser authUser) {
-        return UserId.of(authUser.getUser().getId());
+        return authUser.id();
     }
 
     private PlaceOrderCommand toCommand(OrderCreationRequestDTO request) {

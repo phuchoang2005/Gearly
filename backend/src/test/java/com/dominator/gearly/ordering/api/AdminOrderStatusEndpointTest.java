@@ -1,15 +1,15 @@
 package com.dominator.gearly.ordering.api;
 
 import com.dominator.gearly.config.CorsConfig;
-import com.dominator.gearly.config.SecurityConfig;
+import com.dominator.gearly.platform.security.SecurityConfig;
 import com.dominator.gearly.exception.GlobalExceptionHandler;
 import com.dominator.gearly.ordering.application.AdminOrderPatchCommand;
 import com.dominator.gearly.ordering.application.AdminOrderService;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.repository.UserRepository;
-import com.dominator.gearly.security.JwtAuthenticationFilter;
-import com.dominator.gearly.security.JwtUtil;
+import com.dominator.gearly.identity.domain.UserRepository;
+import com.dominator.gearly.platform.security.JwtAuthenticationFilter;
+import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.service.admin.OrderAnalyticsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ class AdminOrderStatusEndpointTest {
     @MockBean private OrderAnalyticsService orderAnalyticsService;
 
     // Collaborators of the real JwtAuthenticationFilter (unused without a Bearer header).
-    @MockBean private JwtUtil jwtUtil;
+    @MockBean private AccessTokens accessTokens;
     @MockBean private UserRepository userRepository;
 
     @Test

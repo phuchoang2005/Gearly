@@ -1,10 +1,10 @@
 package com.dominator.gearly.catalog.api;
 
 import com.dominator.gearly.config.CorsConfig;
-import com.dominator.gearly.config.SecurityConfig;
-import com.dominator.gearly.repository.UserRepository;
-import com.dominator.gearly.security.JwtAuthenticationFilter;
-import com.dominator.gearly.security.JwtUtil;
+import com.dominator.gearly.platform.security.SecurityConfig;
+import com.dominator.gearly.identity.domain.UserRepository;
+import com.dominator.gearly.platform.security.JwtAuthenticationFilter;
+import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.catalog.application.AdminProductService;
 import com.dominator.gearly.catalog.application.ProductQueryService;
 import com.dominator.gearly.catalog.domain.ProductNotFoundException;
@@ -44,7 +44,7 @@ class AdminProductControllerTest {
 
     // JwtAuthenticationFilter collaborators.
     @MockBean
-    private JwtUtil jwtUtil;
+    private AccessTokens accessTokens;
     @MockBean
     private UserRepository userRepository;
 

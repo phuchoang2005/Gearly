@@ -5,7 +5,7 @@ import com.dominator.gearly.dto.CreateReviewsRequestDTO;
 import com.dominator.gearly.dto.MessageResponse;
 import com.dominator.gearly.dto.ReviewRatingDTO;
 import com.dominator.gearly.dto.ReviewResponseDTO;
-import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.platform.security.AuthenticatedUser;
 import com.dominator.gearly.service.user.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public class ReviewController {
             @AuthenticationPrincipal AuthenticatedUser authUser,
             @RequestBody @Valid CreateReviewsRequestDTO dto
     ) {
-        reviewService.createReview(authUser, dto);
+        reviewService.createReview(authUser.id(), dto);
         return ResponseEntity.ok(new MessageResponse("Reviews submitted successfully"));
     }
 }

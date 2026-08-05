@@ -152,16 +152,27 @@ class ArchitectureFitnessTest {
      * has quietly made "who is calling" part of a use case's input rather than a decision the
      * edge already made. Controllers unwrap it into a {@code UserId} and pass that.
      *
-     * <p>Both the framework's package and this codebase's own {@code security} package are
-     * banned, because {@code AuthenticatedUser} lives in the latter. S12 moves the whole
-     * access boundary; this rule is what stops it drifting back in the meantime.
+     * <p>Both the framework's packages and this codebase's own are banned, because
+     * {@code AuthenticatedUser} lives in one of them.
+     *
+     * <h2>S12: the codebase's half moved, and the rule got stricter</h2>
+     * {@code com.dominator.gearly.security} is gone; the whole access boundary —
+     * {@code AuthenticatedUser}, the JWT filter, the filter chain, the password hasher and the
+     * token issuer — is {@code platform.security} now. The banned package changed to match.
+     *
+     * <p>What did <em>not</em> get an exception is {@code org.springframework.security.crypto}.
+     * Identity needs password hashing, and the easy way to give it that would have been to carve
+     * a crypto-shaped hole here. Instead the context declares a {@code PasswordHasher} port and
+     * {@code platform.security.BCryptPasswordHasher} implements it, so this rule stays absolute:
+     * <b>no class in any bounded context, at any layer below the controller, names a Spring
+     * Security type.</b> A rule with one exception has two, eventually.
      */
     @ArchTest
     static final ArchRule security_types_stop_at_the_api_layer =
             noClasses().that().resideInAnyPackage(CONTEXT_PACKAGES)
                     .and().resideOutsideOfPackage(ROOT + "..api..")
                     .should().dependOnClassesThat().resideInAnyPackage(
-                            "org.springframework.security..", ROOT + ".security..")
+                            "org.springframework.security..", ROOT + ".platform.security..")
                     .because("controllers unwrap the principal into a typed id; "
                             + "a use case never sees a security type")
                     .allowEmptyShould(false);
@@ -352,13 +363,50 @@ class ArchitectureFitnessTest {
     /**
      * The dependency between a context and the platform is one-way. Platform wires
      * everything; a context that needs something from the wiring has misplaced a rule.
+     *
+     * <h2>The one seam, and why it is the api layer</h2>
+     * A controller has to name {@code platform.security.AuthenticatedUser}: that is the type
+     * {@code @AuthenticationPrincipal} injects, and unwrapping it into a {@link UserId} is
+     * precisely the job the inbound edge exists to do. So {@code ..api..} may reach
+     * {@code platform.security} and nothing else may reach anything of the platform's.
+     *
+     * <p>The exemption is by <em>layer</em> and by <em>package</em>, not by class name, so it
+     * cannot be borrowed: an application service cannot take an {@code AuthenticatedUser}
+     * (it is not in {@code ..api..}), and a controller cannot reach into
+     * {@code platform.config} or {@code platform.exception} (they are not
+     * {@code platform.security}). Together with
+     * {@link #security_types_stop_at_the_api_layer} this pins the principal to exactly one
+     * layer of one package — which is stricter than S8's arrangement, where
+     * {@code com.dominator.gearly.security} sat outside the platform entirely and this rule
+     * never saw it.
      */
     @ArchTest
     static final ArchRule contexts_do_not_depend_on_the_platform =
             noClasses().that().resideInAnyPackage(CONTEXT_PACKAGES)
+                    .and().resideOutsideOfPackage(ROOT + "..api..")
                     .should().dependOnClassesThat().resideInAPackage(ROOT + ".platform..")
                     .because("platform knows about the contexts; the contexts do not know about it")
                     .allowEmptyShould(false);
+
+    /**
+     * The companion to the rule above: an {@code ..api..} class may reach the platform's
+     * security package, and no other part of the platform.
+     *
+     * <p>Stated separately because ArchUnit cannot express "all of X except Y in layer Z" in one
+     * rule without the exemption silently widening. Two narrow rules that each fail loudly beat
+     * one broad rule with a hole in it.
+     */
+    @ArchTest
+    static final ArchRule api_reaches_only_the_platforms_security_package =
+            noClasses().that().resideInAnyPackage(CONTEXT_PACKAGES)
+                    .and().resideInAPackage(ROOT + "..api..")
+                    .should().dependOnClassesThat(
+                            JavaClass.Predicates.resideInAPackage(ROOT + ".platform..")
+                                    .and(JavaClass.Predicates.resideOutsideOfPackage(
+                                            ROOT + ".platform.security..")))
+                    .because("a controller unwraps the security principal and needs nothing else "
+                            + "the platform has")
+                    .allowEmptyShould(true);
 
     /** The shared kernel is upstream of everything, so it may know nothing about anything. */
     @ArchTest

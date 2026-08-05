@@ -9,7 +9,7 @@ import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.catalog.domain.ProductFixture;
 import com.dominator.gearly.model.Review;
-import com.dominator.gearly.model.User;
+import com.dominator.gearly.identity.domain.UserFixture;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.OrderId;
@@ -264,12 +264,33 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void roleStoresItsConstantName() {
-            User user = new User();
-            user.setEmail("ada@example.com");
-            user.setRole(Role.ADMIN);
-            mongoTemplate.save(user);
+            mongoTemplate.save(UserFixture.aUser().withEmail("ada@example.com").asAdmin().build());
 
             assertThat(rawDocument("users").get("role")).isEqualTo("ADMIN");
+        }
+
+        /**
+         * The identity aggregate adopted {@code EmailAddress}, {@code PhoneNumber} and
+         * {@code List<ProductId>} in S12, and none of them may change what is on disk. Read
+         * off the raw {@code org.bson.Document}, not off a reloaded entity: a save-then-load
+         * assertion would pass just as happily with the address stored as a nested
+         * {@code {value: …}}, because it would read back the same way.
+         */
+        @Test
+        void identityValueObjectsStayFlatStringsOnDisk() {
+            mongoTemplate.save(UserFixture.aUser()
+                    .withEmail("ada@example.com")
+                    .withPhone("0123456789")
+                    .favouring(PRODUCT_HEX)
+                    .build());
+
+            Document stored = rawDocument("users");
+
+            assertThat(stored.get("email")).isInstanceOf(String.class).isEqualTo("ada@example.com");
+            assertThat(stored.get("phone")).isInstanceOf(String.class).isEqualTo("0123456789");
+            assertThat(stored.getList("favorites", Object.class))
+                    .allSatisfy(id -> assertThat(id).isInstanceOf(String.class))
+                    .containsExactly(PRODUCT_HEX);
         }
 
         /**

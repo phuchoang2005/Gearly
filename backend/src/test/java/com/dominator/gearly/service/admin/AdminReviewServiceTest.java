@@ -7,9 +7,8 @@ import com.dominator.gearly.catalog.domain.CatalogSnapshot;
 import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.ReviewStatus;
-import com.dominator.gearly.model.User;
 import com.dominator.gearly.repository.ReviewRepository;
-import com.dominator.gearly.repository.UserRepository;
+import com.dominator.gearly.identity.domain.UserDirectory;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.ProductCondition;
 import com.dominator.gearly.shared.domain.ProductId;
@@ -38,7 +37,7 @@ class AdminReviewServiceTest {
 
     @Mock private ReviewRepository reviewRepo;
     @Mock private ProductSnapshotPort catalog;
-    @Mock private UserRepository userRepo;
+    @Mock private UserDirectory users;
 
     private AdminReviewService service;
 
@@ -47,7 +46,7 @@ class AdminReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminReviewService(reviewRepo, catalog, userRepo, new ReviewMapper());
+        service = new AdminReviewService(reviewRepo, catalog, users, new ReviewMapper());
     }
 
     /** What the catalog publishes — all this screen needs from it is the title. */
@@ -74,10 +73,7 @@ class AdminReviewServiceTest {
         when(reviewRepo.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
         when(catalog.findSnapshot(ProductId.of(productHex)))
                 .thenReturn(Optional.of(snapshot("RTX 4090")));
-        User user = new User();
-        user.setId(userHex);
-        user.setFullName("Alice Nguyen");
-        when(userRepo.findById(userHex)).thenReturn(Optional.of(user));
+        when(users.displayNameOf(UserId.of(userHex))).thenReturn(Optional.of("Alice Nguyen"));
 
         AdminReviewResponseDTO dto = service.approveReview("r1");
 
@@ -93,7 +89,7 @@ class AdminReviewServiceTest {
         when(reviewRepo.findById("r1")).thenReturn(Optional.of(pendingReview()));
         when(reviewRepo.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
         when(catalog.findSnapshot(ProductId.of(productHex))).thenReturn(Optional.empty());
-        when(userRepo.findById(userHex)).thenReturn(Optional.empty());
+        when(users.displayNameOf(UserId.of(userHex))).thenReturn(Optional.empty());
 
         AdminReviewResponseDTO dto = service.rejectReview("r1");
 
