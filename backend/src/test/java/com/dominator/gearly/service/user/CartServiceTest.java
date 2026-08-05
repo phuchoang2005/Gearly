@@ -5,9 +5,11 @@ import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.CartMapper;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.CartItem;
-import com.dominator.gearly.model.Image;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.CatalogSnapshot;
+import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.repository.CartRepository;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.ProductCondition;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +49,7 @@ import static org.mockito.Mockito.when;
 class CartServiceTest {
 
     @Mock private CartRepository cartRepository;
-    @Mock private ProductService productService;
+    @Mock private ProductSnapshotPort catalog;
 
     private CartService service;
 
@@ -56,21 +58,27 @@ class CartServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CartService(cartRepository, productService, new CartMapper());
+        service = new CartService(cartRepository, catalog, new CartMapper());
     }
 
     // ---- fixtures ----------------------------------------------------------
 
-    private Product product(String id, double price, int stock) {
-        Product p = new Product();
-        p.setId(id);
-        p.setTitle("Product " + id);
-        p.setAuthors(List.of("Author " + id));
-        p.setPrice(Money.of(price));
-        p.setStock(stock);
-        p.setCondition(ProductCondition.NEW);
-        p.setImages(List.of(new Image("http://img/" + id + ".png", "alt")));
-        return p;
+    /**
+     * What the catalog publishes about a product. The cart used to be handed a whole
+     * {@code Product} through a {@code ProductService}; it sees this and nothing else now.
+     */
+    private CatalogSnapshot snapshot(String id, double price, int stock) {
+        return new CatalogSnapshot(ProductId.of(id), "Product " + id, "Author " + id,
+                Money.of(price), "http://img/" + id + ".png", ProductCondition.NEW,
+                Quantity.of(stock));
+    }
+
+    private void catalogHas(String id, double price, int stock) {
+        when(catalog.findSnapshot(ProductId.of(id))).thenReturn(Optional.of(snapshot(id, price, stock)));
+    }
+
+    private void catalogStock(String id, int stock) {
+        when(catalog.snapshotOf(ProductId.of(id))).thenReturn(snapshot(id, 10.00, stock));
     }
 
     private CartItem cartItem(String productId, int quantity, int stock) {
@@ -135,7 +143,7 @@ class CartServiceTest {
         void inSyncCartIsNotSaved() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
+            catalogHas("p1", 10.00, 5);
 
             service.getOrCreate(USER_ID, null);
 
@@ -147,7 +155,7 @@ class CartServiceTest {
         void deletedProductLineIsDropped() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(null);
+            when(catalog.findSnapshot(ProductId.of("p1"))).thenReturn(Optional.empty());
 
             Cart result = service.getOrCreate(USER_ID, null);
 
@@ -160,7 +168,7 @@ class CartServiceTest {
         void outOfStockLineIsDropped() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 0));
+            catalogHas("p1", 10.00, 0);
 
             Cart result = service.getOrCreate(USER_ID, null);
 
@@ -173,7 +181,7 @@ class CartServiceTest {
         void overstockedLineIsClamped() {
             Cart cart = userCart(cartItem("p1", 9, 9));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 3));
+            catalogHas("p1", 10.00, 3);
 
             Cart result = service.getOrCreate(USER_ID, null);
 
@@ -192,7 +200,7 @@ class CartServiceTest {
             // with. S11's reconcileWith(...) should refresh every line.
             Cart cart = userCart(cartItem("p1", 1, 99));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 4));
+            catalogHas("p1", 10.00, 4);
 
             Cart result = service.getOrCreate(USER_ID, null);
 
@@ -215,7 +223,7 @@ class CartServiceTest {
             // so title/price/stock/condition are client-controlled and stored unverified.
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getStock("p1")).thenReturn(5);
+            catalogStock("p1", 5);
             stubSaveReturnsArgument();
 
             CartItem incoming = cartItem("p1", 2, 5);
@@ -234,8 +242,8 @@ class CartServiceTest {
         void existingLineAccumulates() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
-            when(productService.getStock("p1")).thenReturn(5);
+            catalogHas("p1", 10.00, 5);
+            catalogStock("p1", 5);
             stubSaveReturnsArgument();
 
             Cart result = service.addItem(USER_ID, null, cartItem("p1", 3, 5));
@@ -250,8 +258,8 @@ class CartServiceTest {
         void overStockIsRejected() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
-            when(productService.getStock("p1")).thenReturn(5);
+            catalogHas("p1", 10.00, 5);
+            catalogStock("p1", 5);
 
             assertThatThrownBy(() -> service.addItem(USER_ID, null, cartItem("p1", 4, 5)))
                     .isInstanceOf(BadRequestException.class)
@@ -265,7 +273,7 @@ class CartServiceTest {
         void zeroStockUsesOutOfStockMessage() {
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getStock("p1")).thenReturn(0);
+            catalogStock("p1", 0);
 
             assertThatThrownBy(() -> service.addItem(USER_ID, null, cartItem("p1", 1, 0)))
                     .isInstanceOf(BadRequestException.class)
@@ -293,9 +301,9 @@ class CartServiceTest {
         @DisplayName("sets the line quantity outright rather than accumulating")
         void setsAbsoluteQuantity() {
             Cart cart = userCart(cartItem("p1", 2, 5));
-            when(productService.getStock("p1")).thenReturn(5);
+            catalogStock("p1", 5);
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
+            catalogHas("p1", 10.00, 5);
             stubSaveReturnsArgument();
 
             Cart result = service.updateQuantity(USER_ID, null, "p1", 4);
@@ -308,7 +316,7 @@ class CartServiceTest {
         @Test
         @DisplayName("the stock check runs before the cart is even loaded")
         void stockIsCheckedBeforeLoadingTheCart() {
-            when(productService.getStock("p1")).thenReturn(2);
+            catalogStock("p1", 2);
 
             assertThatThrownBy(() -> service.updateQuantity(USER_ID, null, "p1", 3))
                     .isInstanceOf(BadRequestException.class)
@@ -321,7 +329,7 @@ class CartServiceTest {
         @DisplayName("updating a product that is not in the cart silently does nothing, but still saves")
         void unknownProductIsANoOpThatStillSaves() {
             Cart cart = userCart();
-            when(productService.getStock("p1")).thenReturn(5);
+            catalogStock("p1", 5);
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
             stubSaveReturnsArgument();
 
@@ -337,9 +345,9 @@ class CartServiceTest {
             // KNOWN BUG: there is no lower bound, so a line can sit in the cart with quantity 0
             // (or negative). S11's Quantity VO / changeQuantity must reject it or remove the line.
             Cart cart = userCart(cartItem("p1", 2, 5));
-            when(productService.getStock("p1")).thenReturn(5);
+            catalogStock("p1", 5);
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
+            catalogHas("p1", 10.00, 5);
             stubSaveReturnsArgument();
 
             Cart result = service.updateQuantity(USER_ID, null, "p1", 0);
@@ -361,8 +369,8 @@ class CartServiceTest {
         void removeItemDropsOneLine() {
             Cart cart = userCart(cartItem("p1", 2, 5), cartItem("p2", 1, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
-            when(productService.getProductById("p2")).thenReturn(product("p2", 10.00, 5));
+            catalogHas("p1", 10.00, 5);
+            catalogHas("p2", 10.00, 5);
             stubSaveReturnsArgument();
 
             service.removeItem(USER_ID, null, "p1");
@@ -375,7 +383,7 @@ class CartServiceTest {
         void removeItemsDecrementsPartially() {
             Cart cart = userCart(cartItem("p1", 5, 10));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 10));
+            catalogHas("p1", 10.00, 10);
             stubSaveReturnsArgument();
 
             service.removeItems(USER_ID, null, Map.of("p1", 2));
@@ -390,8 +398,8 @@ class CartServiceTest {
         void removeItemsDropsLineWhenFullyConsumed() {
             Cart cart = userCart(cartItem("p1", 2, 10), cartItem("p2", 1, 10));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 10));
-            when(productService.getProductById("p2")).thenReturn(product("p2", 10.00, 10));
+            catalogHas("p1", 10.00, 10);
+            catalogHas("p2", 10.00, 10);
             stubSaveReturnsArgument();
 
             service.removeItems(USER_ID, null, Map.of("p1", 2));
@@ -413,7 +421,7 @@ class CartServiceTest {
         void clearCartEmptiesTheCart() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
+            catalogHas("p1", 10.00, 5);
             stubSaveReturnsArgument();
 
             service.clearCart(USER_ID, null);
@@ -442,7 +450,7 @@ class CartServiceTest {
         void newLineIsAddedClampedToStock() {
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getStock("p1")).thenReturn(3);
+            catalogStock("p1", 3);
             stubSaveReturnsArgument();
 
             Cart result = service.mergeCart(USER_ID, GUEST_ID, List.of(cartItem("p1", 10, 10)));
@@ -458,8 +466,8 @@ class CartServiceTest {
         void existingLineIsSummedThenClamped() {
             Cart cart = userCart(cartItem("p1", 2, 5));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 4));
-            when(productService.getStock("p1")).thenReturn(4);
+            catalogHas("p1", 10.00, 4);
+            catalogStock("p1", 4);
             stubSaveReturnsArgument();
 
             Cart result = service.mergeCart(USER_ID, GUEST_ID, List.of(cartItem("p1", 3, 5)));
@@ -476,7 +484,7 @@ class CartServiceTest {
             // S11's Cart.merge must skip zero-stock lines.
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getStock("p1")).thenReturn(0);
+            catalogStock("p1", 0);
             stubSaveReturnsArgument();
 
             Cart result = service.mergeCart(USER_ID, GUEST_ID, List.of(cartItem("p1", 2, 0)));
@@ -526,7 +534,7 @@ class CartServiceTest {
         void addsOneUnitPerIdFromTheCatalog() {
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 24.99, 5));
+            catalogHas("p1", 24.99, 5);
             stubSaveReturnsArgument();
 
             Cart result = service.addItems(USER_ID, null, List.of("p1"));
@@ -548,7 +556,7 @@ class CartServiceTest {
         void repeatedIdIncrementsTheLine() {
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
+            catalogHas("p1", 10.00, 5);
             stubSaveReturnsArgument();
 
             Cart result = service.addItems(USER_ID, null, List.of("p1", "p1"));
@@ -563,7 +571,7 @@ class CartServiceTest {
         void unknownProductThrows() {
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("nope")).thenReturn(null);
+            when(catalog.findSnapshot(ProductId.of("nope"))).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.addItems(USER_ID, null, List.of("nope")))
                     .isInstanceOf(ResourceNotFoundException.class)
@@ -576,7 +584,7 @@ class CartServiceTest {
             // "Only N Left for " with nothing appended. S11 should build a complete message.
             Cart cart = userCart(cartItem("p1", 2, 2));
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 2));
+            catalogHas("p1", 10.00, 2);
 
             assertThatThrownBy(() -> service.addItems(USER_ID, null, List.of("p1")))
                     .isInstanceOf(BadRequestException.class)
@@ -588,7 +596,7 @@ class CartServiceTest {
         void zeroStockIsReportedByTitle() {
             Cart cart = userCart();
             when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 0));
+            catalogHas("p1", 10.00, 0);
 
             assertThatThrownBy(() -> service.addItems(USER_ID, null, List.of("p1")))
                     .isInstanceOf(BadRequestException.class)
@@ -619,7 +627,7 @@ class CartServiceTest {
         Cart cart = userCart(cartItem("p1", 1, 5));
         cart.setUpdatedAt(Instant.EPOCH);
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 5));
+        catalogHas("p1", 10.00, 5);
         stubSaveReturnsArgument();
 
         service.clearCart(USER_ID, null);
@@ -634,7 +642,7 @@ class CartServiceTest {
         // Worth knowing before S11 collapses these into one aggregate write.
         Cart cart = userCart(cartItem("p1", 9, 9));
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 3));
+        catalogHas("p1", 10.00, 3);
         stubSaveReturnsArgument();
 
         service.removeItem(USER_ID, null, "p2");

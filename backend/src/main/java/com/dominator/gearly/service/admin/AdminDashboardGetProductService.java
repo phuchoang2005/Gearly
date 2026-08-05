@@ -20,10 +20,9 @@ import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.stereotype.Service;
 
 import com.dominator.gearly.dto.BestSellerDTO;
-import com.dominator.gearly.dto.ProductInLowStockDTO;
+import com.dominator.gearly.catalog.api.ProductInLowStockDTO;
+import com.dominator.gearly.catalog.application.ProductQueryService;
 import com.dominator.gearly.dto.TopCategoryQuantityDTO;
-import com.dominator.gearly.mapper.ProductMapper;
-import com.dominator.gearly.repository.ProductsInStockRepository;
 
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +30,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AdminDashboardGetProductService {
-    private final ProductsInStockRepository productsInStock;
+    private final ProductQueryService productQueryService;
     private final MongoTemplate mongoTemplate;
-    private final ProductMapper productMapper;
 
     public List<BestSellerDTO> getTop10BestSellingProducts() {
         // 1) $unwind items
@@ -113,9 +111,15 @@ public class AdminDashboardGetProductService {
         return results.getMappedResults();
     }
 
+    /**
+     * Asks the catalog which products are running out, rather than owning the definition.
+     *
+     * <p>The threshold used to be {@code 10}, hard-coded inside a Spring Data
+     * {@code @Query("{'stock': {$lt: 10}}")} on a one-method repository. It is
+     * {@code gearly.catalog.low-stock-threshold} now, and the catalog decides what "low"
+     * means because the catalog is what owns stock.
+     */
     public List<ProductInLowStockDTO> getProductWithLowStock() {
-        return productsInStock.findProductsWithLowStock().stream()
-                .map(productMapper::toLowStockDto)
-                .collect(Collectors.toList());
+        return productQueryService.getLowStockProducts();
     }
 }

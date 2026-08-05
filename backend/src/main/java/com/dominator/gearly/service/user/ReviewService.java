@@ -6,8 +6,12 @@ import com.dominator.gearly.model.*;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
-import com.dominator.gearly.repository.ProductRepository;
+import com.dominator.gearly.catalog.domain.Product;
+import com.dominator.gearly.catalog.domain.ProductRepository;
 import com.dominator.gearly.ordering.domain.OrderRepository;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Rating;
+import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
@@ -125,7 +129,7 @@ public class ReviewService {
                 throw new ResourceNotFoundException(
                         "Product not found, you cannot create review for this product.");
             }
-            applyRating(product, rdto.getRating());
+            product.addRating(ratingOf(rdto.getRating()));
             productsToSave.add(product);
             reviewsToSave.add(reviewMapper.toEntity(rdto, dto.getOrderId(), user.getId()));
         }
@@ -148,19 +152,33 @@ public class ReviewService {
     }
 
     private Map<String, Product> loadProducts(List<CreateReviewRequestDTO> reviews) {
-        List<String> productIds = reviews.stream()
+        List<ProductId> productIds = reviews.stream()
                 .map(CreateReviewRequestDTO::getProductId)
+                .map(ProductId::of)
                 .collect(Collectors.toList());
         return productRepository.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 
-    private void applyRating(Product product, int rating) {
-        int newCount = product.getRatingCount() + 1;
-        int newTotal = product.getTotalRating() + rating;
-        product.setRatingCount(newCount);
-        product.setTotalRating(newTotal);
-        double average = Math.round((double) newTotal / newCount * 100) / 100.0;
-        product.setAverageRating(average);
+    /**
+     * The star count, as a value the catalog will accept.
+     *
+     * <p>{@code applyRating} used to live here and fold the raw {@code int} straight into the
+     * product's running total, unchecked — the S8 suite pinned a review of <b>900 stars</b>
+     * being accepted and wrecking the average, and one of 0 dragging it below the 1-star
+     * floor. {@code Product.addRating} takes a {@link Rating}, which is 1..5 by construction,
+     * so neither value can reach the rollup at all now.
+     *
+     * <p>The translation into a 400 happens here because the value object raises an
+     * {@code IllegalArgumentException}, and an unmapped one would surface as a 500 — a worse
+     * answer than the bug was. S12 replaces this with bean validation on the request DTO,
+     * which additionally names the offending field.
+     */
+    private Rating ratingOf(int value) {
+        try {
+            return Rating.of(value);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
     }
 }

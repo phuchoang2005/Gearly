@@ -3,14 +3,17 @@ package com.dominator.gearly.service.admin;
 import com.dominator.gearly.dto.AdminReviewResponseDTO;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.mapper.ReviewMapper;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.CatalogSnapshot;
+import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.ReviewStatus;
 import com.dominator.gearly.model.User;
-import com.dominator.gearly.repository.ProductRepository;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
+import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
 import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.UserId;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +37,7 @@ import static org.mockito.Mockito.when;
 class AdminReviewServiceTest {
 
     @Mock private ReviewRepository reviewRepo;
-    @Mock private ProductRepository productRepo;
+    @Mock private ProductSnapshotPort catalog;
     @Mock private UserRepository userRepo;
 
     private AdminReviewService service;
@@ -44,7 +47,13 @@ class AdminReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminReviewService(reviewRepo, productRepo, userRepo, new ReviewMapper());
+        service = new AdminReviewService(reviewRepo, catalog, userRepo, new ReviewMapper());
+    }
+
+    /** What the catalog publishes — all this screen needs from it is the title. */
+    private CatalogSnapshot snapshot(String title) {
+        return new CatalogSnapshot(ProductId.of(productHex), title, "NVIDIA", Money.of(1599.0),
+                "http://img/gpu.png", ProductCondition.NEW, Quantity.of(5));
     }
 
     private Review pendingReview() {
@@ -63,10 +72,8 @@ class AdminReviewServiceTest {
     void approveReview_setsApproved_andResolvesTitleAndName() {
         when(reviewRepo.findById("r1")).thenReturn(Optional.of(pendingReview()));
         when(reviewRepo.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
-        Product product = new Product();
-        product.setId(productHex);
-        product.setTitle("RTX 4090");
-        when(productRepo.findById(productHex)).thenReturn(Optional.of(product));
+        when(catalog.findSnapshot(ProductId.of(productHex)))
+                .thenReturn(Optional.of(snapshot("RTX 4090")));
         User user = new User();
         user.setId(userHex);
         user.setFullName("Alice Nguyen");
@@ -85,7 +92,7 @@ class AdminReviewServiceTest {
     void rejectReview_setsRejected_andFallsBackWhenProductOrUserMissing() {
         when(reviewRepo.findById("r1")).thenReturn(Optional.of(pendingReview()));
         when(reviewRepo.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(productRepo.findById(productHex)).thenReturn(Optional.empty());
+        when(catalog.findSnapshot(ProductId.of(productHex))).thenReturn(Optional.empty());
         when(userRepo.findById(userHex)).thenReturn(Optional.empty());
 
         AdminReviewResponseDTO dto = service.rejectReview("r1");

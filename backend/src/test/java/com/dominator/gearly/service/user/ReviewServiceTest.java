@@ -11,12 +11,15 @@ import com.dominator.gearly.mapper.ReviewMapper;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.ReviewStatus;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.ordering.domain.OrderRepository;
-import com.dominator.gearly.repository.ProductRepository;
+import com.dominator.gearly.catalog.domain.ProductFixture;
+import com.dominator.gearly.catalog.domain.ProductRepository;
+import com.dominator.gearly.exception.BadRequestException;
+import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.repository.ReviewRepository;
 import com.dominator.gearly.repository.UserRepository;
 import com.dominator.gearly.security.AuthenticatedUser;
@@ -88,13 +91,14 @@ class ReviewServiceTest {
         return new AuthenticatedUser(user);
     }
 
-    private Product product(int ratingCount, int totalRating) {
-        Product p = new Product();
-        p.setId(PRODUCT_ID);
-        p.setTitle("Product");
-        p.setRatingCount(ratingCount);
-        p.setTotalRating(totalRating);
-        return p;
+    /**
+     * A product whose rollup is reached by folding real ratings in, one at a time, rather
+     * than by assigning the two numbers. That is not ceremony: the aggregate has no setters
+     * now, and a fixture that could assign them would be able to describe a product the
+     * production code cannot produce.
+     */
+    private Product product(int... stars) {
+        return ProductFixture.aProduct().withId(PRODUCT_ID).titled("Product").rated(stars).build();
     }
 
     private Order ownedOrder(OrderStatus status, boolean reviewed) {
@@ -136,9 +140,9 @@ class ReviewServiceTest {
         @Test
         @DisplayName("the first review sets count 1, total, and the average")
         void firstReviewSeedsTheAverage() {
-            Product p = product(0, 0);
+            Product p = product();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(5));
 
@@ -152,9 +156,9 @@ class ReviewServiceTest {
         @Test
         @DisplayName("a subsequent review folds into the running total")
         void subsequentReviewUpdatesTheAverage() {
-            Product p = product(1, 5);
+            Product p = product(5);
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(4));
 
@@ -168,9 +172,9 @@ class ReviewServiceTest {
         @Test
         @DisplayName("the average is truncated to two decimals via Math.round")
         void averageIsRoundedToTwoDecimals() {
-            Product p = product(2, 9); // 9 + 4 = 13 over 3 -> 4.3333...
+            Product p = product(5, 4); // 9 + 4 = 13 over 3 -> 4.3333...
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(4));
 
@@ -179,34 +183,40 @@ class ReviewServiceTest {
                     .isEqualTo(4.33);
         }
 
+        /**
+         * <b>FIXED — was a KNOWN BUG.</b> The S8 suite pinned 900 stars being folded straight
+         * into the running total and wrecking the average, because
+         * {@code CreateReviewRequestDTO} has no bounds and {@code applyRating} did no
+         * validation.
+         *
+         * <p>The rollup goes through {@code Product.addRating(Rating)} now, and {@code Rating}
+         * is 1..5 by construction, so the value cannot reach the product at all. It is a 400
+         * rather than the 500 an unmapped {@code IllegalArgumentException} would have been.
+         * S12 owns the remaining half — bean validation naming the offending field.
+         */
         @Test
-        @DisplayName("KNOWN BUG: the rating is unbounded — 900 stars is accepted and wrecks the average")
-        void unboundedRatingIsAccepted() {
-            // CreateReviewRequestDTO has no @Min/@Max and applyRating does no validation.
-            // S9's Rating value object (1..5) closes this; this assertion changes then.
-            Product p = product(0, 0);
+        @DisplayName("FIXED (was a KNOWN BUG): 900 stars is refused rather than folded into the average")
+        void outOfRangeRatingIsRefused() {
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(product()));
 
-            service.createReview(authUser(USER_ID), reviewRequest(900));
+            assertThatThrownBy(() -> service.createReview(authUser(USER_ID), reviewRequest(900)))
+                    .isInstanceOf(BadRequestException.class);
 
-            assertThat(captureSavedProducts()).singleElement()
-                    .extracting(Product::getAverageRating)
-                    .isEqualTo(900.0);
+            verify(productRepository, never()).saveAll(anyList());
+            verify(reviewRepository, never()).saveAll(anyList());
         }
 
         @Test
-        @DisplayName("KNOWN BUG: a rating of 0 is accepted and drags the average below the 1-star floor")
-        void zeroRatingIsAccepted() {
-            Product p = product(1, 5);
+        @DisplayName("FIXED (was a KNOWN BUG): a rating of 0 is refused rather than dragging the average below the floor")
+        void zeroRatingIsRefused() {
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(product(5)));
 
-            service.createReview(authUser(USER_ID), reviewRequest(0));
+            assertThatThrownBy(() -> service.createReview(authUser(USER_ID), reviewRequest(0)))
+                    .isInstanceOf(BadRequestException.class);
 
-            assertThat(captureSavedProducts()).singleElement()
-                    .extracting(Product::getAverageRating)
-                    .isEqualTo(2.5);
+            verify(productRepository, never()).saveAll(anyList());
         }
 
         @Test
@@ -215,9 +225,9 @@ class ReviewServiceTest {
             // The public distribution query filters status:'APPROVED', so averageRating and the
             // star histogram are structurally inconsistent. S12 moves the roll-up to a
             // ReviewApproved event and adds a recompute migration.
-            Product p = product(0, 0);
+            Product p = product();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(5));
 
@@ -234,11 +244,11 @@ class ReviewServiceTest {
         void doubleReviewReInflatesTheRollup() {
             // createReview writes order.reviewed = true but never reads it back, so a repeated
             // call counts again. S12 adds the isReviewed guard.
-            Product p = product(0, 0);
+            Product p = product();
             when(orderRepository.findById(OrderId.of(ORDER_ID)))
                     .thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)))
                     .thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, true)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(5));
             service.createReview(authUser(USER_ID), reviewRequest(5));
@@ -251,9 +261,9 @@ class ReviewServiceTest {
         @DisplayName("KNOWN BUG: a CANCELLED order is reviewable — no order status is required")
         void cancelledOrderIsReviewable() {
             // S12 adds a reviewable-status rule.
-            Product p = product(0, 0);
+            Product p = product();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.CANCELLED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(5));
 
@@ -270,9 +280,9 @@ class ReviewServiceTest {
         @Test
         @DisplayName("the review carries the product, order and user ids as typed ids and starts PENDING")
         void reviewIsBuiltFromTheRequest() {
-            Product p = product(0, 0);
+            Product p = product();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(5));
 
@@ -290,10 +300,10 @@ class ReviewServiceTest {
         @Test
         @DisplayName("the order is flagged as reviewed and saved")
         void orderIsFlaggedReviewed() {
-            Product p = product(0, 0);
+            Product p = product();
             Order order = ownedOrder(OrderStatus.DELIVERED, false);
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(p));
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of(p));
 
             service.createReview(authUser(USER_ID), reviewRequest(5));
 
@@ -329,7 +339,7 @@ class ReviewServiceTest {
         @DisplayName("a review for a product that no longer exists is a 404, and nothing is written")
         void unknownProductThrowsAndWritesNothing() {
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(ownedOrder(OrderStatus.DELIVERED, false)));
-            when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of());
+            when(productRepository.findAllById(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of());
 
             assertThatThrownBy(() -> service.createReview(authUser(USER_ID), reviewRequest(5)))
                     .isInstanceOf(ResourceNotFoundException.class)

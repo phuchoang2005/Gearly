@@ -1,5 +1,6 @@
 package com.dominator.gearly.architecture;
 
+import com.dominator.gearly.shared.domain.DomainEvent;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -255,8 +256,8 @@ class ArchitectureFitnessTest {
      * <ul>
      *   <li>a <b>port</b> — an interface in the other context's {@code domain} package
      *       ({@code PaymentGateway}, {@code NotificationSender}, {@code FileStorage});</li>
-     *   <li>a <b>domain event</b> — a {@code *Event} type in that same package
-     *       ({@code OrderPlaced} is consumed as {@code OrderPlacedEvent});</li>
+     *   <li>a <b>domain event</b> — any implementor of {@code shared.domain.DomainEvent} in
+     *       that same package ({@code OrderPlaced}, {@code OrderCancelled});</li>
      *   <li>a <b>published value</b> — a {@code *Snapshot} (the Catalog ACL) or a typed
      *       {@code *Id}.</li>
      * </ul>
@@ -343,7 +344,31 @@ class ArchitectureFitnessTest {
         return CONTEXTS.contains(head) ? head : null;
     }
 
-    /** A type another context is allowed to name: a port, a domain event, or a published value. */
+    /**
+     * A type another context is allowed to name: a port, a domain event, or a published value.
+     *
+     * <h2>S11: a domain event is recognized by its interface, not by its name</h2>
+     * The original wording accepted a type whose simple name ended in {@code Event}, and its
+     * own comment admitted the awkwardness — "{@code OrderPlaced} is consumed as
+     * {@code OrderPlacedEvent}". That was fine while every listener lived in the same context
+     * as the event it consumed, so the clause was never exercised. S11 exercises it: the
+     * stock decrement moved to {@code catalog} and the cart clear to {@code cart}, and both
+     * consume events {@code ordering} publishes.
+     *
+     * <p>Naming was the wrong test. {@code OrderPlaced} and {@code OrderCancelled} are
+     * published by construction — they implement {@link DomainEvent}, the shared-kernel marker
+     * whose whole purpose is to say "this is a value one context announces to others". A
+     * convention that a class must also be *called* {@code …Event} adds nothing a reviewer
+     * would catch and would have been satisfied by a rename, which is the shape of rule that
+     * teaches people to rename things rather than to think.
+     *
+     * <p>This is a loosening, and worth being explicit about. It is narrower than it looks:
+     * the interface is in {@code shared.domain}, so an aggregate cannot acquire published
+     * status by accident, and everything an event carries is checked independently — which is
+     * why {@code OrderPlaced} had to stop carrying {@code List<OrderLine>} and start carrying
+     * {@code Map<ProductId, Quantity>} in the same commit. The name-suffix clause stays as a
+     * fallback for a future event that predates the interface.
+     */
     private static boolean isPublishedLanguage(JavaClass target) {
         if (!target.getPackageName().contains(".domain")) {
             return false;
@@ -351,6 +376,7 @@ class ArchitectureFitnessTest {
         String name = target.getSimpleName();
         return target.isInterface()
                 || target.isEnum()
+                || target.isAssignableTo(DomainEvent.class)
                 || name.endsWith("Event")
                 || name.endsWith("Snapshot")
                 || name.endsWith("Id");

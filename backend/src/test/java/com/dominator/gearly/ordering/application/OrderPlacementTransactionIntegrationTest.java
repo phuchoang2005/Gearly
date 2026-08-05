@@ -1,13 +1,16 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.model.Image;
+import com.dominator.gearly.catalog.domain.Image;
 import com.dominator.gearly.ordering.domain.Order;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.OrderRepository;
-import com.dominator.gearly.repository.ProductRepository;
+import com.dominator.gearly.catalog.domain.ProductRepository;
 import com.dominator.gearly.service.user.CartService;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.UserId;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,10 +71,10 @@ class OrderPlacementTransactionIntegrationTest {
     @Autowired private MongoTemplate mongoTemplate;
 
     /**
-     * The injection point for the mid-flow failure. {@code applyStockAndClearCart}
-     * decrements stock first and clears the cart second, so making the cart clear blow up
-     * puts the failure strictly after a successful stock write — exactly the window the
-     * transaction has to cover.
+     * The injection point for the mid-flow failure. {@code CatalogStockListener} decrements
+     * stock and {@code CartOrderListener} clears the cart, both {@code BEFORE_COMMIT}, so
+     * making the cart clear blow up puts the failure strictly after a successful stock write —
+     * exactly the window the transaction has to cover.
      */
     @MockitoBean private CartService cartService;
 
@@ -83,17 +86,15 @@ class OrderPlacementTransactionIntegrationTest {
         // port deliberately has no deleteAll — nothing in the application ever deletes an
         // order, and a port should not grow a method purely so a test can use it.
         mongoTemplate.dropCollection(Order.class);
-        productRepository.deleteAll();
+        mongoTemplate.dropCollection(Product.class);
     }
 
     // ---- fixtures ----------------------------------------------------------
 
     private Product savedProductWithStock(int stock) {
-        Product product = new Product();
-        product.setTitle("RTX 4090");
-        product.setPrice(Money.of(1599.00));
-        product.setStock(stock);
-        product.setImages(List.of(new Image("http://img/gpu.png", "gpu")));
+        Product product = Product.create("RTX 4090", List.of("NVIDIA"), null,
+                Money.of(1599.00), Money.of(1599.00), ProductCondition.NEW, Quantity.of(stock),
+                null, List.of(new Image("http://img/gpu.png", "gpu")));
         return productRepository.save(product);
     }
 
@@ -105,7 +106,7 @@ class OrderPlacementTransactionIntegrationTest {
     }
 
     private int stockOf(String productId) {
-        return productRepository.findById(productId).orElseThrow().getStock();
+        return productRepository.findById(ProductId.of(productId)).orElseThrow().getStock().toInt();
     }
 
     // ---- 1. transactional rollback -----------------------------------------
@@ -154,14 +155,14 @@ class OrderPlacementTransactionIntegrationTest {
         // simply overwrote the first and one unit was sold twice.
         Product product = savedProductWithStock(1);
 
-        Product checkoutA = productRepository.findById(product.getId()).orElseThrow();
-        Product checkoutB = productRepository.findById(product.getId()).orElseThrow();
+        Product checkoutA = productRepository.findById(product.productId()).orElseThrow();
+        Product checkoutB = productRepository.findById(product.productId()).orElseThrow();
         assertThat(checkoutA.getVersion()).isEqualTo(checkoutB.getVersion());
 
-        checkoutA.setStock(0);
+        checkoutA.reserve(Quantity.ONE);
         productRepository.save(checkoutA);
 
-        checkoutB.setStock(0);
+        checkoutB.reserve(Quantity.ONE);
         assertThatThrownBy(() -> productRepository.save(checkoutB))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
@@ -174,7 +175,7 @@ class OrderPlacementTransactionIntegrationTest {
         Product product = savedProductWithStock(5);
         assertThat(product.getVersion()).isZero();
 
-        product.setStock(4);
+        product.reserve(Quantity.ONE);
         Product updated = productRepository.save(product);
 
         assertThat(updated.getVersion()).isEqualTo(1L);
@@ -200,10 +201,10 @@ class OrderPlacementTransactionIntegrationTest {
                 new Document("version", new Document("$exists", false)),
                 new Document("$set", new Document("version", 0L)));
 
-        Product loaded = productRepository.findById("legacy-product").orElseThrow();
+        Product loaded = productRepository.findById(ProductId.of("legacy-product")).orElseThrow();
         assertThat(loaded.getVersion()).isZero();
 
-        loaded.setStock(4);
+        loaded.reserve(Quantity.ONE);
         Product updated = productRepository.save(loaded);
 
         assertThat(updated.getVersion()).isEqualTo(1L);
@@ -219,8 +220,8 @@ class OrderPlacementTransactionIntegrationTest {
                 "_id", "seeded-product", "title", "Seeded GPU", "stock", 9, "version", 0L);
         mongoTemplate.getCollection("products").insertOne(new Document(seeded));
 
-        Product loaded = productRepository.findById("seeded-product").orElseThrow();
-        loaded.setStock(8);
+        Product loaded = productRepository.findById(ProductId.of("seeded-product")).orElseThrow();
+        loaded.reserve(Quantity.ONE);
         productRepository.save(loaded);
 
         assertThat(productRepository.findAll()).hasSize(1);

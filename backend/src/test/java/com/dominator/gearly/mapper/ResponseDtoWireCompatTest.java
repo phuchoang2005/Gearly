@@ -3,13 +3,15 @@ package com.dominator.gearly.mapper;
 import com.dominator.gearly.dto.CartResponseDTO;
 import com.dominator.gearly.ordering.api.OrderResponseDTO;
 import com.dominator.gearly.ordering.api.OrderResponseMapper;
-import com.dominator.gearly.dto.ProductResponseDTO;
+import com.dominator.gearly.catalog.api.ProductResponseDTO;
+import com.dominator.gearly.catalog.api.ProductResponseMapper;
+import com.dominator.gearly.catalog.domain.ProductFixture;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.CartItem;
-import com.dominator.gearly.model.Image;
+import com.dominator.gearly.catalog.domain.Image;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;
@@ -55,7 +57,7 @@ class ResponseDtoWireCompatTest {
 
     private final OrderResponseMapper orderMapper = new OrderResponseMapper();
     private final CartMapper cartMapper = new CartMapper();
-    private final ProductMapper productMapper = new ProductMapper();
+    private final ProductResponseMapper productMapper = new ProductResponseMapper();
 
     @Test
     void orderResponseDto_matchesEntityWire() {
@@ -95,31 +97,62 @@ class ResponseDtoWireCompatTest {
         assertThat(dtoNode).isEqualTo(entityNode);
     }
 
+    /**
+     * <b>Pinned against literal JSON rather than against the entity (S11).</b>
+     *
+     * <p>The other two tests in this class compare a DTO to the entity it replaced, which was
+     * the right check while the entity was still the wire shape. {@code Product} stopped being
+     * that: it is an aggregate with behavior and no setters, its {@code categoryNames} moved
+     * out to an application-layer projection, and its {@code stock} is a {@code Quantity}. An
+     * entity-equals-DTO assertion would now be comparing the response to something no client
+     * has ever received.
+     *
+     * <p>So this asserts the field set and the scalar shapes directly — the same lesson S9
+     * learned about {@code Money} and S10 learned about the three {@code isX()} properties
+     * Jackson silently added. Both frontends read every key listed here.
+     */
     @Test
-    void productResponseDto_matchesEntityWire() {
-        Product product = new Product();
-        product.setId("p1");
-        product.setTitle("RTX 4090");
-        product.setAuthors(List.of("NVIDIA"));
-        product.setDescription("flagship GPU");
-        product.setPrice(Money.of(1599.0));
-        product.setOriginalPrice(Money.of(1799.0));
-        product.setCondition(ProductCondition.NEW);
-        product.setStock(5);
-        product.setCategoryIds(List.of(CategoryId.of("64b7f0000000000000000001")));
-        product.setImages(List.of(new Image("http://img/a.png", "gpu")));
-        product.setCategoryNames(List.of("Graphics Cards"));
-        product.setAverageRating(4.5);
-        product.setRatingCount(10);
-        product.setTotalRating(45);
-        product.setAddedAt(Instant.parse("2026-01-02T03:04:05Z"));
-        product.setModifiedAt(Instant.parse("2026-01-03T03:04:05Z"));
+    void productResponseDto_carriesExactlyTheFieldsItAlwaysHas() {
+        Product product = ProductFixture.aProduct()
+                .persistedAs("p1", Instant.parse("2026-01-02T03:04:05Z"),
+                        Instant.parse("2026-01-03T03:04:05Z"))
+                .titled("RTX 4090")
+                .by("NVIDIA")
+                .described("flagship GPU")
+                .pricedAt(1599.0)
+                .originallyPricedAt(1799.0)
+                .inCondition(ProductCondition.NEW)
+                .withStock(5)
+                .inCategories(CategoryId.of("64b7f0000000000000000001"))
+                .withImages(new Image("http://img/a.png", "gpu"))
+                .rated(5, 4)
+                .build();
 
-        ProductResponseDTO dto = productMapper.toResponseDto(product);
+        JsonNode node = json.valueToTree(productMapper.toResponseDto(product, List.of("Graphics Cards")));
 
-        JsonNode dtoNode = json.valueToTree(dto);
-        JsonNode entityNode = json.valueToTree(product);
-        assertThat(dtoNode).isEqualTo(entityNode);
+        assertThat(fieldsOf(node)).containsExactlyInAnyOrder(
+                "id", "title", "authors", "description", "price", "originalPrice", "condition",
+                "stock", "categoryIds", "images", "categoryNames", "averageRating",
+                "ratingCount", "totalRating", "addedAt", "modifiedAt");
+
+        assertThat(node.get("id").asText()).isEqualTo("p1");
+        assertThat(node.get("price").isDouble()).as("Money is still a bare double").isTrue();
+        assertThat(node.get("price").asText()).isEqualTo("1599.0");
+        assertThat(node.get("stock").isInt()).as("Quantity is still a bare int").isTrue();
+        assertThat(node.get("stock").intValue()).isEqualTo(5);
+        assertThat(node.get("condition").asText()).isEqualTo("NEW");
+        assertThat(node.get("categoryIds").get(0).asText()).isEqualTo("64b7f0000000000000000001");
+        assertThat(node.get("categoryNames").get(0).asText()).isEqualTo("Graphics Cards");
+        assertThat(node.get("averageRating").doubleValue()).isEqualTo(4.5);
+        assertThat(node.get("ratingCount").intValue()).isEqualTo(2);
+        assertThat(node.get("totalRating").intValue()).isEqualTo(9);
+        assertThat(fieldsOf(node.get("images").get(0))).containsExactlyInAnyOrder("url", "alt");
+    }
+
+    private static List<String> fieldsOf(JsonNode node) {
+        List<String> names = new ArrayList<>();
+        node.fieldNames().forEachRemaining(names::add);
+        return names;
     }
 
     /**
@@ -199,12 +232,6 @@ class ResponseDtoWireCompatTest {
                     "firstName", "lastName", "email", "phoneNumber", "address");
         }
 
-        private List<String> fieldsOf(JsonNode node) {
-            List<String> names = new ArrayList<>();
-            node.fieldNames().forEachRemaining(names::add);
-            return names;
-        }
-
         /**
          * The typed ids and {@code Quantity} adopted on the order aggregate in S10 must be as
          * invisible on the wire as {@code Money} was in S9 — a bare string and a bare int,
@@ -235,10 +262,7 @@ class ResponseDtoWireCompatTest {
          */
         @Test
         void productConditionSerializesAsItsSpacedWireValue() {
-            Product product = productWithValueObjects();
-            product.setCondition(ProductCondition.LIKE_NEW);
-
-            JsonNode node = json.valueToTree(product);
+            JsonNode node = json.valueToTree(productWithValueObjects(ProductCondition.LIKE_NEW));
 
             assertThat(node.get("condition").isTextual()).isTrue();
             assertThat(node.get("condition").asText()).isEqualTo("LIKE NEW");
@@ -301,16 +325,26 @@ class ResponseDtoWireCompatTest {
             assertThat(item.getQuantity()).isEqualTo(2);
         }
 
-        private Product productWithValueObjects() {
-            Product product = new Product();
-            product.setId("p1");
-            product.setTitle("RTX 4090");
-            product.setPrice(Money.of(1599.0));
-            product.setOriginalPrice(Money.of(120.5));
-            product.setCondition(ProductCondition.NEW);
-            product.setStock(5);
-            product.setCategoryIds(List.of(CategoryId.of("64b7f0000000000000000001")));
-            return product;
+        private ProductResponseDTO productWithValueObjects() {
+            return productWithValueObjects(ProductCondition.NEW);
+        }
+
+        /**
+         * The response DTO rather than the entity. {@code Product} is no longer serialized to
+         * anyone — {@code catalog.api} is the wire — so pinning the entity's JSON would pin
+         * something no client reads.
+         */
+        private ProductResponseDTO productWithValueObjects(ProductCondition condition) {
+            Product product = ProductFixture.aProduct()
+                    .withId("p1")
+                    .titled("RTX 4090")
+                    .pricedAt(1599.0)
+                    .originallyPricedAt(120.5)
+                    .inCondition(condition)
+                    .withStock(5)
+                    .inCategories(CategoryId.of("64b7f0000000000000000001"))
+                    .build();
+            return productMapper.toResponseDto(product, List.of());
         }
     }
 }

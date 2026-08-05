@@ -2,12 +2,12 @@ package com.dominator.gearly.mapper;
 
 import com.dominator.gearly.dto.CartResponseDTO;
 import com.dominator.gearly.model.Cart;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.CatalogSnapshot;
 import com.dominator.gearly.model.CartItem;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds {@link CartItem} snapshots from a {@link Product} and maps {@link Cart}
+ * Builds {@link CartItem} lines from a {@link CatalogSnapshot} and maps {@link Cart}
  * entities to response DTOs. The cart stores a denormalized copy (title, price,
  * image, …) so it survives later catalog edits.
  */
@@ -26,21 +26,24 @@ public class CartMapper {
         return dto;
     }
 
-    /** New cart line for the given product with quantity 1. */
-    public CartItem toCartItem(Product product) {
+    /**
+     * New cart line for the given product with quantity 1.
+     *
+     * <p>Every field comes from the catalog's snapshot, which is what makes the line
+     * trustworthy: the author fallback and the image guard that used to be written out here
+     * are decisions {@code Product.snapshot()} has already made, in one place, for the cart
+     * and the order line alike.
+     */
+    public CartItem toCartItem(CatalogSnapshot snapshot) {
         CartItem item = new CartItem();
-        item.setProductId(product.getId());
-        item.setTitle(product.getTitle());
-        item.setAuthor(product.getAuthors() != null && !product.getAuthors().isEmpty()
-                ? product.getAuthors().getFirst()
-                : "Unknown");
-        item.setPrice(product.getPrice());
+        item.setProductId(snapshot.productId().value());
+        item.setTitle(snapshot.title());
+        item.setAuthor(snapshot.author());
+        item.setPrice(snapshot.price());
         item.setQuantity(1);
-        item.setImage((product.getImages() != null && !product.getImages().isEmpty())
-                ? product.getImages().get(0).getUrl()
-                : null);
-        item.setCondition(product.getCondition());
-        item.setStock(product.getStock());
+        item.setImage(snapshot.imageUrl());
+        item.setCondition(snapshot.condition());
+        item.setStock(snapshot.stock().toInt());
         return item;
     }
 }

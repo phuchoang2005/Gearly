@@ -1,13 +1,11 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderLine;
 import com.dominator.gearly.ordering.domain.OrderPlaced;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
-import com.dominator.gearly.service.user.ProductService;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.UserId;
@@ -16,7 +14,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,22 +29,32 @@ import java.util.List;
  * different bean, which is what finally removes the {@code ObjectProvider} self-reference S8
  * had to introduce.
  *
- * <p>This service no longer calls Catalog or Cart. It publishes {@link OrderPlaced} and
- * {@code OrderPlacedListener} reacts {@code BEFORE_COMMIT} — same two writes, same order, same
+ * <p>This service no longer calls Catalog or Cart. It publishes {@link OrderPlaced} and the
+ * two contexts that care react {@code BEFORE_COMMIT} — same writes, same order, same
  * transaction, but placement stops naming two other contexts to get them.
+ *
+ * <h2>What S11 changed here</h2>
+ * The private {@code snapshotFromCatalog} that used to sit at the bottom of this class is
+ * gone. It held a {@code ProductService}, read five fields off a {@code Product}, and made its
+ * own stock check — one of the five copies of that rule. Ordering asks the catalog for a
+ * {@code CatalogSnapshot} through {@link ProductSnapshotPort} now and
+ * {@link OrderLine#fromSnapshot} does the rest, so this class no longer names {@code Product}
+ * at all and the stock rule it used to restate lives on the aggregate that owns it.
  */
 @Service
 @RequiredArgsConstructor
 public class PlaceOrderService {
 
     private final OrderRepository orderRepository;
-    private final ProductService productService;
+    private final ProductSnapshotPort catalog;
     private final PricingPolicy pricingPolicy;
     private final ApplicationEventPublisher events;
 
     @Transactional
     public Order place(UserId userId, PlaceOrderCommand command) {
-        List<OrderLine> lines = snapshotFromCatalog(command.lines());
+        List<OrderLine> lines = command.lines().stream()
+                .map(this::toLine)
+                .toList();
 
         Order order = Order.place(
                 userId,
@@ -65,28 +72,15 @@ public class PlaceOrderService {
     }
 
     /**
-     * Turns catalog ids and quantities into order lines, copying the title, price and image as
-     * they are right now.
+     * One requested line, priced and titled as the catalog has it right now.
      *
-     * <p>This is the seam S11 replaces with the {@code CatalogSnapshot} anti-corruption layer,
-     * at which point Ordering stops naming {@code Product} at all. The stock check here is one
-     * of the five duplicated copies S11 collapses onto {@code Product.reserve(Quantity)}; it
-     * stays as-is so this sprint changes no placement behavior.
+     * @throws com.dominator.gearly.catalog.domain.ProductNotFoundException if it has been
+     *         delisted since the customer put it in their basket — a 404 where the previous
+     *         code dereferenced a {@code null} and produced a 500
      */
-    private List<OrderLine> snapshotFromCatalog(List<PlaceOrderCommand.RequestedLine> requested) {
-        List<OrderLine> lines = new ArrayList<>();
-        for (PlaceOrderCommand.RequestedLine line : requested) {
-            Product product = productService.getProductById(line.productId());
-            if (product.getStock() < line.quantity()) {
-                throw new BadRequestException("Insufficient stock for product: " + product.getTitle());
-            }
-            lines.add(new OrderLine(
-                    ProductId.of(product.getId()),
-                    product.getTitle(),
-                    product.getPrice(),
-                    product.getImages().getFirst().getUrl(),
-                    Quantity.of(line.quantity())));
-        }
-        return lines;
+    private OrderLine toLine(PlaceOrderCommand.RequestedLine line) {
+        return OrderLine.fromSnapshot(
+                catalog.snapshotOf(ProductId.of(line.productId())),
+                Quantity.of(line.quantity()));
     }
 }

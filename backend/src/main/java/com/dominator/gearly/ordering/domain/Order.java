@@ -248,7 +248,8 @@ public class Order extends AggregateRoot {
 
         this.note = reason;
         touch();
-        registerEvent(new OrderCancelled(orderId(), userId, orderStatus, refundOwed, reason, Instant.now()));
+        registerEvent(new OrderCancelled(orderId(), userId, OrderPlaced.quantitiesOf(this),
+                orderStatus, refundOwed, reason, Instant.now()));
     }
 
     /**

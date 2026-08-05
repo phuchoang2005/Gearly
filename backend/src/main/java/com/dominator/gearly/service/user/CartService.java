@@ -1,10 +1,12 @@
 package com.dominator.gearly.service.user;
 
+import com.dominator.gearly.catalog.domain.CatalogSnapshot;
+import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.mapper.CartMapper;
-import com.dominator.gearly.model.Product;
 import com.dominator.gearly.model.Cart;
 import com.dominator.gearly.model.CartItem;
 import com.dominator.gearly.repository.CartRepository;
+import com.dominator.gearly.shared.domain.ProductId;
 import lombok.RequiredArgsConstructor;
 import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
@@ -18,7 +20,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CartService {
     private final CartRepository cartRepository;
-    private final ProductService productService;
+    /**
+     * The catalog, through its published port. This used to be a {@code ProductService} —
+     * one context holding another's application service, and through it its aggregate. Every
+     * read here needs a title, a price, an image and a stock level, which is exactly what a
+     * {@link CatalogSnapshot} is.
+     */
+    private final ProductSnapshotPort catalog;
     private final CartMapper cartMapper;
 
     public Cart getOrCreate(String userId, String guestId) {
@@ -35,14 +43,13 @@ public class CartService {
 
         for (Iterator<CartItem> it = cart.getItems().iterator(); it.hasNext();) {
             CartItem item = it.next();
-            Optional<Product> optProduct = Optional.ofNullable(productService.getProductById(item.getProductId()));
+            Optional<CatalogSnapshot> optProduct = catalog.findSnapshot(ProductId.of(item.getProductId()));
             if (optProduct.isEmpty()) {
                 it.remove();
                 modified = true;
                 continue;
             }
-            Product product = optProduct.get();
-            int currentStock = product.getStock();
+            int currentStock = optProduct.get().stock().toInt();
             if (currentStock  <= 0) {
                 it.remove();
                 modified = true;
@@ -80,7 +87,7 @@ public class CartService {
         Cart cart = getOrCreate(userId, guestId);
         CartItem existing = findItemInCart(cart, item.getProductId());
 
-        int stock = productService.getStock(item.getProductId());
+        int stock = stockOf(item.getProductId());
         int addedQty = item.getQuantity();
         int newQty = (existing != null ? existing.getQuantity() : 0) + addedQty;
 
@@ -103,7 +110,7 @@ public class CartService {
     }
 
     public Cart updateQuantity(String userId, String guestId, String productId, int qty) {
-        int stock = productService.getStock(productId);
+        int stock = stockOf(productId);
         if (qty > stock) {
             String errorMsg = "Only " + stock + " Left!";
             if (stock == 0) {
@@ -173,7 +180,7 @@ public class CartService {
         for (CartItem incoming : localItems) {
             if (incoming == null) continue;
 
-            int stock = productService.getStock(incoming.getProductId());
+            int stock = stockOf(incoming.getProductId());
             int qty = Math.min(incoming.getQuantity(), stock);
 
             CartItem existing = findItemInCart(userCart, incoming.getProductId());
@@ -197,21 +204,19 @@ public class CartService {
         for (String productId : itemIds) {
             if (productId == null) continue;
 
-            var product = productService.getProductById(productId);
-            if (product == null) {
-                throw new ResourceNotFoundException("Product not found: " + productId);
-            }
+            CatalogSnapshot product = catalog.findSnapshot(ProductId.of(productId))
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
 
             CartItem item = cartMapper.toCartItem(product);
 
             CartItem existing = findItemInCart(cart, item.getProductId());
             int newQty = (existing != null ? existing.getQuantity() : 0) + 1;
 
-            int stock = product.getStock();
+            int stock = product.stock().toInt();
             if (newQty > stock) {
                 String errorMsg = "Only " + stock + " Left for ";
                 if (stock == 0) {
-                    errorMsg = "\"" + product.getTitle() +  "\" is out of stock!";
+                    errorMsg = "\"" + product.title() +  "\" is out of stock!";
                 }
                 throw new BadRequestException(
                         errorMsg);
@@ -225,6 +230,11 @@ public class CartService {
         }
 
         return saveCart(cart);
+    }
+
+    /** How many units the catalog has of this product right now. */
+    private int stockOf(String productId) {
+        return catalog.snapshotOf(ProductId.of(productId)).stock().toInt();
     }
 
     // Utility

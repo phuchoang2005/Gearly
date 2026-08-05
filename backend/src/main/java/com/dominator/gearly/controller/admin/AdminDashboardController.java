@@ -1,5 +1,6 @@
 package com.dominator.gearly.controller.admin;
 
+import com.dominator.gearly.catalog.api.ProductInLowStockDTO;
 import com.dominator.gearly.dto.*;
 import com.dominator.gearly.service.admin.AdminDashboardService;
 import lombok.RequiredArgsConstructor;

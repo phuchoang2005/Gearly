@@ -3,7 +3,7 @@ package com.dominator.gearly.service.admin;
 import org.springframework.stereotype.Service;
 
 import com.dominator.gearly.dto.BestSellerDTO;
-import com.dominator.gearly.dto.ProductInLowStockDTO;
+import com.dominator.gearly.catalog.api.ProductInLowStockDTO;
 import com.dominator.gearly.dto.LoyalCustomerDTO;
 import com.dominator.gearly.dto.TopAvgOrderValueUserDTO;
 import com.dominator.gearly.dto.TopCategoryQuantityDTO;
