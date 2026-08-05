@@ -619,22 +619,176 @@ follow-ups rather than modelling faults.
 **Goal:** Close the review-lifecycle holes, make `User` a real aggregate, and get Spring Security types out of the domain.
 
 **Backlog**
-- [ ] **`Review` root:** bounded `Rating` VO; `submit`, `approve()`, `reject()` with a `ReviewStatus` transition rule. Today `AdminReviewService.java:47-52` allows `APPROVED → PENDING`.
-- [ ] **Fix the rating inconsistency.** `applyRating` (`ReviewService.java:155-162`) moves onto `Product.addRating(...)` and is driven by a **`ReviewApproved` domain event instead of firing at creation time.** Today `averageRating` counts reviews that were later *rejected*, while the public distribution query filters `status:'APPROVED'` (`ReviewRepository.java:23`) — the two numbers are structurally inconsistent. Add a `ReviewRejected` handler and a one-off recompute step in `migrate.js`. *Deliberate behavior change.*
-- [ ] **Guard double-review:** `createReview` never reads `order.isReviewed()` even though `:132` writes it, so a repeated call **re-inflates** `ratingCount`/`totalRating`. Also require a reviewable order status — a `CANCELLED` or `PENDING` order is currently reviewable.
-- [ ] **`identity/domain`:** `User` root with `Role`, `EmailAddress`, `PersonName`; `verify()`, `changePassword(...)`, `deactivate()`, `addFavorite`/`removeFavorite`. `VerificationToken`'s magic 30-minute TTL (`VerificationTokenService.java:34`) becomes config.
-- [ ] **Access boundary:** remove `AuthenticatedUser` (a Spring Security `UserDetails`) from all service signatures — controllers unwrap to `UserId`. Replace `throw new ApiException(HttpStatus.FORBIDDEN, …)` inside the domain (`CustomerOrderService.java:102`, `ReviewService.java:141`) with `AccessDeniedDomainException`, mapped in `GlobalExceptionHandler`. Ownership becomes `order.isOwnedBy(userId)`. Enable `@EnableMethodSecurity` and use `@PreAuthorize` for role checks alongside the URL rules.
-- [ ] **🔒 Four security bugs found during the survey — bundled here, each is small:**
+- [x] **`Review` root:** bounded `Rating` VO; `submit`, `approve()`, `reject()` with a `ReviewStatus` transition rule. Today `AdminReviewService.java:47-52` allows `APPROVED → PENDING`.
+- [x] **Fix the rating inconsistency.** `applyRating` (`ReviewService.java:155-162`) moves onto `Product.addRating(...)` and is driven by a **`ReviewApproved` domain event instead of firing at creation time.** Today `averageRating` counts reviews that were later *rejected*, while the public distribution query filters `status:'APPROVED'` (`ReviewRepository.java:23`) — the two numbers are structurally inconsistent. Add a `ReviewRejected` handler and a one-off recompute step in `migrate.js`. *Deliberate behavior change.*
+- [x] **Guard double-review:** `createReview` never reads `order.isReviewed()` even though `:132` writes it, so a repeated call **re-inflates** `ratingCount`/`totalRating`. Also require a reviewable order status — a `CANCELLED` or `PENDING` order is currently reviewable.
+- [x] **`identity/domain`:** `User` root with `Role`, `EmailAddress`, `PersonName`; `verify()`, `changePassword(...)`, `deactivate()`, `addFavorite`/`removeFavorite`. `VerificationToken`'s magic 30-minute TTL (`VerificationTokenService.java:34`) becomes config.
+- [x] **Access boundary:** remove `AuthenticatedUser` (a Spring Security `UserDetails`) from all service signatures — controllers unwrap to `UserId`. Replace `throw new ApiException(HttpStatus.FORBIDDEN, …)` inside the domain (`CustomerOrderService.java:102`, `ReviewService.java:141`) with `AccessDeniedDomainException`, mapped in `GlobalExceptionHandler`. Ownership becomes `order.isOwnedBy(userId)`. Enable `@EnableMethodSecurity` and use `@PreAuthorize` for role checks alongside the URL rules.
+- [x] **🔒 Four security bugs found during the survey — bundled here, each is small:**
   1. **IDOR:** `OrderController.java:59-62` `getOrderById` performs **no ownership check** — any authenticated user can read any order, including payment details and the buyer's shipping address.
   2. `SecurityConfig.java:53-56` permits `/api/reviews/**`, which also matches `POST /api/reviews/submit-review`; an anonymous POST NPEs into a **500 instead of a 401**.
   3. `JwtAuthenticationFilter.java:39` calls `extractEmail` *before* `validateToken:41`, so an expired or tampered token throws → **500 instead of 401**.
   4. `/api/guest-cart/**` is `permitAll` with a client-supplied `guestId` and no binding — **any guest cart is readable and mutable by anyone who knows the UUID.**
-- [ ] **Events:** `UserRegistered` — the email side effect moves out of `AuthService.register:94` into an `AFTER_COMMIT` listener, so a mail send is no longer inside a nominal transaction boundary.
-- [ ] **Tighten ArchUnit** onto `reviews..` and `identity..`.
+- [x] **Events:** `UserRegistered` — the email side effect moves out of `AuthService.register:94` into an `AFTER_COMMIT` listener, so a mail send is no longer inside a nominal transaction boundary.
+- [x] **Tighten ArchUnit** onto `reviews..` and `identity..`.
 
 **Verify:** fetching another user's order → 403; anonymous review POST → 401; expired token → 401; approve-then-reject leaves the product average correct; a rating of 0 or 6 → 400 with field errors.
 
 **Risks:** Med. The rating recompute is a live-data change. Confirm no admin frontend call relied on the previously-open `getOrderById`.
+
+### S12 outcome — shipped
+
+Branch `ddd/s12-reviews-identity`, eight commits (seven of code, one of resume notes that was
+deleted at the end). **435 tests green** (383 after identity landed, 267 at the end of S9).
+The Docker-gated tests were run with Colima up, so the Testcontainers suites actually executed
+rather than self-skipping.
+
+| Item | Landed as |
+|---|---|
+| `Review` root | `submit` / `approve()` / `reject()`, `ReviewStatus` transition table, `Rating` adopted on the field S9 deliberately left an `int` |
+| Rating inconsistency | `ReviewApproved` / `ReviewRejected` drive `Product.addRating`; `CatalogRatingListener` is `BEFORE_COMMIT`; `migrate.js` step 10 recomputes what is stored |
+| Double-review guard | `ordering.domain.ReviewableOrders` + `ReviewEligibility` — ordering answers whether a purchase is reviewable, reviews never reads an `Order` |
+| `identity/domain` | `User` root, `VerificationToken` TTL to config, `UserRegistered` + `AFTER_COMMIT` mail listener |
+| Access boundary | `AuthenticatedUser` stops at the controller; `AccessDeniedDomainException` mapped to 403; `@EnableMethodSecurity` with `@PreAuthorize` on all seven admin controllers |
+| The four security bugs | all four closed — see below |
+| ArchUnit | one new rule (`admin_routes_carry_method_level_authorization`), two platform-boundary rules rewritten, every one falsified |
+| Storage | `reviews.productId`/`orderId`/`userId` normalized from `ObjectId` to `String`; `ObjectIdBackedIdConverters` deleted |
+
+**Verification actually performed**, not just asserted:
+
+- **The migration ran against a real `mongo:6.0` loaded from the shipped dumps.** Step 9 (the
+  rating clamp) was a no-op, as predicted — all 91 seed reviews are already 2–5. Step 10 rewrote
+  **all 51 products**. Step 11 converted 91 `productId`s, 91 `userId`s and 40 `orderId`s. A
+  second run printed zero for every step.
+- **The re-exported dumps were re-imported into a second database and compared document by
+  document against the migrated one** — 51 products and 91 reviews, zero differences in
+  canonical extended JSON, field order included. That is what makes "the dumps ship already
+  migrated" a checked claim rather than an intention.
+- **Every rollup was recomputed independently from the reviews collection after the fact**: 51
+  of 51 products agree with their own approved reviews, and `totalRating` is a BSON `int` on all
+  of them (several were fractional doubles before — 84.6, 202.5 — in a field the application
+  reads as an `int`).
+- **Every new or changed ArchUnit rule was falsified** by planting a violation and confirming
+  the rule, and only the right rule, fires:
+
+  | Planted | Fires |
+  |---|---|
+  | `reviews.application` names `platform.security.AuthenticatedUser` | `contexts_do_not_depend_on_the_platform` **and** `security_types_stop_at_the_api_layer` |
+  | `reviews.api` names `platform.config.TransactionConfig` | `api_reaches_only_the_platforms_security_package` |
+  | `reviews.application` names `org.springframework.security…UserDetails` | `security_types_stop_at_the_api_layer` |
+  | `@PreAuthorize` removed from `AdminDashboardController` (class level) | `admin_routes_carry_method_level_authorization`, 5 handlers |
+  | `@PreAuthorize` removed from `CategoryController.findAllForAdmin` (method level) | same rule, 1 handler |
+
+- **`AdminMethodSecurityTest` was falsified too** — with the annotation removed the customer gets
+  a 200 instead of a 403, which is the whole claim.
+
+**What running it for real caught that the plan did not anticipate:**
+
+1. **A `@PreAuthorize` denial answered 500, not 403.** Method security throws inside the
+   dispatcher, so the refusal reaches `GlobalExceptionHandler` before
+   `ExceptionTranslationFilter` — and the `@ExceptionHandler(Exception.class)` catch-all
+   swallowed it. Every existing admin test was green because the `/api/admin/**` URL rule
+   refuses those requests in the filter chain, before any handler runs, so nothing had ever
+   exercised the annotation on its own. Found by deliberately building a slice with **no URL
+   rules** so that only the annotation could refuse. `rethrowAccessDenied` is the fix: rethrowing
+   lets the filter decide 401 vs 403, which the advice cannot.
+2. **`AccessDeniedDomainException` had no handler at all.** The type was in the shared kernel and
+   `ReviewNotYoursException` already extended it, so reviewing somebody else's order answered
+   **500 "Internal server error"** — the caller was told the server was broken when their request
+   had in fact been correctly refused. The same catch-all, the same shape of bug, found the same
+   way.
+3. **51 of the 91 seed reviews carry no `orderId` at all.** Harmless — the field is simply absent
+   and reads as null — but it means the double-review guard has nothing to key on for those
+   documents, and it is worth knowing before anything starts requiring the field.
+4. **Moving `Review` into `reviews/domain/` is what exposed the `@ValueConverter` dependency.**
+   The class lived in `model/`, which is not a `..domain..` package, so
+   `domain_does_not_depend_on_its_own_infrastructure` had never seen it. The rule was working;
+   the code had been hiding from it.
+
+**Deviations from the plan as written, and why:**
+
+1. **The reviews collection's ids were normalized, which the plan did not ask for.** S9 shipped
+   `ObjectIdBackedIdConverters` because `reviews` stored three ids as BSON `ObjectId`s while the
+   same Java types are plain strings on an order line — one type, two BSON forms, which a
+   per-*type* `MongoCustomConversions` registration cannot express. Moving `Review` into the
+   context put those `@ValueConverter` annotations under
+   `domain_does_not_depend_on_its_own_infrastructure` and they violated it three times. The two
+   alternatives were to relocate a class that exists to describe a storage encoding into
+   `shared/domain` so it would pass, or to exempt annotation members from the rule. Both are
+   ways of annotating around the finding. S9's own note said "S12 owns the reviews context and
+   can decide whether to normalize the stored form", so S12 decided: the ids are strings, the
+   converter class is deleted, and `migrate.js` step 11 moves existing documents.
+2. **`CategoryController` got a split rather than a class-level `@PreAuthorize`.** It serves
+   `/api/categories` to anonymous shoppers and `/api/admin/categories` to the console from one
+   class, so the class-level annotation every other admin controller carries would have taken the
+   storefront's category menu away. Two methods, one delegating to the other, and the ArchUnit
+   rule accepts either placement for exactly this reason.
+3. **The guest-cart id reuses `jwt.secret` rather than getting its own property.** A second secret
+   is a second thing to configure, rotate and forget, and the two uses sit behind the same trust
+   boundary: anyone who can forge a guest id from that key can mint an admin JWT from it.
+4. **`OrderNotYoursException` answers 403, not 404.** A 404 hides whether the order exists and is
+   the stronger answer. The cancel path has always answered 403 for this exact case, and making
+   the read path disagree — or changing both — is a behaviour change that deserves its own commit
+   with the storefront checked, not a side effect of a security fix.
+
+**Deliberate behaviour changes, each with its test edited in the same commit:**
+
+- **The stored review counts drop by roughly an order of magnitude.** `migrate.js` step 10
+  recomputes every product's rollup from its `APPROVED` reviews. In the shipped dumps *all 51*
+  products disagreed with their own reviews: the stored rollups were fabricated demo numbers, not
+  the sum of anything. The RTX 4090 stored 30 ratings averaging 4.9 and has 2 approved reviews
+  averaging 4.5. This is the correct outcome — the product page already contradicted itself,
+  showing "4.9 (30 reviews)" beside a histogram totalling 2, because the average was written at
+  submission time while every review was still `PENDING` and the histogram filters
+  `status:'APPROVED'` — but it is visible on the demo storefront and should not be a surprise.
+- **`GET /api/orders/{id}` now answers 403 for somebody else's order.** Confirmed safe: the admin
+  console's refine dataProvider is based at `/api/admin` (`frontend_admin/gearly/src/App.tsx`),
+  so its `orders` resource resolves to `/api/admin/orders/{id}` — a different endpoint. The only
+  caller of the customer route is `frontend/src/services/user/orderService.js`.
+  `OrderQueryServiceTest.findById_returnsTheOrder` became
+  `findById_returnsTheCallersOwnOrder`; `CustomerOrderAccessTest` asserts the 403 through the
+  real HTTP stack.
+- **A returning guest holding a pre-S12 bare UUID is refused once.** Guest cart ids are
+  `<uuid>.<hmac>` now and the server accepts only ids it issued.
+  `frontend/src/hooks/user/useCartData.js` drops the stored id and re-inits on a 403, so the
+  visitor sees an empty basket rather than an error. That basket is lost; the alternative was
+  accepting unsigned ids indefinitely, which is the hole.
+- **`DomainTypeBsonRoundTripTest`'s two review-id assertions were rewritten, not deleted.**
+  `reviewIdsStayObjectIdsWhileOrderLineProductIdsStayStrings` became
+  `reviewIdsAreStringsLikeEveryOtherTypedIdOutsideCategories`, and
+  `aReviewRemainsQueryableByRawObjectId` became
+  `aReviewIsQueryableByTheRawStringAndNotByAnObjectId` — the second half matters, because getting
+  a query's type wrong here returns nothing rather than failing.
+- **`UserResponseDTO.favorites` is `[]` where it used to be `null`** for an account with no
+  favourites. Safer for the storefront, which maps over it, but it is a wire change.
+
+**Frontend consequences:**
+
+- `frontend/src/hooks/user/useCartData.js` — re-init on a 403 from the guest cart. The only
+  frontend change in the sprint; every other route keeps its URL, request body and response
+  shape.
+- No admin-console change. The `@PreAuthorize` annotations sit behind a URL rule the console
+  already satisfied.
+
+**The security items, one by one:**
+
+| # | Was | Now |
+|---|---|---|
+| 1 | `getOrderById` had no ownership check — any authenticated caller could read any order, payment ledger and shipping address included | `findById(UserId, String)`; there is no signature that omits the caller |
+| 2 | anonymous `POST /api/reviews/submit-review` → 500 | the public review reads are pinned to `GET` and enumerated; the write falls to `anyRequest().authenticated()` → 401 |
+| 3 | JWT filter extracted before validating → 500 on an expired token | `AccessTokens.subjectOf` returns an `Optional`; the wrong ordering cannot be expressed |
+| 4 | any string was a valid `guestId` — readable, mutable, and `getOrCreate` created a document per attempt | `<uuid>.<hmac>`, verified on every guest-cart route including `/api/cart/merge` |
+
+**Carried into S13:**
+
+- **A deactivated account keeps its token.** `deactivate` sets `INACTIVE` and `AuthService.login`
+  refuses an inactive account, but `JwtAuthenticationFilter` does not, so an already-issued JWT
+  stays usable for its full seven days. A one-line check in the filter closes it. Adjacent to
+  this sprint's security items but not one of the four the plan lists.
+- **`ProductReviewsDTO.sortBy` reaches `Sort.by` unvalidated**, so a client picks the sort field.
+  Pre-existing and harmless today — an unknown field sorts by nothing in Mongo.
+- **`MediaController` is still `Files.copy` inline with no service layer**, which S13 already owns
+  under the `storage/` item. S12 only put `@PreAuthorize` on it.
 
 ---
 
