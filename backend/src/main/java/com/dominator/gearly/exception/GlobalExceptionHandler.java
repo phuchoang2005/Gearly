@@ -1,6 +1,8 @@
 package com.dominator.gearly.exception;
 
 import com.dominator.gearly.shared.domain.DomainConflictException;
+import com.dominator.gearly.shared.domain.DomainNotFoundException;
+import com.dominator.gearly.shared.domain.DomainRuleViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -91,6 +93,37 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDomainConflict(DomainConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of(HttpStatus.CONFLICT.value(), ex.getMessage()));
+    }
+
+    /**
+     * The aggregate the request named does not exist → 404.
+     *
+     * <p>The sibling of the handler above, added when S11 gave the catalog a
+     * {@code ProductNotFoundException}. {@code ProductService.getProductById} used to answer
+     * {@code null} and leave each caller to decide what that meant; several forgot, and a
+     * delisted product turned a checkout into a {@code NullPointerException} and an opaque
+     * 500. The response is identical to {@link ResourceNotFoundException}'s — what changed is
+     * that the domain can say "missing" without naming an HTTP type.
+     */
+    @ExceptionHandler(DomainNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDomainNotFound(DomainNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND.value(), ex.getMessage()));
+    }
+
+    /**
+     * A domain rule refused the request as it stands → 400.
+     *
+     * <p>Ordering ten units of something that has three is the case this was added for:
+     * {@code InsufficientStockException} is the single rule S11 collapsed five copies of the
+     * stock check into, and 400 is the status all five of them already returned through
+     * {@link BadRequestException}. Moving where the rule lives and changing what it answers
+     * are separate decisions; only the first has been made.
+     */
+    @ExceptionHandler(DomainRuleViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDomainRuleViolation(DomainRuleViolationException ex) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 
     /** Missing static resource (e.g. an avatar/media file under /uploads/**) → 404, not 500. */

@@ -1,5 +1,6 @@
 package com.dominator.gearly.ordering.domain;
 
+import com.dominator.gearly.catalog.domain.CatalogSnapshot;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.shared.domain.Quantity;
@@ -46,6 +47,31 @@ public class OrderLine {
         this.price = price == null ? Money.ZERO : price;
         this.imageUrl = imageUrl;
         this.quantity = quantity == null ? Quantity.ZERO : quantity;
+    }
+
+    /**
+     * A line for {@code quantity} units of what the catalog is publishing right now.
+     *
+     * <p>This replaces {@code OrderMapper.toOrderItem}, and with it the thing that class did
+     * that this cannot: reach into a {@code Product} and call {@code getImages().getFirst()}
+     * unguarded, which threw {@code NoSuchElementException} on any product without a picture
+     * and turned checkout into a 500. A snapshot has already decided what its image is —
+     * possibly {@code null} — so there is nothing left here to get wrong.
+     *
+     * <p>The check comes first: an order line for more units than exist must not be
+     * constructible at all.
+     *
+     * @throws com.dominator.gearly.catalog.domain.InsufficientStockException if the catalog
+     *         cannot supply that many
+     */
+    public static OrderLine fromSnapshot(CatalogSnapshot snapshot, Quantity quantity) {
+        snapshot.assertCanSupply(quantity);
+        return new OrderLine(
+                snapshot.productId(),
+                snapshot.title(),
+                snapshot.price(),
+                snapshot.imageUrl(),
+                quantity);
     }
 
     /** What this line costs before tax and shipping. */

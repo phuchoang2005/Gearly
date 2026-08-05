@@ -1,6 +1,7 @@
 // In-place schema migration for the Bookify -> Gearly rename (Sprint 5), the
 // Sprint 7 product-timestamp type change, the Sprint 8 optimistic-locking field,
-// and the Sprint 9 category/review timestamp normalization.
+// the Sprint 9 category/review timestamp normalization, and the Sprint 11
+// product rating-rollup repair.
 //
 // Renames the `books` collection -> `products` and the `bookId` reference key
 // -> `productId` everywhere it appears (top-level in reviews/blogPosts, nested
@@ -179,6 +180,73 @@
     }
   }
 
+
+  // ---------------------------------------------------------------------------
+  // Step 8 (S11) - repair any product rating rollup that cannot be true.
+  //
+  // Product.addRating goes through the ProductRating value object now, which
+  // refuses a rollup where the star total is impossible for the number of
+  // ratings (below 1x or above 5x the count), or where a total exists with no
+  // ratings behind it. That invariant is what stops the three fields drifting
+  // apart again - but it also means a document already holding an impossible
+  // rollup would throw the moment somebody reviewed that product.
+  //
+  // Such documents are reachable: until S11 the rating arrived as an unchecked
+  // int, so a review of 900 stars was folded straight into the total. The S8
+  // characterization suite pinned exactly that as a KNOWN BUG.
+  //
+  // The repair clamps the total into the range the count allows and recomputes
+  // the average with the same arithmetic the aggregate uses. Idempotent, and a
+  // no-op on consistent data - all 51 seed products are already consistent, so
+  // this step exists for live databases rather than for the dumps.
+  if (names.includes("products")) {
+    const ops = [];
+    db.products
+      .find(
+        {},
+        { ratingCount: 1, totalRating: 1, averageRating: 1 }
+      )
+      .forEach((doc) => {
+        const count = doc.ratingCount || 0;
+        const total = doc.totalRating || 0;
+
+        let fixedCount = count < 0 ? 0 : count;
+        let fixedTotal = total < 0 ? 0 : total;
+
+        if (fixedCount === 0) {
+          fixedTotal = 0;
+        } else {
+          if (fixedTotal < fixedCount) fixedTotal = fixedCount;         // below 1 star each
+          if (fixedTotal > fixedCount * 5) fixedTotal = fixedCount * 5; // above 5 stars each
+        }
+
+        // the same Math.round(avg * 100) / 100 the rollup has always used
+        const fixedAverage =
+          fixedCount === 0 ? 0 : Math.round((fixedTotal / fixedCount) * 100) / 100;
+
+        if (
+          fixedCount !== count ||
+          fixedTotal !== total ||
+          fixedAverage !== (doc.averageRating || 0)
+        ) {
+          ops.push({
+            updateOne: {
+              filter: { _id: doc._id },
+              update: {
+                $set: {
+                  ratingCount: fixedCount,
+                  totalRating: fixedTotal,
+                  averageRating: fixedAverage,
+                },
+              },
+            },
+          });
+        }
+      });
+
+    if (ops.length) db.products.bulkWrite(ops);
+    print(`products: rating rollup repaired in ${ops.length} docs`);
+  }
 
   print("Migration complete.");
 })();

@@ -1,6 +1,6 @@
 package com.dominator.gearly.controller.user;
 
-import com.dominator.gearly.dto.ProductSummaryDTO;
+import com.dominator.gearly.catalog.api.ProductSummaryDTO;
 import com.dominator.gearly.dto.WishlistRequestDTO;
 import com.dominator.gearly.security.AuthenticatedUser;
 import com.dominator.gearly.service.user.WishlistService;

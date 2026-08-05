@@ -1,12 +1,13 @@
 package com.dominator.gearly.shared.infrastructure;
 
 import com.dominator.gearly.dto.BestSellerDTO;
-import com.dominator.gearly.model.Cart;
-import com.dominator.gearly.model.Category;
-import com.dominator.gearly.model.CartItem;
+import com.dominator.gearly.cart.domain.Cart;
+import com.dominator.gearly.cart.domain.CartFixture;
+import com.dominator.gearly.catalog.domain.Category;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.Product;
+import com.dominator.gearly.catalog.domain.ProductFixture;
 import com.dominator.gearly.model.Review;
 import com.dominator.gearly.model.User;
 import com.dominator.gearly.shared.domain.CategoryId;
@@ -93,10 +94,8 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void onAProductAndItsOriginalPrice() {
-            Product product = new Product();
-            product.setTitle("RTX 4090");
-            product.setPrice(Money.of(109.99));
-            product.setOriginalPrice(Money.of(120.5));
+            Product product = ProductFixture.aProduct()
+                    .titled("RTX 4090").pricedAt(109.99).originallyPricedAt(120.5).build();
             mongoTemplate.save(product);
 
             Document raw = rawDocument("products");
@@ -145,19 +144,19 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void onACartLine() {
-            CartItem item = new CartItem();
-            item.setProductId("p1");
-            item.setPrice(Money.of(24.99));
-            item.setCondition(ProductCondition.LIKE_NEW);
-
-            Cart cart = new Cart();
-            cart.setUserId("u1");
-            cart.setItems(List.of(item));
+            Cart cart = CartFixture.aCart().ownedBy("u1")
+                    .holding("p1", 24.99, 5, 1)
+                    .build();
             mongoTemplate.save(cart);
 
             Document line = rawDocument("carts").getList("items", Document.class).getFirst();
 
             assertThat(line.get("price")).isInstanceOf(Double.class).isEqualTo(24.99);
+            // The typed id and the two quantities are as bare as they ever were.
+            assertThat(line.get("productId")).isInstanceOf(String.class).isEqualTo("p1");
+            assertThat(line.get("quantity")).isInstanceOf(Integer.class).isEqualTo(1);
+            assertThat(line.get("stock")).isInstanceOf(Integer.class).isEqualTo(5);
+            assertThat(rawDocument("carts").get("userId")).isInstanceOf(String.class).isEqualTo("u1");
         }
 
         /**
@@ -190,9 +189,8 @@ class DomainTypeBsonRoundTripTest {
         /** Category ids are the one id stored as an ObjectId rather than a string. */
         @Test
         void categoryIdIsStoredAsAnObjectId() {
-            Product product = new Product();
-            product.setTitle("RTX 4090");
-            product.setCategoryIds(List.of(CategoryId.of(CATEGORY_HEX)));
+            Product product = ProductFixture.aProduct()
+                    .titled("RTX 4090").inCategories(CategoryId.of(CATEGORY_HEX)).build();
             mongoTemplate.save(product);
 
             Object stored = rawDocument("products").getList("categoryIds", Object.class).getFirst();
@@ -255,9 +253,8 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void productConditionStoresTheSpacedWireValueNotTheConstantName() {
-            Product product = new Product();
-            product.setTitle("RTX 4090");
-            product.setCondition(ProductCondition.LIKE_NEW);
+            Product product = ProductFixture.aProduct()
+                    .titled("RTX 4090").inCondition(ProductCondition.LIKE_NEW).build();
             mongoTemplate.save(product);
 
             assertThat(rawDocument("products").get("condition"))
@@ -306,10 +303,7 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void categoryTimestampsAreDatesNotStrings() {
-            Category category = new Category();
-            category.setName("CPU");
-            category.setAddedAt(Instant.parse("2025-12-24T00:00:00Z"));
-            category.setModifiedAt(Instant.parse("2025-12-24T00:00:00Z"));
+            Category category = Category.create("CPU", null, null);
             mongoTemplate.save(category);
 
             Document raw = rawDocument("categories");
@@ -336,10 +330,7 @@ class DomainTypeBsonRoundTripTest {
          */
         @Test
         void cartTimestampsWereAlreadyDatesAndStayThatWay() {
-            Cart cart = new Cart();
-            cart.setUserId("u1");
-            cart.setCreatedAt(Instant.parse("2025-06-08T20:17:14.541Z"));
-            cart.setUpdatedAt(Instant.parse("2025-06-08T20:37:12.168Z"));
+            Cart cart = CartFixture.aCart().ownedBy("u1").build();
             mongoTemplate.save(cart);
 
             Document raw = rawDocument("carts");
@@ -418,18 +409,17 @@ class DomainTypeBsonRoundTripTest {
     @Test
     @DisplayName("a fully populated product document matches the pre-S9 field types exactly")
     void productDocumentShapeIsUnchanged() {
-        Product product = new Product();
-        product.setTitle("Intel Core i3-12100F");
-        product.setAuthors(List.of("Intel"));
-        product.setDescription("entry-level processor");
-        product.setPrice(Money.of(109.99));
-        product.setOriginalPrice(Money.of(120.5));
-        product.setCondition(ProductCondition.NEW);
-        product.setStock(64);
-        product.setCategoryIds(List.of(CategoryId.of(CATEGORY_HEX)));
-        product.setAverageRating(4.5);
-        product.setRatingCount(12);
-        product.setTotalRating(54);
+        Product product = ProductFixture.aProduct()
+                .titled("Intel Core i3-12100F")
+                .by("Intel")
+                .described("entry-level processor")
+                .pricedAt(109.99)
+                .originallyPricedAt(120.5)
+                .inCondition(ProductCondition.NEW)
+                .withStock(64)
+                .inCategories(CategoryId.of(CATEGORY_HEX))
+                .rated(5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4)
+                .build();
         mongoTemplate.save(product);
 
         Document raw = rawDocument("products");
@@ -484,11 +474,12 @@ class DomainTypeBsonRoundTripTest {
     @Test
     @DisplayName("a criteria built from a value object matches the stored document")
     void valueObjectsAreUsableInQueries() {
-        Product product = new Product();
-        product.setTitle("RTX 4090");
-        product.setPrice(Money.of(1599.0));
-        product.setCondition(ProductCondition.LIKE_NEW);
-        product.setCategoryIds(List.of(CategoryId.of(CATEGORY_HEX)));
+        Product product = ProductFixture.aProduct()
+                .titled("RTX 4090")
+                .pricedAt(1599.0)
+                .inCondition(ProductCondition.LIKE_NEW)
+                .inCategories(CategoryId.of(CATEGORY_HEX))
+                .build();
         mongoTemplate.save(product);
 
         assertThat(mongoTemplate.find(

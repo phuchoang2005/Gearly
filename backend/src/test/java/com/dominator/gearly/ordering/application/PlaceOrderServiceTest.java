@@ -1,8 +1,8 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.model.Image;
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.domain.CatalogSnapshot;
+import com.dominator.gearly.catalog.domain.InsufficientStockException;
+import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.ordering.domain.OrderLine;
@@ -14,8 +14,10 @@ import com.dominator.gearly.ordering.domain.PaymentTransaction;
 import com.dominator.gearly.ordering.domain.PricingPolicy;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.TransactionStatus;
-import com.dominator.gearly.service.user.ProductService;
 import com.dominator.gearly.shared.domain.Money;
+import com.dominator.gearly.shared.domain.ProductCondition;
+import com.dominator.gearly.shared.domain.ProductId;
+import com.dominator.gearly.shared.domain.Quantity;
 import com.dominator.gearly.shared.domain.UserId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +32,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -51,7 +54,7 @@ import static org.mockito.Mockito.when;
 class PlaceOrderServiceTest {
 
     @Mock private OrderRepository orderRepository;
-    @Mock private ProductService productService;
+    @Mock private ProductSnapshotPort catalog;
     @Mock private ApplicationEventPublisher events;
 
     private PlaceOrderService service;
@@ -63,19 +66,24 @@ class PlaceOrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PlaceOrderService(orderRepository, productService, pricingPolicy, events);
+        service = new PlaceOrderService(orderRepository, catalog, pricingPolicy, events);
     }
 
     // ---- fixtures ----------------------------------------------------------
 
-    private Product product(String id, double price, int stock) {
-        Product p = new Product();
-        p.setId(id);
-        p.setTitle("Product " + id);
-        p.setPrice(Money.of(price));
-        p.setStock(stock);
-        p.setImages(List.of(new Image("http://img/" + id + ".png", "alt")));
-        return p;
+    /**
+     * What the catalog publishes about a product. Placement sees this and nothing else now —
+     * the {@code ProductService} that used to be mocked here handed over a whole
+     * {@code Product}, which is the coupling the ACL removes.
+     */
+    private CatalogSnapshot snapshot(String id, double price, int stock) {
+        return new CatalogSnapshot(ProductId.of(id), "Product " + id, "Author " + id,
+                Money.of(price), "http://img/" + id + ".png", ProductCondition.NEW,
+                Quantity.of(stock));
+    }
+
+    private void catalogHas(String id, double price, int stock) {
+        when(catalog.snapshotOf(ProductId.of(id))).thenReturn(snapshot(id, price, stock));
     }
 
     private PlaceOrderCommand order(String productId, int quantity) {
@@ -104,7 +112,7 @@ class PlaceOrderServiceTest {
         @Test
         @DisplayName("tax is 8% of the item subtotal, shipping is $15 below the threshold")
         void belowThreshold_charges15Shipping_and8PercentTax() {
-            when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
+            catalogHas("p1", 10.00, 100);
             stubSaveReturnsArgument();
 
             service.place(USER_ID, order("p1", 2));
@@ -116,7 +124,7 @@ class PlaceOrderServiceTest {
         @Test
         @DisplayName("a subtotal above $30 ships free")
         void aboveThreshold_shipsFree() {
-            when(productService.getProductById("p1")).thenReturn(product("p1", 40.00, 100));
+            catalogHas("p1", 40.00, 100);
             stubSaveReturnsArgument();
 
             service.place(USER_ID, order("p1", 1));
@@ -128,7 +136,7 @@ class PlaceOrderServiceTest {
         @Test
         @DisplayName("a subtotal of exactly $30 still pays shipping — the threshold is strictly greater-than")
         void exactlyAtThreshold_stillCharges15Shipping() {
-            when(productService.getProductById("p1")).thenReturn(product("p1", 30.00, 100));
+            catalogHas("p1", 30.00, 100);
             stubSaveReturnsArgument();
 
             service.place(USER_ID, order("p1", 1));
@@ -140,7 +148,7 @@ class PlaceOrderServiceTest {
         @Test
         @DisplayName("tax rounds HALF_UP to two decimals")
         void taxRoundsHalfUpToCents() {
-            when(productService.getProductById("p1")).thenReturn(product("p1", 3.19, 100));
+            catalogHas("p1", 3.19, 100);
             stubSaveReturnsArgument();
 
             service.place(USER_ID, order("p1", 1));
@@ -153,9 +161,9 @@ class PlaceOrderServiceTest {
     // ---- the rest of placement --------------------------------------------
 
     @Test
-    @DisplayName("placement snapshots title, price and the first image off the catalog product")
+    @DisplayName("placement copies title, price and image from the catalog's snapshot")
     void snapshotsCatalogFields() {
-        when(productService.getProductById("p1")).thenReturn(product("p1", 12.50, 100));
+        catalogHas("p1", 12.50, 100);
         stubSaveReturnsArgument();
 
         service.place(USER_ID, order("p1", 3));
@@ -175,7 +183,7 @@ class PlaceOrderServiceTest {
     @Test
     @DisplayName("placement opens the payment with a single PENDING transaction for the grand total")
     void buildsInitialPendingPayment() {
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
+        catalogHas("p1", 10.00, 100);
         stubSaveReturnsArgument();
 
         service.place(USER_ID, order("p1", 2));
@@ -202,7 +210,7 @@ class PlaceOrderServiceTest {
         // Payment owns the list now and it is always mutable. What is handed out is still an
         // unmodifiable view, but deliberately so: appending goes through the aggregate, which
         // is what stops the ledger gaining a row nothing decided to add.
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
+        catalogHas("p1", 10.00, 100);
         stubSaveReturnsArgument();
 
         Order order = service.place(USER_ID, order("p1", 2));
@@ -217,15 +225,15 @@ class PlaceOrderServiceTest {
     }
 
     /**
-     * The stock decrement and the cart clear are {@code OrderPlacedListener}'s now — see
-     * {@code OrderPlacedListenerTest}, which asserts the same two calls the S8 suite did.
-     * What this asserts is the half that belongs to placement: that the announcement carries
-     * everything a listener needs.
+     * The stock decrement is {@code CatalogStockListener}'s and the cart clear is
+     * {@code CartOrderListener}'s — each context reacting for itself. What this asserts is the
+     * half that belongs to placement: that the announcement carries everything a listener
+     * needs, in types neither listener has to reach into ordering to understand.
      */
     @Test
-    @DisplayName("placement announces OrderPlaced with the buyer, the lines and the total")
+    @DisplayName("placement announces OrderPlaced with the buyer, the quantities and the total")
     void publishesOrderPlaced() {
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
+        catalogHas("p1", 10.00, 100);
         stubSaveReturnsArgument();
 
         service.place(USER_ID, order("p1", 2));
@@ -236,21 +244,19 @@ class PlaceOrderServiceTest {
 
         assertThat(event.userId()).isEqualTo(USER_ID);
         assertThat(event.totalAmount()).isEqualTo(Money.of(36.60));
-        assertThat(event.lines()).singleElement().satisfies(line -> {
-            assertThat(line.getProductId().value()).isEqualTo("p1");
-            assertThat(line.getQuantity().toInt()).isEqualTo(2);
-        });
+        assertThat(event.quantities())
+                .containsExactly(entry(ProductId.of("p1"), Quantity.of(2)));
         assertThat(event.occurredOn()).isNotNull();
     }
 
     @Test
     @DisplayName("placement rejects an order for more units than are in stock, before saving anything")
     void insufficientStock_throwsAndSavesNothing() {
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 1));
+        catalogHas("p1", 10.00, 1);
 
         assertThatThrownBy(() -> service.place(USER_ID, order("p1", 2)))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Insufficient stock for product: Product p1");
+                .isInstanceOf(InsufficientStockException.class)
+                .hasMessage("Only 1 left for \"Product p1\"!");
 
         verify(orderRepository, never()).save(any());
         verifyNoInteractions(events);
@@ -259,7 +265,7 @@ class PlaceOrderServiceTest {
     @Test
     @DisplayName("placement allows ordering the exact remaining stock")
     void exactStock_isAllowed() {
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 2));
+        catalogHas("p1", 10.00, 2);
         stubSaveReturnsArgument();
 
         service.place(USER_ID, order("p1", 2));
@@ -270,9 +276,9 @@ class PlaceOrderServiceTest {
     @Test
     @DisplayName("an order line keeps its per-line quantity when the same product appears once")
     void orderLinesCarryQuantities() {
-        // Guards the Collectors.toMap in applyStockAndClearCart: it would throw on a duplicate
-        // productId, which is why the request is expected to pre-merge lines.
-        when(productService.getProductById("p1")).thenReturn(product("p1", 10.00, 100));
+        // The listener used to build its map with Collectors.toMap, which threw on a duplicate
+        // productId. OrderPlaced merges repeated lines now, so this is no longer a landmine.
+        catalogHas("p1", 10.00, 100);
         stubSaveReturnsArgument();
 
         Order placed = service.place(USER_ID, order("p1", 4));

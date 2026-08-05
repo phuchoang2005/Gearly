@@ -1,8 +1,8 @@
 package com.dominator.gearly.ai;
 
-import com.dominator.gearly.model.Product;
+import com.dominator.gearly.catalog.api.ProductSummaryDTO;
+import com.dominator.gearly.catalog.application.ProductQueryService;
 import com.dominator.gearly.service.GithubModelsService;
-import com.dominator.gearly.service.user.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomerServiceHandler {
 
-    private final ProductService productService;
+    private final ProductQueryService productQueryService;
     private final GithubModelsService mainBot;
     private final AiPrompts prompts;
 
@@ -25,7 +25,7 @@ public class CustomerServiceHandler {
             : decision.getOriginalUserMessage();
 
         // 1. Search the catalog for matching products
-        List<Product> products = productService.getProductsByTitle(searchTerm);
+        List<ProductSummaryDTO> products = productQueryService.findByTitle(searchTerm);
 
         if (!products.isEmpty()) {
             // 2. Build the product context for the main bot
