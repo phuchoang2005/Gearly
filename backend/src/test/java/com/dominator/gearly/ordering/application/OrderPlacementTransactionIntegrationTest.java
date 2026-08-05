@@ -1,5 +1,6 @@
 package com.dominator.gearly.ordering.application;
 
+import com.dominator.gearly.cart.domain.Cart;
 import com.dominator.gearly.catalog.domain.Image;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.catalog.domain.Product;
@@ -30,6 +31,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,6 +94,15 @@ class OrderPlacementTransactionIntegrationTest {
         // order, and a port should not grow a method purely so a test can use it.
         mongoTemplate.dropCollection(Order.class);
         mongoTemplate.dropCollection(Product.class);
+        mongoTemplate.dropCollection(Cart.class);
+
+        // Re-create them straight away. Implicitly creating a collection is a DDL operation,
+        // and two transactions that both try it at once lose to a WriteConflict — which is
+        // what the concurrency tests below were measuring before this line existed, rather
+        // than anything about stock. Found by writing a positive control that failed.
+        mongoTemplate.createCollection(Order.class);
+        mongoTemplate.createCollection(Product.class);
+        mongoTemplate.createCollection(Cart.class);
     }
 
     // ---- fixtures ----------------------------------------------------------
@@ -167,6 +183,130 @@ class OrderPlacementTransactionIntegrationTest {
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(stockOf(product.getId())).isZero();
+    }
+
+    /**
+     * <b>The S11 verify step: a concurrent checkout cannot oversell.</b>
+     *
+     * <p>The test above this one demonstrates the mechanism by driving two writes to the same
+     * document by hand. This one drives two <em>real placements</em> — through
+     * {@code PlaceOrderService}, the transaction, and {@code CatalogStockListener} — for the
+     * last unit in stock, and asserts the outcome that actually matters to a customer: one
+     * order exists, one placement failed, and the shelf is empty rather than negative.
+     *
+     * <p>It does not assert <em>which</em> exception the loser gets. Under a real replica set
+     * the second transaction may lose to Spring Data's {@code @Version} check or to MongoDB's
+     * own write conflict depending on how the two interleave, and pinning one of those would
+     * make the test a description of a race's timing rather than of its guarantee.
+     */
+    @Test
+    @DisplayName("two concurrent checkouts for the last unit: one wins, one fails, nothing oversells")
+    void concurrentCheckouts_cannotOversell() throws Exception {
+        Product product = savedProductWithStock(1);
+
+        PlaceOrderCommand order = orderFor(product.getId(), 1);
+        long winners = runConcurrently(
+                new Checkout(UserId.of("buyer-a"), order),
+                new Checkout(UserId.of("buyer-b"), order));
+
+        assertThat(winners).as("exactly one checkout may take the last unit").isEqualTo(1);
+        assertThat(stockOf(product.getId())).as("stock must never go negative").isZero();
+        assertThat(orderRepository.findAll()).as("one order, not two").hasSize(1);
+    }
+
+    /**
+     * <b>The positive control</b>, and it earned its keep immediately.
+     *
+     * <p>Without it, "exactly one winner" above could be true because the second checkout
+     * always fails for a reason having nothing to do with stock — a misconfigured pool, a
+     * latch that never releases, an exception thrown before either transaction opens. Two
+     * genuinely independent checkouts both commit, so both are really being attempted and the
+     * harness is measuring what it claims to measure.
+     *
+     * <p>Independent means different customers <em>and</em> different products: a placement
+     * writes an order, a product and the buyer's cart, so two checkouts sharing any of the
+     * three share a document to conflict on.
+     */
+    @Test
+    @DisplayName("two concurrent checkouts by different customers for different products: both succeed")
+    void concurrentCheckouts_bothSucceedWhenIndependent() throws Exception {
+        Product gpu = savedProductWithStock(5);
+        Product cpu = savedProductWithStock(5);
+
+        assertThat(runConcurrently(
+                new Checkout(UserId.of("buyer-a"), orderFor(gpu.getId(), 1)),
+                new Checkout(UserId.of("buyer-b"), orderFor(cpu.getId(), 1))))
+                .as("independent sales must not interfere")
+                .isEqualTo(2);
+        assertThat(orderRepository.findAll()).hasSize(2);
+    }
+
+    /**
+     * <b>What the first version of the positive control actually found, recorded rather than
+     * deleted.</b>
+     *
+     * <p>The obvious control — two concurrent checkouts of the <em>same</em> product with
+     * stock for both — does not pass, and should not be expected to. Optimistic locking is
+     * conservative: both checkouts read the same product document, both write it, and the
+     * second write is rejected on the version whether or not the stock covered it. There is no
+     * retry anywhere in the system, so the loser gets a 409.
+     *
+     * <p>That is the documented contract — {@code GlobalExceptionHandler} answers "This item
+     * was modified by another request. Please refresh and try again." — and it is the correct
+     * trade for a single-document stock counter: refusing a sale that would have been fine is
+     * recoverable, and overselling is not. It is worth knowing, though, because it means a
+     * popular product under simultaneous load will turn away checkouts that had stock. A retry
+     * on {@code OptimisticLockingFailureException} would close that, and it belongs to whoever
+     * owns throughput rather than to a refactoring sprint.
+     */
+    @Test
+    @DisplayName("two concurrent checkouts of the SAME product conflict even when stock allows — no retry exists")
+    void concurrentCheckouts_ofTheSameProductConflictEvenWithStock() throws Exception {
+        Product product = savedProductWithStock(5);
+        PlaceOrderCommand order = orderFor(product.getId(), 1);
+
+        assertThat(runConcurrently(
+                new Checkout(UserId.of("buyer-a"), order),
+                new Checkout(UserId.of("buyer-b"), order)))
+                .as("the loser is refused on the version, not on the stock")
+                .isEqualTo(1);
+        assertThat(stockOf(product.getId()))
+                .as("and the refused sale took nothing")
+                .isEqualTo(4);
+    }
+
+    /** One customer placing one order. */
+    private record Checkout(UserId buyer, PlaceOrderCommand order) {
+    }
+
+    /** Fires two placements at the same instant and reports how many committed. */
+    private long runConcurrently(Checkout first, Checkout second) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch bothReady = new CountDownLatch(2);
+
+        List<Callable<Boolean>> checkouts = List.of(first, second).stream()
+                .map(checkout -> (Callable<Boolean>) () -> {
+                    bothReady.countDown();
+                    bothReady.await(5, TimeUnit.SECONDS);
+                    try {
+                        placeOrderService.place(checkout.buyer(), checkout.order());
+                        return true;
+                    } catch (RuntimeException expectedForTheLoser) {
+                        return false;
+                    }
+                })
+                .toList();
+
+        List<Future<Boolean>> results = pool.invokeAll(checkouts);
+        pool.shutdown();
+
+        long winners = 0;
+        for (Future<Boolean> result : results) {
+            if (result.get()) {
+                winners++;
+            }
+        }
+        return winners;
     }
 
     @Test

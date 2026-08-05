@@ -4,6 +4,11 @@ import com.dominator.gearly.shared.domain.DomainEvent;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaField;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaParameter;
+import com.tngtech.archunit.core.domain.JavaParameterizedType;
+import com.tngtech.archunit.core.domain.JavaType;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -12,12 +17,14 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 import java.util.stream.Stream;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 
 /**
@@ -245,6 +252,68 @@ class ArchitectureFitnessTest {
                             + "everything else goes through a port")
                     .allowEmptyShould(false);
 
+    /**
+     * <b>An aggregate is never bound from a request body.</b>
+     *
+     * <p>This rule exists because the codebase had the bug it describes, in the place it does
+     * the most damage. {@code CartController.add}, {@code CartController.merge} and
+     * {@code GuestCartController.add} all declared {@code @RequestBody CartItem} — a
+     * {@code @Document} — so a customer could post their own {@code price} and the server
+     * stored it without ever consulting the catalog. The S8 suite pinned a $1,599 product sold
+     * at $0.01.
+     *
+     * <p>The S11 fix was structural: a cart line can only be built from a
+     * {@code CatalogSnapshot}, so there is nowhere for a submitted price to land. This rule is
+     * what stops the structural fix from being quietly undone by someone adding one more
+     * "convenient" endpoint that binds the entity directly, which is exactly how the original
+     * three arrived.
+     *
+     * <p>Deliberately about {@code @RequestBody} rather than about {@code @Document} appearing
+     * in a signature at all: returning an aggregate is a different question (the response DTOs
+     * answer it), and one an ArchUnit rule would answer badly.
+     *
+     * <p>SCOPE: the new packages only, while {@code controller/} still exists. Off in S13.
+     */
+    @ArchTest
+    static void aggregates_are_never_bound_from_a_request_body(JavaClasses classes) {
+        methods().that().areDeclaredInClassesThat().resideInAnyPackage(NEW_PACKAGES)
+                .should(takeNoRequestBodyThatIsAPersistenceDocument())
+                .because("a request body a client controls must never be a stored document — "
+                        + "that is how the cart came to accept a client-supplied price")
+                .allowEmptyShould(false)
+                .check(classes);
+    }
+
+    /**
+     * <b>A published event carries only shared-kernel types.</b>
+     *
+     * <p>The companion to {@code contexts_touch_each_other_only_through_published_types}, and
+     * the more useful half. That rule catches a leak at the <em>consumer</em> — which means it
+     * only fires once somebody has written the consumer and discovered they cannot. This one
+     * catches it at the event, where the decision is actually made.
+     *
+     * <p>S10's {@code OrderPlaced} carried {@code List<OrderLine>}, which was invisible while
+     * the only listener lived in the ordering context. The moment S11 moved the stock decrement
+     * to {@code catalog} and the cart clear to {@code cart}, the event turned out to be
+     * publishing ordering's internal line type to two other contexts. It carries
+     * {@code Map<ProductId, Quantity>} now — and this rule is why it cannot drift back.
+     *
+     * <p>What counts as carryable: the JDK, {@code shared.domain}, and enums from the event's
+     * own context (an {@code OrderStatus} <em>is</em> part of ordering's published language).
+     * Anything else is internal.
+     */
+    @ArchTest
+    static void published_events_carry_only_shared_kernel_types(JavaClasses classes) {
+        classes().that().areAssignableTo(DomainEvent.class)
+                .and().doNotHaveModifier(com.tngtech.archunit.core.domain.JavaModifier.ABSTRACT)
+                .and().areNotInterfaces()
+                .should(carryOnlyPublishableTypes())
+                .because("an event is a contract between contexts; a consumer must be able to "
+                        + "read every field of it without importing the publisher's internals")
+                .allowEmptyShould(false)
+                .check(classes);
+    }
+
     // ------------------------------------------------------------------------
     // Context-boundary rules
     // ------------------------------------------------------------------------
@@ -304,6 +373,99 @@ class ArchitectureFitnessTest {
     // ------------------------------------------------------------------------
     // The published-language condition
     // ------------------------------------------------------------------------
+
+    /**
+     * No parameter annotated {@code @RequestBody} may be — or contain — a {@code @Document}.
+     * Containers are unwrapped, so {@code List<CartItem>} is caught as surely as
+     * {@code CartItem}: the merge endpoint bound exactly that.
+     */
+    private static ArchCondition<JavaMethod> takeNoRequestBodyThatIsAPersistenceDocument() {
+        return new ArchCondition<>("take no @RequestBody that is a persistence document") {
+            @Override
+            public void check(JavaMethod method, ConditionEvents events) {
+                for (JavaParameter parameter : method.getParameters()) {
+                    if (!parameter.isAnnotatedWith(RequestBody.class)) {
+                        continue;
+                    }
+                    for (JavaClass carried : typesCarriedBy(parameter.getType())) {
+                        if (carried.isAnnotatedWith(Document.class)) {
+                            events.add(SimpleConditionEvent.violated(method, String.format(
+                                    "%s binds '%s' from the request body, and it is a @Document "
+                                            + "— a client would control its stored fields (%s)",
+                                    method.getFullName(), carried.getSimpleName(),
+                                    method.getSourceCodeLocation())));
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Every type a domain event carries must be readable by a consumer in another context:
+     * the JDK, the shared kernel, or an enum from the publisher's own domain.
+     */
+    private static ArchCondition<JavaClass> carryOnlyPublishableTypes() {
+        return new ArchCondition<>("carry only shared-kernel types") {
+            @Override
+            public void check(JavaClass event, ConditionEvents events) {
+                for (JavaField field : event.getAllFields()) {
+                    // getType(), not getRawType(). The erasure of a List<OrderLine> field is
+                    // java.util.List, which is publishable — the leak is entirely in the type
+                    // argument, and that is the exact shape S10's OrderPlaced had.
+                    for (JavaClass carried : typesCarriedBy(field.getType())) {
+                        if (isPublishable(carried, contextOf(event))) {
+                            continue;
+                        }
+                        events.add(SimpleConditionEvent.violated(event, String.format(
+                                "'%s' carries '%s', which is internal to '%s' — a consumer in "
+                                        + "another context cannot read it (%s)",
+                                event.getSimpleName(), carried.getSimpleName(),
+                                contextOf(event), field.getFullName())));
+                    }
+                }
+            }
+        };
+    }
+
+    private static boolean isPublishable(JavaClass carried, String publisherContext) {
+        String name = carried.getPackageName();
+        if (name.startsWith("java.") || name.startsWith("javax.") || carried.isPrimitive()) {
+            return true;
+        }
+        if (name.startsWith(ROOT + ".shared.")) {
+            return true;
+        }
+        // A generic type variable erases to Object; the concrete arguments are checked
+        // separately by the consumer-side rule, which is where they are actually resolvable.
+        if (carried.getName().equals("java.lang.Object")) {
+            return true;
+        }
+        String carriedContext = contextOf(carried);
+        return carriedContext != null
+                && carriedContext.equals(publisherContext)
+                && (carried.isEnum() || carried.isInterface());
+    }
+
+    /**
+     * A type and everything it wraps: the component type of an array, and the type arguments
+     * of a generic. {@code Map<ProductId, Quantity>} yields all three.
+     */
+    private static java.util.Set<JavaClass> typesCarriedBy(JavaType type) {
+        java.util.Set<JavaClass> carried = new java.util.LinkedHashSet<>();
+        collectTypes(type, carried);
+        return carried;
+    }
+
+    private static void collectTypes(JavaType type, java.util.Set<JavaClass> into) {
+        if (type instanceof JavaParameterizedType parameterized) {
+            into.add(parameterized.toErasure());
+            parameterized.getActualTypeArguments().forEach(argument -> collectTypes(argument, into));
+            return;
+        }
+        JavaClass erasure = type.toErasure();
+        into.add(erasure.isArray() ? erasure.getBaseComponentType() : erasure);
+    }
 
     private static ArchCondition<JavaClass> onlyTouchOtherContextsThroughPublishedTypes() {
         return new ArchCondition<>(
