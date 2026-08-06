@@ -3,6 +3,7 @@ package com.dominator.gearly.ordering.application;
 import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
+import com.dominator.gearly.ordering.domain.OrderNotYoursException;
 import com.dominator.gearly.ordering.domain.OrderPage;
 import com.dominator.gearly.ordering.domain.OrderQuery;
 import com.dominator.gearly.ordering.domain.OrderRepository;
@@ -38,17 +39,29 @@ public class OrderQueryService {
     private final OrderRepository orderRepository;
 
     /**
-     * One order by id.
+     * One of the caller's own orders, by id.
      *
-     * <p><b>No ownership check</b>, which is the S12 IDOR fix, not this sprint's: any
-     * authenticated caller can still read any order, payment details and delivery address
-     * included. It is called out here so the gap is visible in the code that has it rather
-     * than only in the plan. The aggregate already exposes {@code isOwnedBy}, so closing it is
-     * one line plus a decision about what the admin frontend relies on.
+     * <p><b>The ownership check is the S12 IDOR fix.</b> Until this sprint this method took an
+     * id and nothing else, so any authenticated customer could read any order by guessing an
+     * id — delivery address, phone number and payment ledger included. The caller is a
+     * parameter now, so the check cannot be forgotten at a call site: there is no signature
+     * that omits it.
+     *
+     * <p>The admin console does not come through here. Its refine dataProvider is based at
+     * {@code /api/admin} ({@code frontend_admin/gearly/src/App.tsx}), so its {@code orders}
+     * resource resolves to {@code /api/admin/orders/{id}} — a separate endpoint on
+     * {@code AdminOrderController}, which is where "any order" is the correct answer and
+     * {@code @PreAuthorize} is what grants it. The only caller of this route is the
+     * storefront's {@code orderService.js}.
      */
-    public Order findById(String orderId) {
-        return orderRepository.findById(OrderId.of(orderId))
+    public Order findById(UserId caller, String orderId) {
+        Order order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (!order.isOwnedBy(caller)) {
+            throw OrderNotYoursException.toView();
+        }
+        return order;
     }
 
     /**

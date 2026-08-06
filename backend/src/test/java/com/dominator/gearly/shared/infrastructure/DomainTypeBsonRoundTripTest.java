@@ -8,8 +8,9 @@ import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.catalog.domain.ProductFixture;
-import com.dominator.gearly.model.Review;
-import com.dominator.gearly.model.User;
+import com.dominator.gearly.reviews.domain.Review;
+import com.dominator.gearly.reviews.domain.ReviewFixture;
+import com.dominator.gearly.identity.domain.UserFixture;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.OrderId;
@@ -183,7 +184,7 @@ class DomainTypeBsonRoundTripTest {
     }
 
     @Nested
-    @DisplayName("ids keep the BSON type the collection already used")
+    @DisplayName("a typed id is a string everywhere except a category id")
     class IdStorage {
 
         /** Category ids are the one id stored as an ObjectId rather than a string. */
@@ -200,24 +201,27 @@ class DomainTypeBsonRoundTripTest {
         }
 
         /**
-         * The asymmetry {@code ObjectIdBackedIdConverters} exists for: the same
-         * {@code ProductId} type is an {@code ObjectId} here and a {@code String} on an
-         * order line.
+         * <b>Rewritten in S12, deliberately.</b> Until this sprint a review stored its three
+         * ids as {@code ObjectId}s while the same Java types were strings on an order line —
+         * the asymmetry S9 absorbed behind {@code ObjectIdBackedIdConverters} and explicitly
+         * left for S12 to decide about. S12 normalized it, so the assertion that pinned the
+         * {@code ObjectId} form now pins the string form, and the order line beside it —
+         * unchanged since S10 — is what makes "the same everywhere" checkable in one test.
+         *
+         * <p>{@code data/seed/migrate.js} step 11 is what moves existing documents.
          */
         @Test
-        void reviewIdsStayObjectIdsWhileOrderLineProductIdsStayStrings() {
-            Review review = new Review();
-            review.setProductId(ProductId.of(PRODUCT_HEX));
-            review.setOrderId(OrderId.of(ORDER_HEX));
-            review.setUserId(UserId.of(USER_HEX));
-            review.setRating(5);
-            mongoTemplate.save(review);
+        void reviewIdsAreStringsLikeEveryOtherTypedIdOutsideCategories() {
+            mongoTemplate.save(ReviewFixture.aReview()
+                    .of(PRODUCT_HEX).from(ORDER_HEX).by(USER_HEX).rated(5).build());
 
             Document rawReview = rawDocument("reviews");
-            assertThat(rawReview.get("productId")).isInstanceOf(ObjectId.class)
-                    .isEqualTo(new ObjectId(PRODUCT_HEX));
-            assertThat(rawReview.get("orderId")).isInstanceOf(ObjectId.class);
-            assertThat(rawReview.get("userId")).isInstanceOf(ObjectId.class);
+            assertThat(rawReview.get("productId")).isInstanceOf(String.class)
+                    .isEqualTo(PRODUCT_HEX);
+            assertThat(rawReview.get("orderId")).isInstanceOf(String.class).isEqualTo(ORDER_HEX);
+            assertThat(rawReview.get("userId")).isInstanceOf(String.class).isEqualTo(USER_HEX);
+            // S12 adopted the Rating value object on this field; it still writes as an int32.
+            assertThat(rawReview.get("rating")).isInstanceOf(Integer.class).isEqualTo(5);
 
             Order order = OrderFixture.anOrder()
                     .withLines(OrderFixture.line(PRODUCT_HEX, "GPU", 0.0, 1))
@@ -229,21 +233,26 @@ class DomainTypeBsonRoundTripTest {
         }
 
         /**
-         * A review written by S9 must still be findable by the queries that predate it —
-         * the rating distribution aggregation matches on an {@code ObjectId} productId.
+         * The queries that read the reviews collection have to reach the normalized documents.
+         *
+         * <p>This is the S12 counterpart of {@code aReviewRemainsQueryableByRawObjectId}: the
+         * old test proved the rating-distribution aggregation could still match on the raw
+         * {@code ObjectId}, and it is now false by construction. What has to be true instead
+         * is that a match on the raw <em>string</em> finds the document — and, because the
+         * failure mode of getting this wrong is silence rather than an exception, that a match
+         * on the {@code ObjectId} finds nothing.
          */
         @Test
-        void aReviewRemainsQueryableByRawObjectId() {
-            Review review = new Review();
-            review.setProductId(ProductId.of(PRODUCT_HEX));
-            review.setUserId(UserId.of(USER_HEX));
-            review.setRating(4);
-            mongoTemplate.save(review);
+        void aReviewIsQueryableByTheRawStringAndNotByAnObjectId() {
+            mongoTemplate.save(ReviewFixture.aReview()
+                    .of(PRODUCT_HEX).by(USER_HEX).rated(4).build());
 
-            long matches = mongoTemplate.getCollection("reviews")
-                    .countDocuments(new Document("productId", new ObjectId(PRODUCT_HEX)));
-
-            assertThat(matches).isEqualTo(1);
+            assertThat(mongoTemplate.getCollection("reviews")
+                    .countDocuments(new Document("productId", PRODUCT_HEX)))
+                    .isEqualTo(1);
+            assertThat(mongoTemplate.getCollection("reviews")
+                    .countDocuments(new Document("productId", new ObjectId(PRODUCT_HEX))))
+                    .isZero();
         }
     }
 
@@ -264,12 +273,33 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void roleStoresItsConstantName() {
-            User user = new User();
-            user.setEmail("ada@example.com");
-            user.setRole(Role.ADMIN);
-            mongoTemplate.save(user);
+            mongoTemplate.save(UserFixture.aUser().withEmail("ada@example.com").asAdmin().build());
 
             assertThat(rawDocument("users").get("role")).isEqualTo("ADMIN");
+        }
+
+        /**
+         * The identity aggregate adopted {@code EmailAddress}, {@code PhoneNumber} and
+         * {@code List<ProductId>} in S12, and none of them may change what is on disk. Read
+         * off the raw {@code org.bson.Document}, not off a reloaded entity: a save-then-load
+         * assertion would pass just as happily with the address stored as a nested
+         * {@code {value: …}}, because it would read back the same way.
+         */
+        @Test
+        void identityValueObjectsStayFlatStringsOnDisk() {
+            mongoTemplate.save(UserFixture.aUser()
+                    .withEmail("ada@example.com")
+                    .withPhone("0123456789")
+                    .favouring(PRODUCT_HEX)
+                    .build());
+
+            Document stored = rawDocument("users");
+
+            assertThat(stored.get("email")).isInstanceOf(String.class).isEqualTo("ada@example.com");
+            assertThat(stored.get("phone")).isInstanceOf(String.class).isEqualTo("0123456789");
+            assertThat(stored.getList("favorites", Object.class))
+                    .allSatisfy(id -> assertThat(id).isInstanceOf(String.class))
+                    .containsExactly(PRODUCT_HEX);
         }
 
         /**
@@ -314,12 +344,10 @@ class DomainTypeBsonRoundTripTest {
 
         @Test
         void reviewTimestampsAreDatesNotStrings() {
-            Review review = new Review();
-            review.setProductId(ProductId.of(PRODUCT_HEX));
-            review.setUserId(UserId.of(USER_HEX));
-            review.setRating(5);
-            review.setAddedAt(Instant.parse("2025-05-23T01:57:38.580Z"));
-            mongoTemplate.save(review);
+            mongoTemplate.save(ReviewFixture.aReview()
+                    .of(PRODUCT_HEX).by(USER_HEX).rated(5)
+                    .persistedAs(null, Instant.parse("2025-05-23T01:57:38.580Z"))
+                    .build());
 
             assertThat(rawDocument("reviews").get("addedAt")).isInstanceOf(java.util.Date.class);
         }

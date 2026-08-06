@@ -3,6 +3,7 @@ package com.dominator.gearly.exception;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.OrderCannotBeCancelledException;
 import com.dominator.gearly.ordering.domain.OrderStatus;
+import com.dominator.gearly.reviews.domain.ReviewNotYoursException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -58,6 +59,11 @@ class GlobalExceptionHandlerTest {
         void stale() {
             throw new OptimisticLockingFailureException(
                     "Cannot save entity 42 with version 3 to collection products");
+        }
+
+        @GetMapping("/boom/not-yours")
+        void notYours() {
+            throw new ReviewNotYoursException();
         }
 
         @GetMapping("/boom/generic")
@@ -151,6 +157,22 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error")
                         .value("This order already has status that cannot be cancelled: SHIPPED"));
+    }
+
+    /**
+     * The regression this was added for: {@code AccessDeniedDomainException} was in the shared
+     * kernel and {@code ReviewNotYoursException} already extended it, but nothing here handled
+     * it — so a correctly refused request fell through to {@link #uncaughtException_maps500_withOpaqueMessage}'s
+     * catch-all and answered <b>500 "Internal server error"</b>. The status is the visible half;
+     * the message is the other half, since the opaque 500 also swallowed the reason.
+     */
+    @Test
+    void aDomainAccessDenial_maps403_withTheDomainsOwnMessage() throws Exception {
+        mvc.perform(get("/boom/not-yours"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error")
+                        .value("You are not allowed to review the items in this order"));
     }
 
     @Test

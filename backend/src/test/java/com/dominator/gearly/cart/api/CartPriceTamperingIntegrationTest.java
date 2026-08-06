@@ -3,6 +3,7 @@ package com.dominator.gearly.cart.api;
 import com.dominator.gearly.cart.domain.Cart;
 import com.dominator.gearly.cart.domain.CartLine;
 import com.dominator.gearly.cart.domain.CartRepository;
+import com.dominator.gearly.cart.domain.GuestCartIds;
 import com.dominator.gearly.catalog.domain.Image;
 import com.dominator.gearly.catalog.domain.Product;
 import com.dominator.gearly.catalog.domain.ProductRepository;
@@ -45,6 +46,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>{@code /api/guest-cart/**} is {@code permitAll}, so the attack needs no account — which
  * is what made this worth fixing first, and is also why no authentication setup appears below.
  *
+ * <p><b>S12:</b> the guest id is signed now, so the requests below present one the server
+ * issued. That is a binding, not an authentication — this test still runs with no account, and
+ * the tampering claim it makes is untouched. {@code GuestCartBindingTest} covers what happens to
+ * an id the server did <em>not</em> issue.
+ *
  * <p>Docker-gated so {@code mvn test} still passes offline; run with Colima up to exercise it.
  */
 @SpringBootTest
@@ -61,8 +67,13 @@ class CartPriceTamperingIntegrationTest {
     @Autowired private ProductRepository products;
     @Autowired private CartRepository carts;
     @Autowired private MongoTemplate mongoTemplate;
+    @Autowired private GuestCartIds guestCartIds;
 
-    private static final String GUEST_ID = "guest-under-test";
+    /** The value a client presents: signed. */
+    private String signedGuestId;
+
+    /** The value stored in {@code carts.guestId}: the raw UUID inside it. */
+    private String guestId;
 
     /** What the storefront actually posts, with the price replaced by a penny. */
     private static final String TAMPERED_BODY = """
@@ -77,6 +88,9 @@ class CartPriceTamperingIntegrationTest {
         mongoTemplate.dropCollection(Cart.class);
         mongoTemplate.dropCollection(Product.class);
 
+        signedGuestId = guestCartIds.issue();
+        guestId = guestCartIds.verify(signedGuestId).orElseThrow();
+
         Product gpu = products.save(Product.create(
                 "RTX 4090", List.of("NVIDIA"), "flagship GPU",
                 Money.of(1599.00), Money.of(1799.00), ProductCondition.NEW, Quantity.of(5),
@@ -88,7 +102,7 @@ class CartPriceTamperingIntegrationTest {
     @DisplayName("a tampered price in the add-to-cart body is ignored — the catalog's price is stored")
     void tamperedPriceHasNoEffectOnWhatIsStored() throws Exception {
         mvc.perform(post("/api/guest-cart/add")
-                        .param("guestId", GUEST_ID)
+                        .param("guestId", signedGuestId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(TAMPERED_BODY.formatted(productId)))
                 .andExpect(status().isOk())
@@ -96,7 +110,7 @@ class CartPriceTamperingIntegrationTest {
                 .andExpect(jsonPath("$.items[0].price").value(1599.00))
                 .andExpect(jsonPath("$.items[0].title").value("RTX 4090"));
 
-        CartLine stored = carts.findByGuest(GUEST_ID).orElseThrow().getItems().getFirst();
+        CartLine stored = carts.findByGuest(guestId).orElseThrow().getItems().getFirst();
 
         assertThat(stored.getPrice()).as("the catalog's price, not the caller's")
                 .isEqualTo(Money.of(1599.00));
@@ -119,7 +133,7 @@ class CartPriceTamperingIntegrationTest {
     @DisplayName("the storefront's full eight-field body is still accepted, not rejected as malformed")
     void theStorefrontsExistingBodyStillWorks() throws Exception {
         mvc.perform(post("/api/guest-cart/add")
-                        .param("guestId", GUEST_ID)
+                        .param("guestId", signedGuestId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(TAMPERED_BODY.formatted(productId)))
                 .andExpect(status().isOk());
@@ -129,12 +143,12 @@ class CartPriceTamperingIntegrationTest {
     @DisplayName("a body naming a product that does not exist is a 404, not a stored line")
     void unknownProductIsRejected() throws Exception {
         mvc.perform(post("/api/guest-cart/add")
-                        .param("guestId", GUEST_ID)
+                        .param("guestId", signedGuestId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(TAMPERED_BODY.formatted("507f1f77bcf86cd799439011")))
                 .andExpect(status().isNotFound());
 
-        assertThat(carts.findByGuest(GUEST_ID))
+        assertThat(carts.findByGuest(guestId))
                 .hasValueSatisfying(cart -> assertThat(cart.getItems()).isEmpty());
     }
 }

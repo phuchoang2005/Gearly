@@ -1,7 +1,8 @@
 // In-place schema migration for the Bookify -> Gearly rename (Sprint 5), the
 // Sprint 7 product-timestamp type change, the Sprint 8 optimistic-locking field,
-// the Sprint 9 category/review timestamp normalization, and the Sprint 11
-// product rating-rollup repair.
+// the Sprint 9 category/review timestamp normalization, the Sprint 11
+// product rating-rollup repair, and the Sprint 12 review-rating clamp,
+// rating-rollup recompute and review-id normalization.
 //
 // Renames the `books` collection -> `products` and the `bookId` reference key
 // -> `productId` everywhere it appears (top-level in reviews/blogPosts, nested
@@ -246,6 +247,166 @@
 
     if (ops.length) db.products.bulkWrite(ops);
     print(`products: rating rollup repaired in ${ops.length} docs`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 9 (S12) - clamp any review rating that is not a legal star count.
+  //
+  // Review.rating is a Rating value object now, and Rating is 1..5 by
+  // construction. S9 built the type and deliberately left this field an int,
+  // because a document holding an out-of-range value had to stay readable until
+  // something owned the reviews context. Something does, so the field changed -
+  // and from this point a stored rating outside 1..5 does not deserialize at
+  // all. It is not a bad number on a screen; the document becomes unreadable and
+  // every query that touches it fails.
+  //
+  // Such documents are reachable: until S11 the rating arrived as an unchecked
+  // int and was folded straight into the product's running total, which is what
+  // the S8 characterization suite pinned as a 900-star review. The seed dumps
+  // are clean (all 91 reviews are 2..5), so this step exists for live databases.
+  //
+  // Clamping rather than deleting: the review's text is the customer's and is
+  // still worth reading, and a rating outside the scale carries no information
+  // about which end of it was meant. Idempotent - a second run finds nothing.
+  if (names.includes("reviews")) {
+    const ops = [];
+    db.reviews
+      .find(
+        {
+          $or: [
+            { rating: { $lt: 1 } },
+            { rating: { $gt: 5 } },
+            { rating: { $not: { $type: "int" } } },
+          ],
+        },
+        { rating: 1 }
+      )
+      .forEach((doc) => {
+        const raw = typeof doc.rating === "number" ? Math.round(doc.rating) : 0;
+        const value = raw < 1 ? 1 : raw > 5 ? 5 : raw;
+        ops.push({
+          updateOne: {
+            filter: { _id: doc._id },
+            update: { $set: { rating: new NumberInt(value) } },
+          },
+        });
+      });
+
+    if (ops.length) db.reviews.bulkWrite(ops);
+    print(`reviews: ratings clamped into 1..5 in ${ops.length} docs`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 10 (S12) - recompute every product's rating rollup from its APPROVED
+  // reviews.
+  //
+  // WHY THIS IS NOT COSMETIC. The rollup used to be written at submission time:
+  // ReviewService.createReview called product.addRating(...) in the same loop
+  // that created the reviews, while every one of them was still PENDING. So
+  // averageRating counted reviews a moderator later rejected and nobody ever
+  // saw - while the star histogram on the same product page is drawn from an
+  // aggregation that filters { status: 'APPROVED' }. The two numbers were
+  // computed from different sets of reviews by design, so they could never agree.
+  //
+  // S12 moves the rollup onto a ReviewApproved domain event, which fixes it
+  // going forward. This step fixes what is already stored, and it must run once
+  // for the two numbers to start out consistent.
+  //
+  // WHAT IT WILL DO TO THE DEMO DATA, stated plainly because it is visible:
+  // in the shipped seed dumps every one of the 51 products disagrees with its
+  // own reviews, because the stored rollups are fabricated marketing numbers
+  // rather than the sum of anything (several store a fractional totalRating -
+  // 84.6, 202.5 - in a field the application reads as an int). The RTX 4090, for
+  // instance, stores 30 ratings averaging 4.9 and has 2 approved reviews
+  // averaging 4.5. After this step the displayed review counts drop to what the
+  // reviews collection actually contains. That is the point: the product page
+  // already contradicted itself, showing "4.9 (30 reviews)" beside a histogram
+  // totalling 2.
+  //
+  // Idempotent by construction - a recompute of a correct rollup is a no-op.
+  // Run step 9 first: this one counts only ratings within 1..5.
+  if (names.includes("products") && names.includes("reviews")) {
+    const tally = {};
+    db.reviews
+      .find({ status: "APPROVED" }, { productId: 1, rating: 1 })
+      .forEach((review) => {
+        const stars = review.rating;
+        if (typeof stars !== "number" || stars < 1 || stars > 5) return;
+        const key = String(review.productId);
+        if (!tally[key]) tally[key] = { count: 0, total: 0 };
+        tally[key].count += 1;
+        tally[key].total += stars;
+      });
+
+    const ops = [];
+    db.products
+      .find({}, { ratingCount: 1, totalRating: 1, averageRating: 1 })
+      .forEach((product) => {
+        const rollup = tally[String(product._id)] || { count: 0, total: 0 };
+        // the same Math.round(avg * 100) / 100 ProductRating.average() uses
+        const average =
+          rollup.count === 0
+            ? 0
+            : Math.round((rollup.total / rollup.count) * 100) / 100;
+
+        if (
+          rollup.count !== (product.ratingCount || 0) ||
+          rollup.total !== (product.totalRating || 0) ||
+          average !== (product.averageRating || 0)
+        ) {
+          ops.push({
+            updateOne: {
+              filter: { _id: product._id },
+              update: {
+                $set: {
+                  ratingCount: rollup.count,
+                  totalRating: rollup.total,
+                  averageRating: average,
+                },
+              },
+            },
+          });
+        }
+      });
+
+    if (ops.length) db.products.bulkWrite(ops);
+    print(
+      `products: rating rollup recomputed from APPROVED reviews in ${ops.length} docs`
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 11 (S12) - reviews.productId/orderId/userId: ObjectId -> String.
+  //
+  // The last place in the database where a typed id had two BSON forms. The same
+  // ProductId is a plain string in orders.items[].productId and carts.items[],
+  // and Order.userId is a string, but all three ids on a review were stored as
+  // ObjectIds. S9 could not fix it - it was forbidden from moving stored bytes -
+  // so it absorbed the asymmetry behind per-property @ValueConverters and left a
+  // note saying S12 owned the decision. This is that decision.
+  //
+  // What forced it: moving Review into reviews/domain/ put it under the ArchUnit
+  // rule domain_does_not_depend_on_its_own_infrastructure, and
+  // @ValueConverter(ObjectIdBackedIdConverters...) is a domain field naming an
+  // infrastructure class. The alternatives were to relocate a class that exists
+  // to describe a storage encoding into the domain, or to exempt annotation
+  // members from the rule. Normalizing removes the asymmetry instead of
+  // annotating around it, and it is what S9 anticipated.
+  //
+  // Run this before starting the application: with the converters gone, a stored
+  // ObjectId no longer maps onto a ProductId/OrderId/UserId field and the
+  // document fails to read.
+  //
+  // Type-guarded on $type: "objectId" and reported per field, so a re-run is a
+  // no-op and a collection already holding strings is left alone.
+  if (names.includes("reviews")) {
+    for (const field of ["productId", "orderId", "userId"]) {
+      const res = db.reviews.updateMany(
+        { [field]: { $type: "objectId" } },
+        [{ $set: { [field]: { $toString: "$" + field } } }]
+      );
+      print(`reviews: ${field} ObjectId -> String in ${res.modifiedCount} docs`);
+    }
   }
 
   print("Migration complete.");

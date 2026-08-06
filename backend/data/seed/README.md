@@ -42,3 +42,21 @@ mongosh "mongodb://localhost:27017/gearly" migrate.js
 
 > **Snapshot the database before migrating.** `mongodump` above doubles as the
 > snapshot; keep the archive to roll back.
+
+### Two S12 steps you should know about before running it
+
+Both are in `migrate.js` with the full reasoning; this is the short version.
+
+- **Step 10 recomputes every product's rating rollup from its `APPROVED` reviews,** and on the
+  shipped dumps that changed all 51 products — the stored numbers were demo values rather than
+  the sum of anything. Displayed review counts drop accordingly. The rollup used to be written
+  at submission time while reviews were still `PENDING`, so `averageRating` counted reviews a
+  moderator later rejected, while the histogram beside it filters `status:'APPROVED'`. The two
+  could never agree; now they do.
+- **Step 11 converts `reviews.productId`/`orderId`/`userId` from `ObjectId` to `String`.**
+  **Run it before starting the application.** Those were the last fields storing a typed id as an
+  `ObjectId` while the same type is a plain string everywhere else; the converters that absorbed
+  the difference are gone, so an unconverted document no longer maps on read.
+
+The dumps in this directory ship already migrated — re-running `migrate.js` against a database
+seeded from them prints zero for every step.

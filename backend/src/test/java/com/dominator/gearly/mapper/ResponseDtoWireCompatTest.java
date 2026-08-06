@@ -14,7 +14,8 @@ import com.dominator.gearly.catalog.domain.Image;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.catalog.domain.Product;
-import com.dominator.gearly.model.User;
+import com.dominator.gearly.identity.domain.User;
+import com.dominator.gearly.identity.domain.UserFixture;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.PersonName;
@@ -323,8 +324,7 @@ class ResponseDtoWireCompatTest {
 
         @Test
         void roleSerializesAsItsConstantName() {
-            User user = new User();
-            user.setRole(Role.ADMIN);
+            User user = UserFixture.aUser().asAdmin().build();
 
             assertThat(json.valueToTree(user).get("role").asText()).isEqualTo("ADMIN");
         }
@@ -335,8 +335,7 @@ class ResponseDtoWireCompatTest {
          */
         @Test
         void personNameStaysThreeFlatFieldsAndAddsNoNameProperty() {
-            User user = new User();
-            user.setName(PersonName.of("Jane", "Doe"));
+            User user = UserFixture.aUser().named("Jane", "Doe").build();
 
             JsonNode node = json.valueToTree(user);
 

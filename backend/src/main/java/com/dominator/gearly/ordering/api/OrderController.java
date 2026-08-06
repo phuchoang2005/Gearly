@@ -8,7 +8,7 @@ import com.dominator.gearly.ordering.application.OrderQueryService;
 import com.dominator.gearly.ordering.application.PlaceOrderCommand;
 import com.dominator.gearly.ordering.application.PlaceOrderService;
 import com.dominator.gearly.ordering.domain.Order;
-import com.dominator.gearly.security.AuthenticatedUser;
+import com.dominator.gearly.platform.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -71,9 +71,18 @@ public class OrderController {
         return ResponseEntity.ok(new MessageResponse("Order cancelled successfully."));
     }
 
+    /**
+     * One of the caller's own orders. The principal is unwrapped and passed in like every
+     * other call here — which is what closes the S12 IDOR: until this sprint this was the one
+     * method on this controller that took an id and no caller.
+     */
     @GetMapping("/{orderId}")
-    public ResponseEntity<OrderResponseDTO> getOrderById(@PathVariable String orderId) {
-        return ResponseEntity.ok(orderResponseMapper.toResponseDto(orderQueryService.findById(orderId)));
+    public ResponseEntity<OrderResponseDTO> getOrderById(
+            @AuthenticationPrincipal AuthenticatedUser authUser,
+            @PathVariable String orderId
+    ) {
+        return ResponseEntity.ok(orderResponseMapper.toResponseDto(
+                orderQueryService.findById(callerId(authUser), orderId)));
     }
 
     @PostMapping
@@ -97,7 +106,7 @@ public class OrderController {
     }
 
     private UserId callerId(AuthenticatedUser authUser) {
-        return UserId.of(authUser.getUser().getId());
+        return authUser.id();
     }
 
     private PlaceOrderCommand toCommand(OrderCreationRequestDTO request) {

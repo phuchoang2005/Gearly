@@ -1,7 +1,7 @@
 package com.dominator.gearly.catalog.api;
 
 import com.dominator.gearly.catalog.application.ProductQueryService;
-import com.dominator.gearly.dto.WishlistRequestDTO;
+import com.dominator.gearly.catalog.api.WishlistRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;

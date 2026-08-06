@@ -23,9 +23,9 @@
         "alt": "Intel Core i3-12100F"
       }
     ],
-    "averageRating": 4.5,
-    "ratingCount": 12,
-    "totalRating": 54,
+    "averageRating": 4.33,
+    "ratingCount": 6,
+    "totalRating": 26,
     "addedAt": {
       "$date": "2025-12-10T08:30:00Z"
     },
@@ -61,9 +61,9 @@
         "alt": "Intel Core i5-12400F"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 20,
-    "totalRating": 92,
+    "averageRating": 4.4,
+    "ratingCount": 5,
+    "totalRating": 22,
     "addedAt": {
       "$date": "2025-12-12T10:20:00Z"
     },
@@ -99,9 +99,9 @@
         "alt": "Intel Core i7-13700K"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 15,
-    "totalRating": 72,
+    "averageRating": 3.75,
+    "ratingCount": 4,
+    "totalRating": 15,
     "addedAt": {
       "$date": "2025-12-11T14:15:00Z"
     },
@@ -137,9 +137,9 @@
         "alt": "AMD Ryzen 5 5600"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 18,
-    "totalRating": 84.6,
+    "averageRating": 4.67,
+    "ratingCount": 3,
+    "totalRating": 14,
     "addedAt": {
       "$date": "2025-12-18T09:00:00Z"
     },
@@ -175,9 +175,9 @@
         "alt": "AMD Ryzen 7 5800X"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 14,
-    "totalRating": 64.4,
+    "averageRating": 4.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-14T20:10:00Z"
     },
@@ -213,9 +213,9 @@
         "alt": "AMD Ryzen 9 7950X"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 10,
-    "totalRating": 48,
+    "averageRating": 4.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-10T11:45:00Z"
     },
@@ -251,9 +251,9 @@
         "alt": "NVIDIA GeForce RTX 3060 12GB"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 25,
-    "totalRating": 115,
+    "averageRating": 4.5,
+    "ratingCount": 4,
+    "totalRating": 18,
     "addedAt": {
       "$date": "2025-12-16T15:00:00Z"
     },
@@ -289,9 +289,9 @@
         "alt": "NVIDIA GeForce RTX 4070 12GB"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 12,
-    "totalRating": 57.6,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-19T10:00:00Z"
     },
@@ -327,9 +327,9 @@
         "alt": "NVIDIA GeForce RTX 4090 24GB"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 30,
-    "totalRating": 147,
+    "averageRating": 4.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-13T12:00:00Z"
     },
@@ -366,8 +366,8 @@
       }
     ],
     "averageRating": 4.5,
-    "ratingCount": 15,
-    "totalRating": 67.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-17T08:45:00Z"
     },
@@ -403,9 +403,9 @@
         "alt": "AMD Radeon RX 7800 XT 16GB"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 10,
-    "totalRating": 47,
+    "averageRating": 4.67,
+    "ratingCount": 3,
+    "totalRating": 14,
     "addedAt": {
       "$date": "2025-12-20T11:00:00Z"
     },
@@ -442,8 +442,8 @@
       }
     ],
     "averageRating": 4.5,
-    "ratingCount": 45,
-    "totalRating": 202.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-11T09:30:00Z"
     },
@@ -479,9 +479,9 @@
         "alt": "Corsair Vengeance 32GB DDR5"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 25,
-    "totalRating": 115,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-14T16:20:00Z"
     },
@@ -517,9 +517,9 @@
         "alt": "G.Skill Trident Z5 RGB"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 18,
-    "totalRating": 84.6,
+    "averageRating": 4,
+    "ratingCount": 2,
+    "totalRating": 8,
     "addedAt": {
       "$date": "2025-12-18T13:40:00Z"
     },
@@ -555,9 +555,9 @@
         "alt": "Kingston Fury Beast 64GB"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 10,
-    "totalRating": 46,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-12T07:15:00Z"
     },
@@ -593,9 +593,9 @@
         "alt": "Samsung 970 EVO Plus"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 55,
-    "totalRating": 258.5,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-15T14:00:00Z"
     },
@@ -631,9 +631,9 @@
         "alt": "Samsung 990 Pro 2TB"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 42,
-    "totalRating": 205.8,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-19T11:00:00Z"
     },
@@ -669,9 +669,9 @@
         "alt": "WD Black SN850X"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 33,
-    "totalRating": 155.1,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-20T08:00:00Z"
     },
@@ -707,9 +707,9 @@
         "alt": "Crucial P5 Plus 2TB"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 18,
-    "totalRating": 82.8,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-13T10:30:00Z"
     },
@@ -745,9 +745,9 @@
         "alt": "Seagate Barracuda 2TB"
       }
     ],
-    "averageRating": 4.4,
-    "ratingCount": 60,
-    "totalRating": 264,
+    "averageRating": 4,
+    "ratingCount": 3,
+    "totalRating": 12,
     "addedAt": {
       "$date": "2025-12-10T09:00:00Z"
     },
@@ -783,9 +783,9 @@
         "alt": "WD Blue 4TB"
       }
     ],
-    "averageRating": 4.5,
-    "ratingCount": 22,
-    "totalRating": 99,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-14T14:10:00Z"
     },
@@ -821,9 +821,9 @@
         "alt": "ASUS ROG STRIX B550-F"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 14,
-    "totalRating": 64.4,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-16T17:30:00Z"
     },
@@ -859,9 +859,9 @@
         "alt": "MSI MAG B660 Tomahawk"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 9,
-    "totalRating": 42.3,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-11T12:00:00Z"
     },
@@ -897,9 +897,9 @@
         "alt": "Gigabyte Z790 AORUS Elite"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 7,
-    "totalRating": 33.6,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-18T10:45:00Z"
     },
@@ -935,9 +935,9 @@
         "alt": "Corsair RM650x 650W"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 28,
-    "totalRating": 131.6,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-12T15:20:00Z"
     },
@@ -973,9 +973,9 @@
         "alt": "Corsair RM850x 850W"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 16,
-    "totalRating": 76.8,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-17T11:00:00Z"
     },
@@ -1011,9 +1011,9 @@
         "alt": "Seasonic Focus GX-750"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 12,
-    "totalRating": 56.4,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-13T08:30:00Z"
     },
@@ -1049,9 +1049,9 @@
         "alt": "NZXT H510 Flow"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 40,
-    "totalRating": 184,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-15T09:45:00Z"
     },
@@ -1087,9 +1087,9 @@
         "alt": "Lian Li Lancool 216"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 25,
-    "totalRating": 120,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-19T14:30:00Z"
     },
@@ -1125,9 +1125,9 @@
         "alt": "Corsair 4000D Airflow"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 35,
-    "totalRating": 164.5,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-10T12:00:00Z"
     },
@@ -1163,9 +1163,9 @@
         "alt": "Noctua NH-D15"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 50,
-    "totalRating": 245,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-14T08:15:00Z"
     },
@@ -1201,9 +1201,9 @@
         "alt": "DeepCool AK620"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 20,
-    "totalRating": 92,
+    "averageRating": 4.33,
+    "ratingCount": 3,
+    "totalRating": 13,
     "addedAt": {
       "$date": "2025-12-16T11:20:00Z"
     },
@@ -1240,8 +1240,8 @@
       }
     ],
     "averageRating": 4.5,
-    "ratingCount": 18,
-    "totalRating": 81,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-20T16:00:00Z"
     },
@@ -1277,9 +1277,9 @@
         "alt": "LG 27GP850-B"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 15,
-    "totalRating": 70.5,
+    "averageRating": 3.5,
+    "ratingCount": 2,
+    "totalRating": 7,
     "addedAt": {
       "$date": "2025-12-12T13:40:00Z"
     },
@@ -1315,9 +1315,9 @@
         "alt": "ASUS TUF VG27AQ"
       }
     ],
-    "averageRating": 4.6,
-    "ratingCount": 12,
-    "totalRating": 55.2,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-15T10:00:00Z"
     },
@@ -1353,9 +1353,9 @@
         "alt": "Samsung Odyssey G7"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 20,
-    "totalRating": 96,
+    "averageRating": 5,
+    "ratingCount": 2,
+    "totalRating": 10,
     "addedAt": {
       "$date": "2025-12-18T15:20:00Z"
     },
@@ -1391,9 +1391,9 @@
         "alt": "Intel Core i9-13900K"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 10,
-    "totalRating": 49,
+    "averageRating": 4.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-10T08:00:00Z"
     },
@@ -1429,9 +1429,9 @@
         "alt": "AMD Ryzen 7 7700X"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 15,
-    "totalRating": 70.5,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-11T12:00:00Z"
     },
@@ -1467,9 +1467,9 @@
         "alt": "NVIDIA GeForce RTX 4060 Ti"
       }
     ],
-    "averageRating": 4.5,
-    "ratingCount": 20,
-    "totalRating": 90,
+    "averageRating": 4,
+    "ratingCount": 2,
+    "totalRating": 8,
     "addedAt": {
       "$date": "2025-12-13T10:00:00Z"
     },
@@ -1505,9 +1505,9 @@
         "alt": "AMD Radeon RX 7900 XTX"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 10,
-    "totalRating": 48,
+    "averageRating": 4,
+    "ratingCount": 2,
+    "totalRating": 8,
     "addedAt": {
       "$date": "2025-12-14T09:30:00Z"
     },
@@ -1543,9 +1543,9 @@
         "alt": "ASUS ROG Maximus Z790 Hero"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 5,
-    "totalRating": 24.5,
+    "averageRating": 4.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-15T15:00:00Z"
     },
@@ -1581,9 +1581,9 @@
         "alt": "Corsair RM1000x"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 12,
-    "totalRating": 57.6,
+    "averageRating": 3.5,
+    "ratingCount": 2,
+    "totalRating": 7,
     "addedAt": {
       "$date": "2025-12-16T11:00:00Z"
     },
@@ -1619,9 +1619,9 @@
         "alt": "NZXT H9 Elite"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 8,
-    "totalRating": 38.4,
+    "averageRating": 3.5,
+    "ratingCount": 2,
+    "totalRating": 7,
     "addedAt": {
       "$date": "2025-12-17T09:00:00Z"
     },
@@ -1657,9 +1657,9 @@
         "alt": "Arctic Liquid Freezer II 360"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 25,
-    "totalRating": 122.5,
+    "averageRating": 4.5,
+    "ratingCount": 2,
+    "totalRating": 9,
     "addedAt": {
       "$date": "2025-12-18T10:20:00Z"
     },
@@ -1695,9 +1695,9 @@
         "alt": "Logitech G502 X"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 30,
-    "totalRating": 144,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-19T14:45:00Z"
     },
@@ -1733,9 +1733,9 @@
         "alt": "Razer DeathAdder V3 Pro"
       }
     ],
-    "averageRating": 4.7,
-    "ratingCount": 22,
-    "totalRating": 103.4,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-11T08:00:00Z"
     },
@@ -1771,9 +1771,9 @@
         "alt": "SteelSeries Apex Pro"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 15,
-    "totalRating": 73.5,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-12T13:30:00Z"
     },
@@ -1809,9 +1809,9 @@
         "alt": "Kingston NV2 1TB"
       }
     ],
-    "averageRating": 4.5,
-    "ratingCount": 50,
-    "totalRating": 225,
+    "averageRating": 4,
+    "ratingCount": 1,
+    "totalRating": 4,
     "addedAt": {
       "$date": "2025-12-13T10:15:00Z"
     },
@@ -1847,9 +1847,9 @@
         "alt": "MSI RTX 4080 Super"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 5,
-    "totalRating": 24,
+    "averageRating": 3.5,
+    "ratingCount": 2,
+    "totalRating": 7,
     "addedAt": {
       "$date": "2025-12-14T12:00:00Z"
     },
@@ -1885,9 +1885,9 @@
         "alt": "ASUS ROG Swift PG279QM"
       }
     ],
-    "averageRating": 4.9,
-    "ratingCount": 8,
-    "totalRating": 39.2,
+    "averageRating": 5,
+    "ratingCount": 1,
+    "totalRating": 5,
     "addedAt": {
       "$date": "2025-12-15T09:00:00Z"
     },
@@ -1923,9 +1923,9 @@
         "alt": "Corsair Dominator Titanium"
       }
     ],
-    "averageRating": 4.8,
-    "ratingCount": 10,
-    "totalRating": 48,
+    "averageRating": 3,
+    "ratingCount": 1,
+    "totalRating": 3,
     "addedAt": {
       "$date": "2025-12-16T11:30:00Z"
     },

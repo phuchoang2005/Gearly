@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,10 +23,19 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 
-/** The admin console's catalog management. Same routes, same shapes. */
+/**
+ * The admin console's catalog management. Same routes, same shapes.
+ *
+ * <p><b>Defence in depth.</b> {@code @PreAuthorize("hasRole('ADMIN')")} repeats the
+ * {@code /api/admin/**} URL rule from {@code SecurityConfig} at the class level rather than
+ * replacing it, for the reason {@code AdminUserController} spells out: the URL rule is a prefix
+ * match on a string, and every endpoint that has ever escaped one did so by being mounted
+ * somewhere the pattern did not reach. The annotation travels with the code.
+ */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/admin/products")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminProductController {
 
     private final ProductQueryService productQueryService;
