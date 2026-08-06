@@ -73,3 +73,7 @@ Thumbs.db
 
 structure.txt
 .fuse_hidden*
+
+backend/.classpath
+backend/bin
+backend/.settings
