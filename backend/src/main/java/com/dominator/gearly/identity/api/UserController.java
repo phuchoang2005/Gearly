@@ -1,6 +1,6 @@
 package com.dominator.gearly.identity.api;
 
-import com.dominator.gearly.dto.MessageResponse;
+import com.dominator.gearly.shared.api.MessageResponse;
 import com.dominator.gearly.identity.application.AuthService;
 import com.dominator.gearly.identity.application.RegisterUserCommand;
 import com.dominator.gearly.identity.application.UserProfileService;

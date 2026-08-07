@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.shared.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -85,11 +85,6 @@ public class MongoProductRepository implements ProductRepository {
         return products.findByTitleContainingIgnoreCase(title);
     }
 
-    @Override
-    public List<Product> findByAnyCategory(List<CategoryId> categoryIds) {
-        return products.findByCategoryIdsIn(categoryIds);
-    }
-
     /** The threshold arrives as a parameter, where it used to be {@code 10} inside a {@code @Query}. */
     @Override
     public List<Product> findLowStock(Quantity threshold) {

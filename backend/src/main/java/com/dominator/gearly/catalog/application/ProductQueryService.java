@@ -47,7 +47,6 @@ public class ProductQueryService {
 
     private final ProductRepository products;
     private final CategoryNameProjection categoryNames;
-    private final CategoryQueryService categories;
     private final ProductResponseMapper mapper;
     private final LowStockThreshold lowStockThreshold;
 
@@ -113,29 +112,6 @@ public class ProductQueryService {
     public List<ProductInLowStockDTO> getLowStockProducts() {
         return products.findLowStock(lowStockThreshold.value()).stream()
                 .map(mapper::toLowStockDto)
-                .toList();
-    }
-
-    /** The assistant's catalog lookup: a handful of matches for a free-text phrase. */
-    public List<ProductSummaryDTO> findByTitle(String phrase) {
-        if (phrase == null || phrase.isBlank()) {
-            return List.of();
-        }
-        return products.findByTitleContaining(phrase.trim()).stream()
-                .limit(5)
-                .map(mapper::toSummaryDto)
-                .toList();
-    }
-
-    /** The assistant's category lookup. */
-    public List<ProductSummaryDTO> findByCategoryName(String categoryName) {
-        List<CategoryId> ids = categories.idsMatching(categoryName);
-        if (ids.isEmpty()) {
-            return List.of();
-        }
-        return products.findByAnyCategory(ids).stream()
-                .limit(5)
-                .map(mapper::toSummaryDto)
                 .toList();
     }
 
