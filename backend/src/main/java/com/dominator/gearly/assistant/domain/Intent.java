@@ -1,8 +1,8 @@
-package com.dominator.gearly.ai;
+package com.dominator.gearly.assistant.domain;
 
 /**
- * High-level intent categories produced by {@link IntentClassifierService} and
- * consumed by {@link AiRouter}. Replaces the free-form intent strings the model
+ * High-level intent categories produced by {@link IntentClassifier} and
+ * consumed by the router. Replaces the free-form intent strings the model
  * used to emit.
  */
 public enum Intent {

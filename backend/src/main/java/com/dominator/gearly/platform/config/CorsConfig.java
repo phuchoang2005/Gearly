@@ -1,4 +1,4 @@
-package com.dominator.gearly.config;
+package com.dominator.gearly.platform.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

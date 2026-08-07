@@ -1,4 +1,4 @@
-package com.dominator.gearly.ai;
+package com.dominator.gearly.assistant.infrastructure;
 
 import java.io.IOException;
 import java.net.URI;
@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Thin HTTP client for the GitHub Models chat/completions endpoint. Centralizes
- * the request wiring that {@link IntentClassifierService} and
- * {@code GithubModelsService} previously duplicated; the caller supplies the
+ * the request wiring that {@link GithubModelsIntentClassifier} and
+ * {@code GithubModelsConversation} previously duplicated; the caller supplies the
  * bearer token (they use different ones) and the request payload.
  */
 @Component

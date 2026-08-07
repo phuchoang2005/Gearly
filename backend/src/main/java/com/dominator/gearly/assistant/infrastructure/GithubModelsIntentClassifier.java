@@ -1,4 +1,9 @@
-package com.dominator.gearly.ai;
+package com.dominator.gearly.assistant.infrastructure;
+
+import com.dominator.gearly.assistant.domain.AiDecision;
+import com.dominator.gearly.assistant.domain.Intent;
+import com.dominator.gearly.assistant.domain.IntentClassifier;
+import com.dominator.gearly.assistant.domain.NavigationTarget;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -6,10 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class IntentClassifierService {
+public class GithubModelsIntentClassifier implements IntentClassifier {
 
     private static final String MODEL = "meta/meta-llama-3.1-8b-instruct";
 
@@ -19,6 +26,7 @@ public class IntentClassifierService {
     @Value("${github.models.secondToken}")
     private String token;
 
+    @Override
     public AiDecision classify(String userMessage) {
         try {
             JSONObject payload = new JSONObject()
@@ -42,19 +50,22 @@ public class IntentClassifierService {
 
             JSONObject parsed = new JSONObject(message.getString("content"));
 
-            AiDecision decision = new AiDecision();
-            decision.setIntent(Intent.from(parsed.optString("intent", null)));
-            decision.setContent(parsed.optString("content", ""));
-            decision.setSearchQuery(parsed.optString("search_query", null));
-            decision.setTarget(parseTarget(parsed.optString("target", "UNKNOWN")));
-            return decision;
+            // The message is carried on the decision from the start. It used to be assigned
+            // by ChatController after this method returned, which left it null for any other
+            // caller — including the fallback below, whose handler needs it to search.
+            return new AiDecision(
+                    Intent.from(parsed.optString("intent", null)),
+                    parseTarget(parsed.optString("target", "UNKNOWN")),
+                    parsed.optString("content", ""),
+                    userMessage,
+                    parsed.optString("search_query", null));
 
         } catch (Exception e) {
-            AiDecision fallback = new AiDecision();
-            fallback.setIntent(Intent.UNRELATED);
-            fallback.setTarget(NavigationTarget.UNKNOWN);
-            fallback.setContent("Sorry, I can only help with this store.");
-            return fallback;
+            // Deliberately not rethrown: a model outage should degrade the chat, not break the
+            // socket. Logged, which it was not before — the classifier failing and the customer
+            // genuinely asking something off-topic produced the identical reply and no trace.
+            log.warn("Intent classification failed; answering as UNRELATED", e);
+            return AiDecision.unrelated(userMessage, "Sorry, I can only help with this store.");
         }
     }
 

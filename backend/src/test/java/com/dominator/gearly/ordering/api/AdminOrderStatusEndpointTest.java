@@ -1,6 +1,6 @@
 package com.dominator.gearly.ordering.api;
 
-import com.dominator.gearly.config.CorsConfig;
+import com.dominator.gearly.platform.config.CorsConfig;
 import com.dominator.gearly.platform.security.SecurityConfig;
 import com.dominator.gearly.exception.GlobalExceptionHandler;
 import com.dominator.gearly.ordering.application.AdminOrderPatchCommand;

@@ -1,4 +1,4 @@
-package com.dominator.gearly.websocket;
+package com.dominator.gearly.assistant.api;
 
 public class ChatMessage {
     private String sessionId;

@@ -1,4 +1,4 @@
-package com.dominator.gearly.ai;
+package com.dominator.gearly.assistant.domain;
 
 public enum NavigationTarget {
     HOME,

@@ -1,6 +1,6 @@
 package com.dominator.gearly.catalog.api;
 
-import com.dominator.gearly.config.CorsConfig;
+import com.dominator.gearly.platform.config.CorsConfig;
 import com.dominator.gearly.platform.security.SecurityConfig;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.platform.security.JwtAuthenticationFilter;

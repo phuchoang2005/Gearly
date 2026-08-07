@@ -1,4 +1,4 @@
-package com.dominator.gearly.ai;
+package com.dominator.gearly.assistant.infrastructure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

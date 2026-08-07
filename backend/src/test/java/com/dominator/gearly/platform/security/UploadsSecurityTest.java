@@ -1,6 +1,6 @@
 package com.dominator.gearly.platform.security;
 
-import com.dominator.gearly.config.CorsConfig;
+import com.dominator.gearly.platform.config.CorsConfig;
 import com.dominator.gearly.platform.security.SecurityConfig;
 import com.dominator.gearly.catalog.api.MediaController;
 import com.dominator.gearly.identity.domain.AccessTokens;

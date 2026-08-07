@@ -1,4 +1,4 @@
-package com.dominator.gearly.service;
+package com.dominator.gearly.assistant.infrastructure;
 
 import java.io.IOException;
 
@@ -7,8 +7,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.dominator.gearly.ai.AiPrompts;
-import com.dominator.gearly.ai.GithubModelsClient;
+import com.dominator.gearly.assistant.domain.ConversationalModel;
 
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.message.AiMessage;
@@ -19,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GithubModelsService {
+public class GithubModelsConversation implements ConversationalModel {
 
     private static final String MODEL = "meta/meta-llama-3.1-8b-instruct";
 
@@ -30,7 +29,8 @@ public class GithubModelsService {
     @Value("${github.models.token}") // from application.properties
     private String githubToken;
 
-    public String getAIResponse(String sessionId, String userMessage) {
+    @Override
+    public String reply(String sessionId, String userMessage) {
         try {
             chatMemoryService.addUserMessage(sessionId, userMessage);
 

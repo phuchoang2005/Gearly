@@ -1,6 +1,6 @@
 package com.dominator.gearly.identity.api;
 
-import com.dominator.gearly.config.CorsConfig;
+import com.dominator.gearly.platform.config.CorsConfig;
 import com.dominator.gearly.exception.UnauthorizedException;
 import com.dominator.gearly.identity.application.AuthService;
 import com.dominator.gearly.identity.application.UserProfileService;

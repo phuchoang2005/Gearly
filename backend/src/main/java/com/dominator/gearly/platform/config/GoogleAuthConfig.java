@@ -1,4 +1,4 @@
-package com.dominator.gearly.config;
+package com.dominator.gearly.platform.config;
 
 import com.google.auth.oauth2.TokenVerifier;
 import org.springframework.beans.factory.annotation.Value;
