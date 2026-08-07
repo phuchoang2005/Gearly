@@ -1,9 +1,18 @@
-package com.dominator.gearly.model;
+package com.dominator.gearly.analytics.api;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
+/**
+ * The reporting window a dashboard query is asked for, bound straight from a {@code ?period=}
+ * query parameter.
+ *
+ * <p>Was {@code model.TimeFrame} — and until S13 it was the only class in the whole
+ * {@code model/} package with any behaviour at all ({@link #getStartInstant()}), which the
+ * refactoring plan cites as the measure of how anemic that package was. It belongs to the read
+ * side: nothing writes it, nothing stores it, and it exists to shape a query.
+ */
 public enum TimeFrame {
     ALL,
     ONE_MONTH,

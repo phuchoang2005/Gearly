@@ -10,7 +10,6 @@ import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.platform.security.JwtAuthenticationFilter;
 import com.dominator.gearly.identity.domain.AccessTokens;
-import com.dominator.gearly.service.admin.OrderAnalyticsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,6 @@ class AdminOrderStatusEndpointTest {
     private MockMvc mvc;
 
     @MockBean private AdminOrderService orderService;
-    @MockBean private OrderAnalyticsService orderAnalyticsService;
 
     // Collaborators of the real JwtAuthenticationFilter (unused without a Bearer header).
     @MockBean private AccessTokens accessTokens;

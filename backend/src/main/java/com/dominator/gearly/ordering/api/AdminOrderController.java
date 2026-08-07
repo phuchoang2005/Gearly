@@ -1,13 +1,9 @@
 package com.dominator.gearly.ordering.api;
 
-import com.dominator.gearly.dto.QuantitySoldDTO;
-import com.dominator.gearly.dto.TopSellerDTO;
-import com.dominator.gearly.model.TimeFrame;
 import com.dominator.gearly.ordering.application.AdminOrderCommand;
 import com.dominator.gearly.ordering.application.AdminOrderPatchCommand;
 import com.dominator.gearly.ordering.application.AdminOrderService;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.service.admin.OrderAnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,9 +19,11 @@ import java.util.List;
  * and returns {@code false}, so the admin frontend needs no change. Every other write path —
  * {@code PUT}, {@code PATCH}, the customer cancel — lets it through to a 409.
  *
- * <p>The two analytics endpoints below still call {@code OrderAnalyticsService} in the legacy
- * {@code service.admin} package. Moving the read side into {@code analytics} is S13's item;
- * they stay here so this sprint changes no URL.
+ * <p>S13 moved the two sales-report endpoints out. {@code /quantity-sold} and {@code /top5}
+ * answer at the same URLs from {@code analytics.api.AdminSalesController}, which is mapped at
+ * this same base path — reporting reads the documents ordering writes, but it is not an
+ * ordering use case, and holding the read side's query service here made {@code ordering.api}
+ * depend on a context downstream of it.
  *
  * <p><b>Defence in depth.</b> {@code @PreAuthorize("hasRole('ADMIN')")} repeats the
  * {@code /api/admin/**} URL rule from {@code SecurityConfig} at the class level rather than
@@ -40,7 +38,6 @@ import java.util.List;
 public class AdminOrderController {
 
     private final AdminOrderService orderService;
-    private final OrderAnalyticsService orderAnalyticsService;
     private final OrderResponseMapper orderResponseMapper;
 
     @GetMapping
@@ -52,20 +49,6 @@ public class AdminOrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponseDTO> getOrderById(@PathVariable String id) {
         return ResponseEntity.ok(orderResponseMapper.toResponseDto(orderService.getOrderById(id)));
-    }
-
-    @GetMapping("/quantity-sold")
-    public ResponseEntity<List<QuantitySoldDTO>> getQuantitySoldByProduct(
-            @RequestParam(defaultValue = "ALL") TimeFrame period
-    ) {
-        return ResponseEntity.ok(orderAnalyticsService.getQuantitySold(period));
-    }
-
-    @GetMapping("/top5")
-    public ResponseEntity<List<TopSellerDTO>> getTop5BestSelling(
-            @RequestParam(defaultValue = "ALL") TimeFrame period
-    ) {
-        return ResponseEntity.ok(orderAnalyticsService.getTop5BestSelling(period));
     }
 
     @PutMapping("/{id}")

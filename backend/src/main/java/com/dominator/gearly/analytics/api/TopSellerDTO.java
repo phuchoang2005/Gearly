@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.analytics.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuantitySoldDTO {
+public class TopSellerDTO {
     private String productId;
-    private long totalSold;
     private String title;
+    private long totalSold;
 }

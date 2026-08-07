@@ -1,9 +1,8 @@
-package com.dominator.gearly.service.admin;
+package com.dominator.gearly.analytics.application;
 
-import com.dominator.gearly.dto.QuantitySoldDTO;
-import com.dominator.gearly.dto.TopSellerDTO;
-import com.dominator.gearly.ordering.domain.Order;
-import com.dominator.gearly.model.TimeFrame;
+import com.dominator.gearly.analytics.api.QuantitySoldDTO;
+import com.dominator.gearly.analytics.api.TimeFrame;
+import com.dominator.gearly.analytics.api.TopSellerDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -29,13 +28,34 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.sort
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.unwind;
 
 /**
- * Read-only sales analytics over the orders collection (MongoDB aggregations),
- * extracted from the admin order service so CRUD/workflow and reporting stay
- * separate.
+ * Read-only sales analytics over the orders collection.
+ *
+ * <p>Part of the explicit CQRS split S13 makes: this reads raw documents with an aggregation
+ * pipeline and returns DTOs, and never loads, mutates or names an aggregate. That is what earns
+ * {@code analytics} the codebase's only licence to use {@code MongoTemplate} outside a
+ * repository adapter.
+ *
+ * <p>The price of the licence is stated in {@code analytics/package-info.java}: this class is
+ * coupled to field names rather than to types, so nothing but an integration test against a
+ * real MongoDB can tell you it still works. {@code SalesAnalyticsQueryIntegrationTest} is that
+ * test.
  */
 @RequiredArgsConstructor
 @Service
-public class OrderAnalyticsService {
+public class SalesAnalyticsQuery {
+
+    /**
+     * The collection, by name.
+     *
+     * <p>It used to be {@code Order.class}. Passing the aggregate class made this the one place
+     * in the read side that named a domain type — which
+     * {@code contexts_touch_each_other_only_through_published_types} refuses, and rightly: the
+     * whole claim of a query side is that it reads documents, so a change to the aggregate has
+     * no business rippling into a report. There are no {@code @Field} renames on {@code Order},
+     * so the emitted pipeline is byte-identical; {@code SalesAnalyticsQueryIntegrationTest}
+     * runs against a real MongoDB and is what actually confirms that.
+     */
+    private static final String ORDERS = "orders";
 
     private final MongoTemplate mongoTemplate;
 
@@ -60,7 +80,7 @@ public class OrderAnalyticsService {
                 sort(Sort.by(Sort.Direction.DESC, "totalSold"))
         );
         return mongoTemplate
-                .aggregate(agg, Order.class, QuantitySoldDTO.class)
+                .aggregate(agg, ORDERS, QuantitySoldDTO.class)
                 .getMappedResults();
     }
 
@@ -84,7 +104,7 @@ public class OrderAnalyticsService {
         Aggregation agg = newAggregation(match, unwind, group, sort, limit, project);
 
         return mongoTemplate
-                .aggregate(agg, Order.class, TopSellerDTO.class)
+                .aggregate(agg, ORDERS, TopSellerDTO.class)
                 .getMappedResults();
     }
 

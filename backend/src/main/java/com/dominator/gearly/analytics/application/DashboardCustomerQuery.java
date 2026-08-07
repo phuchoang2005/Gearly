@@ -1,4 +1,4 @@
-package com.dominator.gearly.service.admin;
+package com.dominator.gearly.analytics.application;
 
 import java.util.List;
 import java.util.Map;
@@ -15,14 +15,20 @@ import org.springframework.data.mongodb.core.aggregation.SortOperation;
 import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import com.dominator.gearly.dto.LoyalCustomerDTO;
-import com.dominator.gearly.dto.TopAvgOrderValueUserDTO;
+import com.dominator.gearly.analytics.api.LoyalCustomerDTO;
+import com.dominator.gearly.analytics.api.TopAvgOrderValueUserDTO;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * The dashboard's customer panels: who spends the most, and who has the highest average order.
+ *
+ * <p>Both roll up the orders collection and join users by casting {@code _id} to a string,
+ * because an order stores its {@code userId} as one. Was {@code AdminDashboardGetUserService}.
+ */
 @Service
 @RequiredArgsConstructor
-public class AdminDashboardGetUserService {
+public class DashboardCustomerQuery {
     private final MongoTemplate mongoTemplate;
 
     public List<LoyalCustomerDTO> getTop10LoyalCustomers() {

@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.analytics.api;
 import java.util.Date;
 import lombok.Data;
 

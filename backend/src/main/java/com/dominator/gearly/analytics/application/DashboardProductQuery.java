@@ -1,8 +1,7 @@
-package com.dominator.gearly.service.admin;
+package com.dominator.gearly.analytics.application;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.springframework.data.domain.Sort;
@@ -19,18 +18,37 @@ import org.springframework.data.mongodb.core.aggregation.SortOperation;
 import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.stereotype.Service;
 
-import com.dominator.gearly.dto.BestSellerDTO;
-import com.dominator.gearly.catalog.api.ProductInLowStockDTO;
-import com.dominator.gearly.catalog.application.ProductQueryService;
-import com.dominator.gearly.dto.TopCategoryQuantityDTO;
+import com.dominator.gearly.analytics.api.BestSellerDTO;
+import com.dominator.gearly.analytics.api.TopCategoryQuantityDTO;
 
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * The dashboard's product panels: best sellers overall, and the top sellers within each
+ * category.
+ *
+ * <p>Was {@code AdminDashboardGetProductService}. Two things left it in S13.
+ *
+ * <p>{@code AdminDashboardService} is gone — thirty-eight lines that forwarded five calls to
+ * these two classes and did nothing else. The controller calls them directly.
+ *
+ * <p>{@code getProductWithLowStock} is gone too, and that one is a boundary correction rather
+ * than tidying. It delegated to {@code catalog.application.ProductQueryService}, so the read
+ * side reached into another context's application layer to ask a question that context already
+ * answers — the exact coupling
+ * {@code contexts_touch_each_other_only_through_published_types} exists to refuse. "Which
+ * products are running low" is the catalog's question: it owns stock, and since S11 it owns the
+ * threshold that defines "low" as well. The endpoint keeps its URL and is served by
+ * {@code catalog.api.AdminLowStockController}.
+ */
 @Service
 @RequiredArgsConstructor
-public class AdminDashboardGetProductService {
-    private final ProductQueryService productQueryService;
+public class DashboardProductQuery {
+
+    /** By name, not by aggregate class — see {@link SalesAnalyticsQuery}. */
+    private static final String ORDERS = "orders";
+
     private final MongoTemplate mongoTemplate;
 
     public List<BestSellerDTO> getTop10BestSellingProducts() {
@@ -55,7 +73,7 @@ public class AdminDashboardGetProductService {
         // Assemble the pipeline
         Aggregation agg = Aggregation.newAggregation(unwindItems, groupByProduct, sort, limit, lookup, unwindProduct, project);
 
-        return mongoTemplate.aggregate(agg, "orders", BestSellerDTO.class).getMappedResults();
+        return mongoTemplate.aggregate(agg, ORDERS, BestSellerDTO.class).getMappedResults();
     }
 
     public List<TopCategoryQuantityDTO> getTop10ProductsPerCategory() {
@@ -106,20 +124,8 @@ public class AdminDashboardGetProductService {
         Aggregation aggregation = Aggregation.newAggregation(unwindItems, groupProducts, addConvertId, lookupProducts, unwindProductDetails, unwindCategoryIds, lookupCategories, unwindCategoryDetails, sortOperation, groupByCategory, projectOutput);
 
         // Execute the aggregation and map results into the DTO
-        AggregationResults<TopCategoryQuantityDTO> results = mongoTemplate.aggregate(aggregation, "orders", TopCategoryQuantityDTO.class);
+        AggregationResults<TopCategoryQuantityDTO> results = mongoTemplate.aggregate(aggregation, ORDERS, TopCategoryQuantityDTO.class);
 
         return results.getMappedResults();
-    }
-
-    /**
-     * Asks the catalog which products are running out, rather than owning the definition.
-     *
-     * <p>The threshold used to be {@code 10}, hard-coded inside a Spring Data
-     * {@code @Query("{'stock': {$lt: 10}}")} on a one-method repository. It is
-     * {@code gearly.catalog.low-stock-threshold} now, and the catalog decides what "low"
-     * means because the catalog is what owns stock.
-     */
-    public List<ProductInLowStockDTO> getProductWithLowStock() {
-        return productQueryService.getLowStockProducts();
     }
 }

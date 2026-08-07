@@ -1,4 +1,4 @@
-package com.dominator.gearly.dto;
+package com.dominator.gearly.analytics.api;
 
 import com.dominator.gearly.shared.domain.Money;
 import lombok.Data;

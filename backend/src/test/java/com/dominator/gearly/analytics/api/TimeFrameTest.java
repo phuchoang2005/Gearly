@@ -1,4 +1,4 @@
-package com.dominator.gearly.model;
+package com.dominator.gearly.analytics.api;
 
 import org.junit.jupiter.api.Test;
 

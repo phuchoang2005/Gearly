@@ -1,8 +1,7 @@
-package com.dominator.gearly.controller.admin;
+package com.dominator.gearly.analytics.api;
 
-import com.dominator.gearly.catalog.api.ProductInLowStockDTO;
-import com.dominator.gearly.dto.*;
-import com.dominator.gearly.service.admin.AdminDashboardService;
+import com.dominator.gearly.analytics.application.DashboardCustomerQuery;
+import com.dominator.gearly.analytics.application.DashboardProductQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +19,16 @@ import java.util.List;
  * replacing it, for the reason {@code AdminUserController} spells out: the URL rule is a prefix
  * match on a string, and every endpoint that has ever escaped one did so by being mounted
  * somewhere the pattern did not reach. The annotation travels with the code.
+ *
+ * <h2>S13: the pass-through in the middle is gone</h2>
+ * This called {@code AdminDashboardService}, thirty-eight lines whose every method was
+ * {@code return getXImp.sameMethodName();}. A layer that forwards and does nothing else is a
+ * file people have to open to discover it had nothing to say. The two query classes are
+ * injected directly.
+ *
+ * <p>{@code /product-in-low-stock} kept its URL and moved to
+ * {@code catalog.api.AdminLowStockController} — see {@code DashboardProductQuery} for why the
+ * catalog answers that one.
  */
 @RestController
 @RequiredArgsConstructor
@@ -27,31 +36,26 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminDashboardController {
 
-    private final AdminDashboardService dashboardService;
+    private final DashboardProductQuery products;
+    private final DashboardCustomerQuery customers;
 
     @GetMapping("/top-by-category")
     public ResponseEntity<List<TopCategoryQuantityDTO>> getTopQuantityPerCategory() {
-        return ResponseEntity.ok(dashboardService.getTop10ProductsPerCategory());
+        return ResponseEntity.ok(products.getTop10ProductsPerCategory());
     }
 
     @GetMapping("/top-products")
     public ResponseEntity<List<BestSellerDTO>> getTopProducts() {
-        return ResponseEntity.ok(dashboardService.getTop10BestSellingProducts());
+        return ResponseEntity.ok(products.getTop10BestSellingProducts());
     }
 
     @GetMapping("/loyal-customers")
     public ResponseEntity<List<LoyalCustomerDTO>> getTopLoyalCustomers() {
-        return ResponseEntity.ok(dashboardService.getTop10LoyalCustomers());
+        return ResponseEntity.ok(customers.getTop10LoyalCustomers());
     }
 
     @GetMapping("/top-user-by-avg-order-value")
     public ResponseEntity<TopAvgOrderValueUserDTO> getTopAvgOrderValueUser() {
-        return ResponseEntity.ok(dashboardService.findUserWithHighestAvgOrderValue());
-    }
-
-    // products with stock less than 10
-    @GetMapping("/product-in-low-stock")
-    public ResponseEntity<List<ProductInLowStockDTO>> getTopProductsInLowStock() {
-        return ResponseEntity.ok(dashboardService.getProductWithLowStock());
+        return ResponseEntity.ok(customers.findUserWithHighestAvgOrderValue());
     }
 }

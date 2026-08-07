@@ -1,10 +1,10 @@
-package com.dominator.gearly.service.admin;
+package com.dominator.gearly.analytics.application;
 
-import com.dominator.gearly.dto.QuantitySoldDTO;
-import com.dominator.gearly.dto.TopSellerDTO;
+import com.dominator.gearly.analytics.api.QuantitySoldDTO;
+import com.dominator.gearly.analytics.api.TopSellerDTO;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderStatus;
-import com.dominator.gearly.model.TimeFrame;
+import com.dominator.gearly.analytics.api.TimeFrame;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.tuple;
 @DataMongoTest
 @ActiveProfiles("test")
 @Testcontainers(disabledWithoutDocker = true)
-class OrderAnalyticsServiceIntegrationTest {
+class SalesAnalyticsQueryIntegrationTest {
 
     @Container
     @ServiceConnection
@@ -44,13 +44,13 @@ class OrderAnalyticsServiceIntegrationTest {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    private OrderAnalyticsService service;
+    private SalesAnalyticsQuery service;
 
     private final Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
-        service = new OrderAnalyticsService(mongoTemplate);
+        service = new SalesAnalyticsQuery(mongoTemplate);
         mongoTemplate.dropCollection(Order.class);
 
         // p1: 2 + 3 = 5, recent COMPLETED
