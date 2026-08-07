@@ -1,6 +1,6 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderRepository;
 import com.dominator.gearly.payments.domain.GatewaySettlement;
@@ -62,7 +62,7 @@ public class OnlinePaymentService {
     @Transactional
     public void recordSettlement(GatewaySettlement settlement) {
         Order order = orderRepository.findById(OrderId.of(settlement.orderReference()))
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException());
 
         order.recordGatewayResult(
                 settlement.transactionId(), settlement.successful(), settlement.rawNotification());

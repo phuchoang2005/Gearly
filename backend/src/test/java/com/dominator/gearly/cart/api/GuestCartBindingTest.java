@@ -4,7 +4,7 @@ import com.dominator.gearly.cart.application.CartService;
 import com.dominator.gearly.cart.domain.CartFixture;
 import com.dominator.gearly.cart.domain.GuestCartIds;
 import com.dominator.gearly.platform.config.CorsConfig;
-import com.dominator.gearly.exception.GlobalExceptionHandler;
+import com.dominator.gearly.platform.exception.GlobalExceptionHandler;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.platform.security.HmacGuestCartIds;

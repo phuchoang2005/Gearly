@@ -1,6 +1,6 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
+import com.dominator.gearly.identity.domain.ProfileValueRejectedException;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
@@ -85,7 +85,7 @@ public class UserProfileService {
         try {
             return EmailAddress.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 
@@ -96,7 +96,7 @@ public class UserProfileService {
         try {
             return PhoneNumber.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 

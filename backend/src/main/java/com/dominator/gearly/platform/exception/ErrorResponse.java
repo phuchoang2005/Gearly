@@ -1,4 +1,4 @@
-package com.dominator.gearly.exception;
+package com.dominator.gearly.platform.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

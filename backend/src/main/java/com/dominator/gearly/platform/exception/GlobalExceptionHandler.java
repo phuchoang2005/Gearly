@@ -1,6 +1,7 @@
-package com.dominator.gearly.exception;
+package com.dominator.gearly.platform.exception;
 
 import com.dominator.gearly.shared.domain.AccessDeniedDomainException;
+import com.dominator.gearly.shared.domain.AuthenticationFailedException;
 import com.dominator.gearly.shared.domain.DomainConflictException;
 import com.dominator.gearly.shared.domain.DomainNotFoundException;
 import com.dominator.gearly.shared.domain.DomainRuleViolationException;
@@ -27,13 +28,6 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    /** Application exceptions carry their own status. */
-    @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ErrorResponse> handleApiException(ApiException ex) {
-        return ResponseEntity.status(ex.getStatus())
-                .body(ErrorResponse.of(ex.getStatus().value(), ex.getMessage()));
-    }
 
     /** Spring's own {@code ResponseStatusException}, still thrown by some services pending S3. */
     @ExceptionHandler(ResponseStatusException.class)
@@ -141,6 +135,23 @@ public class GlobalExceptionHandler {
      * base replaced both answered 403, and hiding the resource's existence is a decision worth
      * making deliberately rather than as a side effect of adding a handler.
      */
+    /**
+     * <b>401 — we do not know who you are.</b>
+     *
+     * <p>The last of the five shared-kernel bases to get a handler, added by S13 when
+     * {@code exception.UnauthorizedException} was removed. It is a separate status from the 403
+     * below on purpose: this is a failed sign-in, that is a known caller refused a resource.
+     *
+     * <p>The message is passed through, and the ones that reach here are written knowing that —
+     * see {@code SignInRefusedException.invalidCredentials}, which deliberately says the same
+     * thing for an unknown address and a wrong password.
+     */
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationFailed(AuthenticationFailedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
+    }
+
     @ExceptionHandler(AccessDeniedDomainException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedDomainException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

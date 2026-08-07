@@ -1,7 +1,7 @@
 package com.dominator.gearly.ordering.api;
 
 import com.dominator.gearly.platform.config.CorsConfig;
-import com.dominator.gearly.exception.GlobalExceptionHandler;
+import com.dominator.gearly.platform.exception.GlobalExceptionHandler;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.UserFixture;
 import com.dominator.gearly.identity.domain.UserRepository;

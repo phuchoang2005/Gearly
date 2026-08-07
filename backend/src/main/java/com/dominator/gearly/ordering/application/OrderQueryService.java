@@ -1,7 +1,7 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.ordering.domain.UnknownOrderStatusException;
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderNotYoursException;
 import com.dominator.gearly.ordering.domain.OrderPage;
@@ -56,7 +56,7 @@ public class OrderQueryService {
      */
     public Order findById(UserId caller, String orderId) {
         Order order = orderRepository.findById(OrderId.of(orderId))
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException());
 
         if (!order.isOwnedBy(caller)) {
             throw OrderNotYoursException.toView();
@@ -107,7 +107,7 @@ public class OrderQueryService {
         try {
             return OrderStatus.valueOf(status.trim());
         } catch (IllegalArgumentException unknown) {
-            throw new BadRequestException("Unknown order status: " + status);
+            throw new UnknownOrderStatusException(status);
         }
     }
 }

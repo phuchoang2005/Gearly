@@ -1,7 +1,8 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ConflictException;
+import com.dominator.gearly.identity.domain.AccountAlreadyVerifiedException;
+import com.dominator.gearly.identity.domain.InvalidVerificationTokenException;
+import com.dominator.gearly.identity.domain.ProfileValueRejectedException;
 import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
 import com.dominator.gearly.identity.domain.UserRepository;
@@ -59,10 +60,10 @@ public class VerificationTokenService {
     /** Return the token if it exists and has not expired, otherwise throw. */
     public VerificationToken validate(String token, VerificationToken.TokenType type) {
         VerificationToken vt = tokens.findByTokenAndType(token, type)
-                .orElseThrow(() -> new BadRequestException("Invalid or expired token"));
+                .orElseThrow(() -> InvalidVerificationTokenException.invalid());
 
         if (vt.isExpired(Instant.now())) {
-            throw new BadRequestException("Token expired!");
+            throw InvalidVerificationTokenException.expired();
         }
         return vt;
     }
@@ -107,7 +108,7 @@ public class VerificationTokenService {
         tokens.deleteAllFor(user.userId());
 
         if (user.isVerified()) {
-            throw new ConflictException("User already verified.");
+            throw new AccountAlreadyVerifiedException();
         }
 
         createAndSend(user, VerificationToken.TokenType.EMAIL_VERIFICATION);
@@ -117,7 +118,7 @@ public class VerificationTokenService {
         try {
             return EmailAddress.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 }

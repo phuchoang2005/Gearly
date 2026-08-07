@@ -1,6 +1,6 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.UnauthorizedException;
+import com.dominator.gearly.identity.domain.SignInRefusedException;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserRepository;
@@ -37,11 +37,11 @@ public class OAuthService {
         try {
             jws = tokenVerifier.verify(credential);
         } catch (TokenVerifier.VerificationException ex) {
-            throw new UnauthorizedException("Invalid Google ID-token");
+            throw SignInRefusedException.invalidGoogleToken();
         }
 
         if (jws == null) {
-            throw new UnauthorizedException("Invalid Google ID-token");
+            throw SignInRefusedException.invalidGoogleToken();
         }
 
         JsonWebToken.Payload payload = jws.getPayload();
@@ -58,7 +58,7 @@ public class OAuthService {
         try {
             return EmailAddress.of(value);
         } catch (IllegalArgumentException | NullPointerException malformed) {
-            throw new UnauthorizedException("Invalid Google ID-token");
+            throw SignInRefusedException.invalidGoogleToken();
         }
     }
 }

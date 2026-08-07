@@ -56,10 +56,24 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
  * real classes to check and says so by failing if it ever stops having them. A rule here can
  * no longer pass by vacuity.
  *
- * <p>Rules that would fail against the <em>legacy</em> packages
- * ({@code model}, {@code service}, {@code controller}, …) are still scoped to the new packages
- * with {@link #NEW_PACKAGES}. Those scopes come off in S13, at which point every rule here
- * applies repo-wide. Each such rule carries a {@code SCOPE:} note saying so.
+ * <h2>S13: repo-wide, with nothing scoped and nothing exempt</h2>
+ * Three rules were scoped to the packages the refactor had already been through, because the
+ * legacy tree failed them by construction — {@code model/} held nineteen {@code @Document}
+ * classes outside any domain package, {@code service.admin} injected a {@code MongoTemplate},
+ * {@code controller/} bound entities from request bodies. Each carried a {@code SCOPE:} note
+ * saying the scope would come off in S13.
+ *
+ * <p>It has. There is no {@code NEW_PACKAGES} constant any more and no rule below names a subset
+ * of the codebase: every one of them applies to every class. That is the difference between a
+ * structure that is enforced and one that is merely described, and it is worth being blunt about
+ * why — <b>a rule scoped to the code already known to satisfy it proves nothing.</b> It is the
+ * same failure as the {@code allowEmptyShould(true)} S10 removed, and the same failure S11 found
+ * in a rule that a rename would have satisfied.
+ *
+ * <p>What remains scoped is not a rule but an exemption, and each is by <em>layer</em> rather
+ * than by class name so that it cannot be borrowed: {@code ..infrastructure..} may name Spring
+ * Data and {@code MongoTemplate}, {@code ..api..} may name {@code platform.security}. Both are
+ * stated on the rules that grant them.
  */
 @AnalyzeClasses(
         packages = ArchitectureFitnessTest.ROOT,
@@ -74,20 +88,21 @@ class ArchitectureFitnessTest {
             "payments", "notification", "storage", "geo", "content", "assistant",
             "analytics");
 
-    /**
-     * Everything the DDD refactor owns: the contexts plus the shared kernel and the
-     * cross-cutting platform package. Used to scope rules that the untouched legacy
-     * packages would still fail. Removed in S13.
-     */
-    private static final String[] NEW_PACKAGES =
-            Stream.concat(CONTEXTS.stream(), Stream.of("shared", "platform"))
-                    .map(name -> ROOT + "." + name + "..")
-                    .toArray(String[]::new);
-
     private static final String[] CONTEXT_PACKAGES =
             CONTEXTS.stream().map(name -> ROOT + "." + name + "..").toArray(String[]::new);
 
-    /** The pre-refactor packages. Nothing inside a context's domain may reach back into these. */
+    /**
+     * <b>The pre-refactor packages — every one of which is now empty and deleted.</b>
+     *
+     * <p>Kept as a list rather than removed with them, because a rule that nothing may reach
+     * into them is what stops one coming back. {@code service/} and {@code controller/} were not
+     * mistakes anybody made deliberately; they were where things went when nobody had said where
+     * things go. Now the answer is a context, and reintroducing {@code com.dominator.gearly.model}
+     * fails a test rather than passing review.
+     *
+     * <p>The list is also the sprint's own progress bar, read backwards: it started as eleven
+     * populated packages and ends as eleven names nothing is allowed to use.
+     */
     private static final String[] LEGACY_PACKAGES = {
             ROOT + ".ai..", ROOT + ".config..", ROOT + ".controller..", ROOT + ".dto..",
             ROOT + ".exception..", ROOT + ".mapper..", ROOT + ".model..",
@@ -218,13 +233,14 @@ class ArchitectureFitnessTest {
      * Finding one in a DTO or a controller package means the persistence shape has leaked
      * onto the wire — which is exactly how the current cart accepts a client-supplied price.
      *
-     * <p>SCOPE: the new packages only. The legacy {@code model/} package fails this today by
-     * construction; the scope comes off in S13 once {@code model/} is empty.
+     * <p><b>S13: repo-wide.</b> The scope came off with {@code model/}, which held nineteen
+     * {@code @Document} classes and failed this rule by construction. Every one of them now
+     * lives in the domain package of the context that owns it, so the rule checks all of them
+     * rather than the ones already known to pass.
      */
     @ArchTest
     static final ArchRule documents_live_only_in_a_domain_package =
             classes().that().areAnnotatedWith(Document.class)
-                    .and().resideInAnyPackage(NEW_PACKAGES)
                     .should().resideInAPackage(ROOT + "..domain..")
                     .because("a persistence document is an aggregate, and aggregates live in the domain")
                     .allowEmptyShould(false);
@@ -262,13 +278,19 @@ class ArchitectureFitnessTest {
      * pass the rule by not completing the move. The exemption is by layer, not by class name,
      * so it cannot be borrowed by an application service.
      *
-     * <p>SCOPE: the new packages only — {@code service.admin} still injects it today. That
-     * scope comes off in S13, when analytics and the adapters are the last holders.
+     * <p><b>S13: repo-wide.</b> {@code service.admin} was the last holder outside the exemption
+     * and is gone — its two dashboard query classes are {@code analytics.application} now. The
+     * plan's verify step reads {@code grep -rn "MongoTemplate" backend/src/main | grep -vE
+     * "analytics|infrastructure"}, and it is empty.
+     *
+     * <p>This also caught something on the way. When {@code config/} moved under
+     * {@code platform}, the guest-cart TTL index started failing here — correctly. It is not
+     * general wiring and it is not an exception to carve out: it is a statement about how one
+     * context's collection is stored, so it went to {@code cart.infrastructure}.
      */
     @ArchTest
     static final ArchRule mongo_template_is_reserved_for_analytics_and_adapters =
-            noClasses().that().resideInAnyPackage(NEW_PACKAGES)
-                    .and().resideOutsideOfPackage(ROOT + ".analytics..")
+            noClasses().that().resideOutsideOfPackage(ROOT + ".analytics..")
                     .and().resideOutsideOfPackage(ROOT + "..infrastructure..")
                     .should().dependOnClassesThat()
                     .haveFullyQualifiedName("org.springframework.data.mongodb.core.MongoTemplate")
@@ -296,12 +318,12 @@ class ArchitectureFitnessTest {
      * in a signature at all: returning an aggregate is a different question (the response DTOs
      * answer it), and one an ArchUnit rule would answer badly.
      *
-     * <p>SCOPE: the new packages only, while {@code controller/} still exists. Off in S13.
+     * <p><b>S13: repo-wide.</b> {@code controller/} is gone, so every handler in the codebase is
+     * checked rather than the ones in packages the refactor had already been through.
      */
     @ArchTest
     static void aggregates_are_never_bound_from_a_request_body(JavaClasses classes) {
-        methods().that().areDeclaredInClassesThat().resideInAnyPackage(NEW_PACKAGES)
-                .should(takeNoRequestBodyThatIsAPersistenceDocument())
+        methods().should(takeNoRequestBodyThatIsAPersistenceDocument())
                 .because("a request body a client controls must never be a stored document — "
                         + "that is how the cart came to accept a client-supplied price")
                 .allowEmptyShould(false)

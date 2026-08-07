@@ -1,7 +1,9 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.UnauthorizedException;
+
+
+import com.dominator.gearly.identity.domain.SignInRefusedException;
+import com.dominator.gearly.shared.domain.DomainRuleViolationException;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.EmailAlreadyRegisteredException;
 import com.dominator.gearly.identity.domain.PasswordHasher;
@@ -89,7 +91,7 @@ class AuthServiceTest {
         when(users.findByEmail(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login("x@y.com", "pw"))
-                .isInstanceOf(UnauthorizedException.class);
+                .isInstanceOf(SignInRefusedException.class);
     }
 
     @Test
@@ -98,7 +100,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(verifiedUser("a@b.com", "pw")));
 
         assertThatThrownBy(() -> authService.login("a@b.com", "bad"))
-                .isInstanceOf(UnauthorizedException.class);
+                .isInstanceOf(SignInRefusedException.class);
     }
 
     @Test
@@ -107,7 +109,7 @@ class AuthServiceTest {
         when(users.findByEmail(EmailAddress.of("a@b.com"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login("a@b.com", "secret"))
-                .isInstanceOf(UnauthorizedException.class)
+                .isInstanceOf(SignInRefusedException.class)
                 .hasMessageContaining("verify your email");
     }
 
@@ -118,7 +120,7 @@ class AuthServiceTest {
         when(users.findByEmail(EmailAddress.of("a@b.com"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login("a@b.com", "pw"))
-                .isInstanceOf(UnauthorizedException.class)
+                .isInstanceOf(SignInRefusedException.class)
                 .hasMessageContaining("inactive");
     }
 
@@ -126,7 +128,7 @@ class AuthServiceTest {
     @DisplayName("a malformed address is a 400, not the 500 an unmapped IllegalArgumentException would be")
     void login_malformedEmail_isBadRequest() {
         assertThatThrownBy(() -> authService.login("not-an-email", "pw"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(DomainRuleViolationException.class);
     }
 
     // ---- registration ------------------------------------------------------
@@ -223,7 +225,7 @@ class AuthServiceTest {
         when(users.findById(UserId.of("u1"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.changePassword(UserId.of("u1"), "wrong", "new"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(DomainRuleViolationException.class);
         verify(users, never()).save(any());
     }
 
@@ -245,7 +247,7 @@ class AuthServiceTest {
         when(users.findByEmail(EmailAddress.of("a@b.com"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.handleForgotPassword("a@b.com"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(DomainRuleViolationException.class);
         verify(verificationTokenService, never()).createAndSend(any(), any());
     }
 

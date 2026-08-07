@@ -1,5 +1,9 @@
-package com.dominator.gearly.exception;
+package com.dominator.gearly.platform.exception;
 
+import com.dominator.gearly.shared.domain.AuthenticationFailedException;
+import com.dominator.gearly.shared.domain.DomainConflictException;
+import com.dominator.gearly.shared.domain.DomainNotFoundException;
+import com.dominator.gearly.shared.domain.DomainRuleViolationException;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.OrderCannotBeCancelledException;
 import com.dominator.gearly.ordering.domain.OrderStatus;
@@ -28,21 +32,61 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class GlobalExceptionHandlerTest {
 
+    /**
+     * S13: these were {@code ResourceNotFoundException}, {@code ConflictException} and
+     * {@code BadRequestException} — the {@code ApiException} subclasses that carried their own
+     * status. Every one of them is gone; contexts throw named subclasses of the shared kernel's
+     * five bases and the handler decides the status.
+     *
+     * <p>Declared here as minimal subclasses of the <em>bases</em> rather than borrowing a real
+     * one from a context, which is deliberate: this test is about the base-to-status mapping, and
+     * using, say, {@code OrderNotFoundException} would leave it passing if the handler were
+     * narrowed to that concrete type. What is asserted is that <b>any</b> subclass maps.
+     */
+    static class TestNotFound extends DomainNotFoundException {
+        TestNotFound(String message) {
+            super(message);
+        }
+    }
+
+    static class TestConflict extends DomainConflictException {
+        TestConflict(String message) {
+            super(message);
+        }
+    }
+
+    static class TestRuleViolation extends DomainRuleViolationException {
+        TestRuleViolation(String message) {
+            super(message);
+        }
+    }
+
+    static class TestAuthenticationFailure extends AuthenticationFailedException {
+        TestAuthenticationFailure(String message) {
+            super(message);
+        }
+    }
+
     @RestController
     static class BoomController {
         @GetMapping("/boom/not-found")
         void notFound() {
-            throw new ResourceNotFoundException("thing not found");
+            throw new TestNotFound("thing not found");
         }
 
         @GetMapping("/boom/conflict")
         void conflict() {
-            throw new ConflictException("email already registered");
+            throw new TestConflict("email already registered");
         }
 
         @GetMapping("/boom/bad-request")
         void badRequest() {
-            throw new BadRequestException("bad input");
+            throw new TestRuleViolation("bad input");
+        }
+
+        @GetMapping("/boom/unauthenticated")
+        void unauthenticated() {
+            throw new TestAuthenticationFailure("who are you");
         }
 
         @GetMapping("/boom/illegal-transition")
@@ -111,6 +155,21 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("bad input"));
+    }
+
+    /**
+     * The fifth base, added in S13 when {@code exception.UnauthorizedException} — which carried
+     * its own 401 — was deleted. Without this handler the sign-in refusals that used to be 401
+     * would fall to the {@code @ExceptionHandler(Exception.class)} catch-all and answer
+     * <b>500</b>, which is the exact failure S12 found twice over with
+     * {@code AccessDeniedDomainException} and a {@code @PreAuthorize} denial.
+     */
+    @Test
+    void authenticationFailure_maps401() throws Exception {
+        mvc.perform(get("/boom/unauthenticated"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("who are you"));
     }
 
     @Test

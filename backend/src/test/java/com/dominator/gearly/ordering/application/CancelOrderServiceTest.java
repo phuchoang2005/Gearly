@@ -1,6 +1,7 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ResourceNotFoundException;
+
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderCannotBeCancelledException;
 import com.dominator.gearly.ordering.domain.OrderFixture;
@@ -159,7 +160,7 @@ class CancelOrderServiceTest {
         when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cancel(USER_ID, cancelRequest()))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(OrderNotFoundException.class);
     }
 
     @Test

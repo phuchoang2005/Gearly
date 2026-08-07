@@ -1,7 +1,8 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.UnauthorizedException;
+import com.dominator.gearly.identity.domain.PasswordChangeRefusedException;
+import com.dominator.gearly.identity.domain.ProfileValueRejectedException;
+import com.dominator.gearly.identity.domain.SignInRefusedException;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.EmailAlreadyRegisteredException;
 import com.dominator.gearly.identity.domain.PasswordHasher;
@@ -59,18 +60,18 @@ public class AuthService {
      */
     public SignedIn login(String email, String rawPassword) {
         User user = users.findByEmail(emailOf(email))
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> SignInRefusedException.invalidCredentials());
 
         if (!user.isVerified()) {
-            throw new UnauthorizedException("Please verify your email before logging in.");
+            throw SignInRefusedException.emailNotVerified();
         }
 
         if (!user.isActive()) {
-            throw new UnauthorizedException("This account had been set to inactive. \nPlease contact Gearly Support if you need to activate your account.");
+            throw SignInRefusedException.accountInactive();
         }
 
         if (!user.hasPassword(rawPassword, passwordHasher)) {
-            throw new UnauthorizedException("Invalid credentials");
+            throw SignInRefusedException.invalidCredentials();
         }
 
         return new SignedIn(accessTokens.issueFor(user.getEmail()), user);
@@ -104,7 +105,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("Email not registered."));
 
         if (!user.isVerified()) {
-            throw new BadRequestException("Please verify your email before resetting password.");
+            throw PasswordChangeRefusedException.emailNotVerified();
         }
 
         verificationTokenService.createAndSend(user, VerificationToken.TokenType.PASSWORD_RESET);
@@ -128,7 +129,7 @@ public class AuthService {
         User user = users.findById(caller).orElseThrow(() -> new UserNotFoundException(caller));
 
         if (!user.hasPassword(oldPassword, passwordHasher)) {
-            throw new BadRequestException("Old password does not match with your current password.");
+            throw PasswordChangeRefusedException.oldPasswordDoesNotMatch();
         }
 
         user.changePassword(newPassword, passwordHasher);
@@ -169,7 +170,7 @@ public class AuthService {
         try {
             return EmailAddress.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 
@@ -181,7 +182,7 @@ public class AuthService {
         try {
             return PhoneNumber.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 }

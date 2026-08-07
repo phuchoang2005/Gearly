@@ -1,6 +1,7 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ResourceNotFoundException;
+
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
@@ -159,7 +160,7 @@ class AdminOrderServiceTest {
             when(orderRepository.findById(OrderId.of("missing"))).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.transition("missing", OrderStatus.PROCESSING))
-                    .isInstanceOf(ResourceNotFoundException.class);
+                    .isInstanceOf(OrderNotFoundException.class);
         }
     }
 

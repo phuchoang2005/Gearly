@@ -1,9 +1,11 @@
 package com.dominator.gearly.reviews.application;
 
+import com.dominator.gearly.reviews.domain.RatingOutOfRangeException;
+import com.dominator.gearly.reviews.domain.ReviewSubjectNotFoundException;
 import com.dominator.gearly.catalog.domain.CatalogSnapshot;
 import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ResourceNotFoundException;
+
+
 import com.dominator.gearly.ordering.domain.ReviewEligibility;
 import com.dominator.gearly.ordering.domain.ReviewableOrders;
 import com.dominator.gearly.reviews.domain.OrderNotReviewableException;
@@ -181,7 +183,7 @@ class SubmitReviewServiceTest {
         orderIs(ReviewEligibility.NO_SUCH_ORDER);
 
         assertThatThrownBy(() -> service.submit(caller(), command(5)))
-                .isInstanceOf(ResourceNotFoundException.class)
+                .isInstanceOf(ReviewSubjectNotFoundException.class)
                 .hasMessage("Order not found, you cannot create review on this.");
     }
 
@@ -219,7 +221,7 @@ class SubmitReviewServiceTest {
         when(catalog.snapshotsOf(List.of(ProductId.of(PRODUCT_ID)))).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.submit(caller(), command(5)))
-                .isInstanceOf(ResourceNotFoundException.class)
+                .isInstanceOf(ReviewSubjectNotFoundException.class)
                 .hasMessage("Product not found, you cannot create review for this product.");
 
         verify(reviews, never()).saveAll(anyList());
@@ -238,7 +240,7 @@ class SubmitReviewServiceTest {
         productExists();
 
         assertThatThrownBy(() -> service.submit(caller(), command(900)))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(RatingOutOfRangeException.class);
 
         verify(reviews, never()).saveAll(anyList());
         verify(orders, never()).markReviewed(any());
@@ -251,7 +253,7 @@ class SubmitReviewServiceTest {
         productExists();
 
         assertThatThrownBy(() -> service.submit(caller(), command(0)))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(RatingOutOfRangeException.class);
 
         verify(reviews, never()).saveAll(anyList());
     }

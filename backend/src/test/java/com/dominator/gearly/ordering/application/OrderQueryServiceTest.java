@@ -1,7 +1,9 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ResourceNotFoundException;
+
+
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
+import com.dominator.gearly.ordering.domain.UnknownOrderStatusException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderFixture;
 import com.dominator.gearly.ordering.domain.OrderNotYoursException;
@@ -107,7 +109,7 @@ class OrderQueryServiceTest {
         when(orderRepository.findById(OrderId.of("nope"))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.findById(USER_ID, "nope"))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(OrderNotFoundException.class);
     }
 
     // ---- search ------------------------------------------------------------
@@ -158,12 +160,12 @@ class OrderQueryServiceTest {
     @DisplayName("an unrecognized status is a 400 rather than a 500 or a silently empty history")
     void anUnknownStatusIsABadRequest() {
         assertThatThrownBy(() -> service.search(USER_ID, null, "BOGUS", 0))
-                .isInstanceOf(BadRequestException.class)
+                .isInstanceOf(UnknownOrderStatusException.class)
                 .hasMessageContaining("BOGUS");
 
         assertThatThrownBy(() -> service.search(USER_ID, "lovelace", "BOGUS", 0))
                 .as("the same answer whether or not a search term accompanies it")
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(UnknownOrderStatusException.class);
 
         verifyNoInteractions(orderRepository);
     }
