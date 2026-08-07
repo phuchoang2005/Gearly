@@ -1,7 +1,6 @@
-package com.dominator.gearly.mapper;
+package com.dominator.gearly.content.api;
 
-import com.dominator.gearly.dto.StaticPageDTO;
-import com.dominator.gearly.model.StaticPage;
+import com.dominator.gearly.content.domain.StaticPage;
 import org.springframework.stereotype.Component;
 
 /** Maps {@link StaticPage} entities to their response DTO. */

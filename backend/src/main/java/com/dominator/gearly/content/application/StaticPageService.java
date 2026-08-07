@@ -1,10 +1,10 @@
-package com.dominator.gearly.service.user;
+package com.dominator.gearly.content.application;
 
-import com.dominator.gearly.dto.StaticPageDTO;
-import com.dominator.gearly.mapper.StaticPageMapper;
-import com.dominator.gearly.model.StaticPage;
-import com.dominator.gearly.repository.StaticPageRepository;
-import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.content.api.StaticPageDTO;
+import com.dominator.gearly.content.api.StaticPageMapper;
+import com.dominator.gearly.content.domain.StaticPage;
+import com.dominator.gearly.content.domain.ContentNotFoundException;
+import com.dominator.gearly.content.domain.StaticPageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ public class StaticPageService {
 
     public StaticPageDTO getStaticPageBySlug(String slug) {
         StaticPage staticPage = staticPageRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Static page not found with slug: " + slug));
+                .orElseThrow(() -> ContentNotFoundException.page(slug));
         return staticPageMapper.toDto(staticPage);
     }
 }

@@ -1,8 +1,6 @@
-package com.dominator.gearly.mapper;
+package com.dominator.gearly.content.api;
 
-import com.dominator.gearly.dto.BlogPostDetailDTO;
-import com.dominator.gearly.dto.BlogPostSummaryDTO;
-import com.dominator.gearly.model.BlogPost;
+import com.dominator.gearly.content.domain.BlogPost;
 import org.springframework.stereotype.Component;
 
 /** Maps {@link BlogPost} entities to their list-summary and full-detail DTOs. */

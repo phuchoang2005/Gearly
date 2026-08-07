@@ -12,7 +12,8 @@ import com.dominator.gearly.identity.domain.UserRegistered;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.identity.domain.VerificationToken;
 import com.dominator.gearly.identity.domain.VerificationTokenTtl;
-import com.dominator.gearly.service.common.AddressService;
+import com.dominator.gearly.geo.domain.PlaceDirectory;
+import com.dominator.gearly.geo.domain.ResolvedPlace;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import com.dominator.gearly.shared.domain.UserId;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +48,7 @@ class AuthServiceTest {
 
     @Mock private UserRepository users;
     @Mock private AccessTokens accessTokens;
-    @Mock private AddressService addressService;
+    @Mock private PlaceDirectory places;
     @Mock private VerificationTokenService verificationTokenService;
 
     private final PasswordHasher passwordHasher = UserFixture.FAKE_HASHER;
@@ -57,7 +58,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(users, accessTokens, passwordHasher,
-                addressService, verificationTokenService);
+                places, verificationTokenService);
     }
 
     private User verifiedUser(String email, String rawPassword) {
@@ -143,9 +144,9 @@ class AuthServiceTest {
     @DisplayName("registration saves the account and raises UserRegistered rather than sending mail itself")
     void register_newUser_savesAndRaisesTheEvent() {
         when(users.existsByEmail(EmailAddress.of("new@b.com"))).thenReturn(false);
-        when(addressService.getCountryIdByName(any())).thenReturn(1);
-        when(addressService.getStateIdByName(any(), anyInt())).thenReturn(2);
-        when(addressService.getCityIdByName(any(), anyInt(), anyInt())).thenReturn(3);
+        // S13: one port call replaces three service calls. Same ids resolved, so the address
+        // this test asserts on is unchanged.
+        when(places.resolve(any(), any(), any())).thenReturn(new ResolvedPlace(1, 2, 3));
 
         authService.register(registration("new@b.com"));
 
@@ -172,9 +173,9 @@ class AuthServiceTest {
     @DisplayName("a client-supplied fullName cannot reach the aggregate — there is nowhere for it to land")
     void register_derivesFullNameFromTheParts() {
         when(users.existsByEmail(any())).thenReturn(false);
-        when(addressService.getCountryIdByName(any())).thenReturn(1);
-        when(addressService.getStateIdByName(any(), anyInt())).thenReturn(2);
-        when(addressService.getCityIdByName(any(), anyInt(), anyInt())).thenReturn(3);
+        // S13: one port call replaces three service calls. Same ids resolved, so the address
+        // this test asserts on is unchanged.
+        when(places.resolve(any(), any(), any())).thenReturn(new ResolvedPlace(1, 2, 3));
 
         authService.register(new RegisterUserCommand("Grace", "Hopper", "grace@b.com", "pw",
                 null, null, null, null, null, null));

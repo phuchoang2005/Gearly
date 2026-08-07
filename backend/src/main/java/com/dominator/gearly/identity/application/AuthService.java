@@ -9,7 +9,8 @@ import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.identity.domain.VerificationToken;
-import com.dominator.gearly.service.common.AddressService;
+import com.dominator.gearly.geo.domain.PlaceDirectory;
+import com.dominator.gearly.geo.domain.ResolvedPlace;
 import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import com.dominator.gearly.shared.domain.PersonName;
@@ -47,7 +48,7 @@ public class AuthService {
     private final UserRepository users;
     private final AccessTokens accessTokens;
     private final PasswordHasher passwordHasher;
-    private final AddressService addressService;
+    private final PlaceDirectory places;
     private final VerificationTokenService verificationTokenService;
 
     /**
@@ -136,22 +137,27 @@ public class AuthService {
 
     /**
      * The registration form sends place <em>names</em>; the stored address carries the numeric
-     * ids the geo lookups use. Unchanged, and still {@code service.common}'s job until S13 puts
-     * a port in front of it.
+     * ids the geo lookups use.
+     *
+     * <p>S13: one call to the {@link PlaceDirectory} port instead of three to a concrete service.
+     * That is not only tidier — the three-call version was the NPE the plan flags. Each lookup
+     * ended {@code .orElse(null)} and each result was assigned to an {@code int}, so an
+     * unrecognised country, or none at all (the field is not {@code @NotBlank}), unboxed null
+     * and answered <b>500</b>. Registering with no address was simply not possible. It is
+     * {@code ResolvedPlace.NONE} now, and a name that was given but does not match is a 400
+     * saying which one.
      */
     private Address resolveAddress(RegisterUserCommand command) {
-        int countryId = addressService.getCountryIdByName(command.country());
-        int stateId = addressService.getStateIdByName(command.state(), countryId);
-        int cityId = addressService.getCityIdByName(command.city(), stateId, countryId);
+        ResolvedPlace place = places.resolve(command.country(), command.state(), command.city());
         return new Address(
                 command.streetAddress(),
                 command.city(),
-                cityId,
+                place.cityId(),
                 command.state(),
-                stateId,
+                place.stateId(),
                 command.postalCode(),
                 command.country(),
-                countryId);
+                place.countryId());
     }
 
     /**

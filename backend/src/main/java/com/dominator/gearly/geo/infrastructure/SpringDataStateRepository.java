@@ -1,13 +1,12 @@
-package com.dominator.gearly.repository;
+package com.dominator.gearly.geo.infrastructure;
 
-import com.dominator.gearly.model.State;
+import com.dominator.gearly.geo.domain.State;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
-public interface StateRepository extends MongoRepository<State, String> {
+/** Spring Data's view of the states collection. Reached only through {@link MongoPlaceDirectory}. */
+interface SpringDataStateRepository extends MongoRepository<State, String> {
     List<State> findByCountryIdOrderByNameAsc(Integer countryId);
     Optional<State> findByNameIgnoreCaseAndCountryId(String name, Integer countryId);
 

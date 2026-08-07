@@ -1,8 +1,6 @@
-package com.dominator.gearly.controller.user;
+package com.dominator.gearly.content.api;
 
-import com.dominator.gearly.dto.BlogPostDetailDTO;
-import com.dominator.gearly.dto.BlogPostSummaryDTO;
-import com.dominator.gearly.service.user.BlogPostService;
+import com.dominator.gearly.content.application.BlogPostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

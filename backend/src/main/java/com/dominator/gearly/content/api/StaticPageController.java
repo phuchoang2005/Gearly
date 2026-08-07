@@ -1,7 +1,6 @@
-package com.dominator.gearly.controller.user;
+package com.dominator.gearly.content.api;
 
-import com.dominator.gearly.dto.StaticPageDTO;
-import com.dominator.gearly.service.user.StaticPageService;
+import com.dominator.gearly.content.application.StaticPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
