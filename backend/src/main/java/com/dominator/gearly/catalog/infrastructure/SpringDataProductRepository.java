@@ -1,7 +1,6 @@
 package com.dominator.gearly.catalog.infrastructure;
 
 import com.dominator.gearly.catalog.domain.Product;
-import com.dominator.gearly.shared.domain.CategoryId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
@@ -22,6 +21,4 @@ import java.util.List;
 interface SpringDataProductRepository extends MongoRepository<Product, String> {
 
     List<Product> findByTitleContainingIgnoreCase(String title);
-
-    List<Product> findByCategoryIdsIn(List<CategoryId> categoryIds);
 }

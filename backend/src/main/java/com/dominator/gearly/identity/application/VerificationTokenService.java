@@ -1,14 +1,18 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ConflictException;
+import com.dominator.gearly.identity.domain.AccountAlreadyVerifiedException;
+import com.dominator.gearly.identity.domain.InvalidVerificationTokenException;
+import com.dominator.gearly.identity.domain.ProfileValueRejectedException;
 import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
 import com.dominator.gearly.identity.domain.UserRepository;
+import com.dominator.gearly.identity.domain.VerificationLinks;
 import com.dominator.gearly.identity.domain.VerificationToken;
 import com.dominator.gearly.identity.domain.VerificationTokenRepository;
 import com.dominator.gearly.identity.domain.VerificationTokenTtl;
-import com.dominator.gearly.service.user.EmailService;
+import com.dominator.gearly.notification.domain.Notification;
+import com.dominator.gearly.notification.domain.NotificationSender;
+import com.dominator.gearly.notification.domain.NotificationType;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,8 +26,9 @@ import java.time.Instant;
  * {@link VerificationTokenTtl}, bound from {@code gearly.identity.verification-token-ttl}, and
  * the token computes its own expiry from it. The default is what was compiled in before.
  *
- * <p>{@code EmailService} is still the legacy sender. S13 puts a {@code NotificationSender} port
- * in front of it; the only thing that has to change here when it does is the field.
+ * <p>S13: the sender is the {@link NotificationSender} port. This service no longer knows that a
+ * notification is an email, what it says, or where it is hosted — it knows which token it just
+ * issued and, through {@link VerificationLinks}, which of its own routes that token belongs to.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,27 +36,34 @@ public class VerificationTokenService {
 
     private final VerificationTokenRepository tokens;
     private final UserRepository users;
-    private final EmailService emailService;
+    private final NotificationSender notifications;
+    private final VerificationLinks links;
     private final VerificationTokenTtl ttl;
 
-    /** Issue a fresh token for the user and send the matching email. */
+    /** Issue a fresh token for the user and send the matching message. */
     public void createAndSend(User user, VerificationToken.TokenType type) {
         VerificationToken vt = tokens.save(VerificationToken.issue(user.userId(), type, ttl));
 
-        if (type == VerificationToken.TokenType.EMAIL_VERIFICATION) {
-            emailService.sendVerificationEmail(user.getEmail().value(), user.displayName(), vt.getToken());
-        } else {
-            emailService.sendPasswordResetEmail(user.getEmail().value(), user.displayName(), vt.getToken());
-        }
+        notifications.send(new Notification(
+                user.getEmail(),
+                notificationFor(type),
+                user.displayName(),
+                links.forToken(type, vt.getToken())));
+    }
+
+    private static NotificationType notificationFor(VerificationToken.TokenType type) {
+        return type == VerificationToken.TokenType.EMAIL_VERIFICATION
+                ? NotificationType.EMAIL_VERIFICATION
+                : NotificationType.PASSWORD_RESET;
     }
 
     /** Return the token if it exists and has not expired, otherwise throw. */
     public VerificationToken validate(String token, VerificationToken.TokenType type) {
         VerificationToken vt = tokens.findByTokenAndType(token, type)
-                .orElseThrow(() -> new BadRequestException("Invalid or expired token"));
+                .orElseThrow(() -> InvalidVerificationTokenException.invalid());
 
         if (vt.isExpired(Instant.now())) {
-            throw new BadRequestException("Token expired!");
+            throw InvalidVerificationTokenException.expired();
         }
         return vt;
     }
@@ -96,7 +108,7 @@ public class VerificationTokenService {
         tokens.deleteAllFor(user.userId());
 
         if (user.isVerified()) {
-            throw new ConflictException("User already verified.");
+            throw new AccountAlreadyVerifiedException();
         }
 
         createAndSend(user, VerificationToken.TokenType.EMAIL_VERIFICATION);
@@ -106,7 +118,7 @@ public class VerificationTokenService {
         try {
             return EmailAddress.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 }

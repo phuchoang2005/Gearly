@@ -1,7 +1,8 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.UnauthorizedException;
+import com.dominator.gearly.identity.domain.PasswordChangeRefusedException;
+import com.dominator.gearly.identity.domain.ProfileValueRejectedException;
+import com.dominator.gearly.identity.domain.SignInRefusedException;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.EmailAlreadyRegisteredException;
 import com.dominator.gearly.identity.domain.PasswordHasher;
@@ -9,7 +10,8 @@ import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.identity.domain.VerificationToken;
-import com.dominator.gearly.service.common.AddressService;
+import com.dominator.gearly.geo.domain.PlaceDirectory;
+import com.dominator.gearly.geo.domain.ResolvedPlace;
 import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import com.dominator.gearly.shared.domain.PersonName;
@@ -47,7 +49,7 @@ public class AuthService {
     private final UserRepository users;
     private final AccessTokens accessTokens;
     private final PasswordHasher passwordHasher;
-    private final AddressService addressService;
+    private final PlaceDirectory places;
     private final VerificationTokenService verificationTokenService;
 
     /**
@@ -58,18 +60,18 @@ public class AuthService {
      */
     public SignedIn login(String email, String rawPassword) {
         User user = users.findByEmail(emailOf(email))
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> SignInRefusedException.invalidCredentials());
 
         if (!user.isVerified()) {
-            throw new UnauthorizedException("Please verify your email before logging in.");
+            throw SignInRefusedException.emailNotVerified();
         }
 
         if (!user.isActive()) {
-            throw new UnauthorizedException("This account had been set to inactive. \nPlease contact Gearly Support if you need to activate your account.");
+            throw SignInRefusedException.accountInactive();
         }
 
         if (!user.hasPassword(rawPassword, passwordHasher)) {
-            throw new UnauthorizedException("Invalid credentials");
+            throw SignInRefusedException.invalidCredentials();
         }
 
         return new SignedIn(accessTokens.issueFor(user.getEmail()), user);
@@ -103,7 +105,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("Email not registered."));
 
         if (!user.isVerified()) {
-            throw new BadRequestException("Please verify your email before resetting password.");
+            throw PasswordChangeRefusedException.emailNotVerified();
         }
 
         verificationTokenService.createAndSend(user, VerificationToken.TokenType.PASSWORD_RESET);
@@ -127,7 +129,7 @@ public class AuthService {
         User user = users.findById(caller).orElseThrow(() -> new UserNotFoundException(caller));
 
         if (!user.hasPassword(oldPassword, passwordHasher)) {
-            throw new BadRequestException("Old password does not match with your current password.");
+            throw PasswordChangeRefusedException.oldPasswordDoesNotMatch();
         }
 
         user.changePassword(newPassword, passwordHasher);
@@ -136,22 +138,27 @@ public class AuthService {
 
     /**
      * The registration form sends place <em>names</em>; the stored address carries the numeric
-     * ids the geo lookups use. Unchanged, and still {@code service.common}'s job until S13 puts
-     * a port in front of it.
+     * ids the geo lookups use.
+     *
+     * <p>S13: one call to the {@link PlaceDirectory} port instead of three to a concrete service.
+     * That is not only tidier — the three-call version was the NPE the plan flags. Each lookup
+     * ended {@code .orElse(null)} and each result was assigned to an {@code int}, so an
+     * unrecognised country, or none at all (the field is not {@code @NotBlank}), unboxed null
+     * and answered <b>500</b>. Registering with no address was simply not possible. It is
+     * {@code ResolvedPlace.NONE} now, and a name that was given but does not match is a 400
+     * saying which one.
      */
     private Address resolveAddress(RegisterUserCommand command) {
-        int countryId = addressService.getCountryIdByName(command.country());
-        int stateId = addressService.getStateIdByName(command.state(), countryId);
-        int cityId = addressService.getCityIdByName(command.city(), stateId, countryId);
+        ResolvedPlace place = places.resolve(command.country(), command.state(), command.city());
         return new Address(
                 command.streetAddress(),
                 command.city(),
-                cityId,
+                place.cityId(),
                 command.state(),
-                stateId,
+                place.stateId(),
                 command.postalCode(),
                 command.country(),
-                countryId);
+                place.countryId());
     }
 
     /**
@@ -163,7 +170,7 @@ public class AuthService {
         try {
             return EmailAddress.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 
@@ -175,7 +182,7 @@ public class AuthService {
         try {
             return PhoneNumber.of(value);
         } catch (IllegalArgumentException malformed) {
-            throw new BadRequestException(malformed.getMessage());
+            throw new ProfileValueRejectedException(malformed.getMessage());
         }
     }
 }

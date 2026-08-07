@@ -1,7 +1,9 @@
 package com.dominator.gearly.identity.application;
 
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.UnauthorizedException;
+
+
+import com.dominator.gearly.identity.domain.SignInRefusedException;
+import com.dominator.gearly.shared.domain.DomainRuleViolationException;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.EmailAlreadyRegisteredException;
 import com.dominator.gearly.identity.domain.PasswordHasher;
@@ -12,7 +14,8 @@ import com.dominator.gearly.identity.domain.UserRegistered;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.identity.domain.VerificationToken;
 import com.dominator.gearly.identity.domain.VerificationTokenTtl;
-import com.dominator.gearly.service.common.AddressService;
+import com.dominator.gearly.geo.domain.PlaceDirectory;
+import com.dominator.gearly.geo.domain.ResolvedPlace;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import com.dominator.gearly.shared.domain.UserId;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +50,7 @@ class AuthServiceTest {
 
     @Mock private UserRepository users;
     @Mock private AccessTokens accessTokens;
-    @Mock private AddressService addressService;
+    @Mock private PlaceDirectory places;
     @Mock private VerificationTokenService verificationTokenService;
 
     private final PasswordHasher passwordHasher = UserFixture.FAKE_HASHER;
@@ -57,7 +60,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(users, accessTokens, passwordHasher,
-                addressService, verificationTokenService);
+                places, verificationTokenService);
     }
 
     private User verifiedUser(String email, String rawPassword) {
@@ -88,7 +91,7 @@ class AuthServiceTest {
         when(users.findByEmail(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login("x@y.com", "pw"))
-                .isInstanceOf(UnauthorizedException.class);
+                .isInstanceOf(SignInRefusedException.class);
     }
 
     @Test
@@ -97,7 +100,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(verifiedUser("a@b.com", "pw")));
 
         assertThatThrownBy(() -> authService.login("a@b.com", "bad"))
-                .isInstanceOf(UnauthorizedException.class);
+                .isInstanceOf(SignInRefusedException.class);
     }
 
     @Test
@@ -106,7 +109,7 @@ class AuthServiceTest {
         when(users.findByEmail(EmailAddress.of("a@b.com"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login("a@b.com", "secret"))
-                .isInstanceOf(UnauthorizedException.class)
+                .isInstanceOf(SignInRefusedException.class)
                 .hasMessageContaining("verify your email");
     }
 
@@ -117,7 +120,7 @@ class AuthServiceTest {
         when(users.findByEmail(EmailAddress.of("a@b.com"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login("a@b.com", "pw"))
-                .isInstanceOf(UnauthorizedException.class)
+                .isInstanceOf(SignInRefusedException.class)
                 .hasMessageContaining("inactive");
     }
 
@@ -125,7 +128,7 @@ class AuthServiceTest {
     @DisplayName("a malformed address is a 400, not the 500 an unmapped IllegalArgumentException would be")
     void login_malformedEmail_isBadRequest() {
         assertThatThrownBy(() -> authService.login("not-an-email", "pw"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(DomainRuleViolationException.class);
     }
 
     // ---- registration ------------------------------------------------------
@@ -143,9 +146,9 @@ class AuthServiceTest {
     @DisplayName("registration saves the account and raises UserRegistered rather than sending mail itself")
     void register_newUser_savesAndRaisesTheEvent() {
         when(users.existsByEmail(EmailAddress.of("new@b.com"))).thenReturn(false);
-        when(addressService.getCountryIdByName(any())).thenReturn(1);
-        when(addressService.getStateIdByName(any(), anyInt())).thenReturn(2);
-        when(addressService.getCityIdByName(any(), anyInt(), anyInt())).thenReturn(3);
+        // S13: one port call replaces three service calls. Same ids resolved, so the address
+        // this test asserts on is unchanged.
+        when(places.resolve(any(), any(), any())).thenReturn(new ResolvedPlace(1, 2, 3));
 
         authService.register(registration("new@b.com"));
 
@@ -172,9 +175,9 @@ class AuthServiceTest {
     @DisplayName("a client-supplied fullName cannot reach the aggregate — there is nowhere for it to land")
     void register_derivesFullNameFromTheParts() {
         when(users.existsByEmail(any())).thenReturn(false);
-        when(addressService.getCountryIdByName(any())).thenReturn(1);
-        when(addressService.getStateIdByName(any(), anyInt())).thenReturn(2);
-        when(addressService.getCityIdByName(any(), anyInt(), anyInt())).thenReturn(3);
+        // S13: one port call replaces three service calls. Same ids resolved, so the address
+        // this test asserts on is unchanged.
+        when(places.resolve(any(), any(), any())).thenReturn(new ResolvedPlace(1, 2, 3));
 
         authService.register(new RegisterUserCommand("Grace", "Hopper", "grace@b.com", "pw",
                 null, null, null, null, null, null));
@@ -222,7 +225,7 @@ class AuthServiceTest {
         when(users.findById(UserId.of("u1"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.changePassword(UserId.of("u1"), "wrong", "new"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(DomainRuleViolationException.class);
         verify(users, never()).save(any());
     }
 
@@ -244,7 +247,7 @@ class AuthServiceTest {
         when(users.findByEmail(EmailAddress.of("a@b.com"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.handleForgotPassword("a@b.com"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(DomainRuleViolationException.class);
         verify(verificationTokenService, never()).createAndSend(any(), any());
     }
 

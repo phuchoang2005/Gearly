@@ -1,0 +1,196 @@
+package com.dominator.gearly.platform.exception;
+
+import com.dominator.gearly.shared.domain.AccessDeniedDomainException;
+import com.dominator.gearly.shared.domain.AuthenticationFailedException;
+import com.dominator.gearly.shared.domain.DomainConflictException;
+import com.dominator.gearly.shared.domain.DomainNotFoundException;
+import com.dominator.gearly.shared.domain.DomainRuleViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Single source of truth for HTTP error responses. Replaces the per-controller
+ * try/catch blocks that used to return {@code Map.of("error", ...)}.
+ */
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    /** Spring's own {@code ResponseStatusException}, still thrown by some services pending S3. */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        String message = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+        return ResponseEntity.status(status).body(ErrorResponse.of(status.value(), message));
+    }
+
+    /** Bean-validation failures on {@code @Valid} request bodies → 400 with per-field messages. */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
+            fieldErrors.putIfAbsent(fe.getField(), fe.getDefaultMessage());
+        }
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Validation failed", fieldErrors));
+    }
+
+    /** Malformed/unreadable request body → 400 rather than a leaked 500. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Malformed request body"));
+    }
+
+    /**
+     * An optimistic-locking clash → 409, not a leaked 500.
+     *
+     * <p>Raised when a {@code @Version}ed document (Product, Order, Cart) was changed by
+     * someone else between this request reading it and writing it back — most importantly
+     * two concurrent checkouts racing on the same product's stock, which is exactly the
+     * oversell the version field exists to prevent. 409 tells the caller the request was
+     * valid but is now stale: re-read and retry.
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLocking(OptimisticLockingFailureException ex) {
+        log.warn("Optimistic locking conflict: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT.value(),
+                        "This item was modified by another request. Please refresh and try again."));
+    }
+
+    /**
+     * A domain rule refused the requested state change → 409.
+     *
+     * <p>An illegal order-status transition, or cancelling an order that has already shipped.
+     * The request was well-formed and the caller was entitled to make it; the aggregate is
+     * simply not in a state where it makes sense.
+     *
+     * <p>One handler covers every context because {@link DomainConflictException} lives in the
+     * shared kernel. An aggregate states the rule that broke and names no web type — it may
+     * not, since {@code org.springframework.http} is banned from a domain package — so
+     * choosing the status code is this class's job. That is what keeps the response identical
+     * to the {@code ConflictException} these replaced.
+     */
+    @ExceptionHandler(DomainConflictException.class)
+    public ResponseEntity<ErrorResponse> handleDomainConflict(DomainConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT.value(), ex.getMessage()));
+    }
+
+    /**
+     * The aggregate the request named does not exist → 404.
+     *
+     * <p>The sibling of the handler above, added when S11 gave the catalog a
+     * {@code ProductNotFoundException}. {@code ProductService.getProductById} used to answer
+     * {@code null} and leave each caller to decide what that meant; several forgot, and a
+     * delisted product turned a checkout into a {@code NullPointerException} and an opaque
+     * 500. The response is identical to {@link ResourceNotFoundException}'s — what changed is
+     * that the domain can say "missing" without naming an HTTP type.
+     */
+    @ExceptionHandler(DomainNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDomainNotFound(DomainNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND.value(), ex.getMessage()));
+    }
+
+    /**
+     * A domain rule refused the request as it stands → 400.
+     *
+     * <p>Ordering ten units of something that has three is the case this was added for:
+     * {@code InsufficientStockException} is the single rule S11 collapsed five copies of the
+     * stock check into, and 400 is the status all five of them already returned through
+     * {@link BadRequestException}. Moving where the rule lives and changing what it answers
+     * are separate decisions; only the first has been made.
+     */
+    @ExceptionHandler(DomainRuleViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDomainRuleViolation(DomainRuleViolationException ex) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    }
+
+    /**
+     * The caller is authenticated, but this is not theirs → 403.
+     *
+     * <p>The fourth and last of the shared-kernel bases to get a handler, and the one whose
+     * absence was visible: {@code ReviewNotYoursException} already extended
+     * {@link AccessDeniedDomainException}, so without this it fell to {@link #handleGeneric}
+     * and answered <b>500 with "Internal server error"</b> — the caller was told the server
+     * was broken when in fact their request had been correctly refused.
+     *
+     * <p>403 rather than 404: the two {@code ApiException(HttpStatus.FORBIDDEN, …)} throws this
+     * base replaced both answered 403, and hiding the resource's existence is a decision worth
+     * making deliberately rather than as a side effect of adding a handler.
+     */
+    /**
+     * <b>401 — we do not know who you are.</b>
+     *
+     * <p>The last of the five shared-kernel bases to get a handler, added by S13 when
+     * {@code exception.UnauthorizedException} was removed. It is a separate status from the 403
+     * below on purpose: this is a failed sign-in, that is a known caller refused a resource.
+     *
+     * <p>The message is passed through, and the ones that reach here are written knowing that —
+     * see {@code SignInRefusedException.invalidCredentials}, which deliberately says the same
+     * thing for an unknown address and a wrong password.
+     */
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationFailed(AuthenticationFailedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedDomainException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedDomainException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
+    }
+
+    /**
+     * A {@code @PreAuthorize} refusal → back to Spring Security, which decides 401 vs 403.
+     *
+     * <p><b>This handler exists to get out of the way, and it is not optional.</b> Method
+     * security throws {@code AuthorizationDeniedException} from inside the dispatcher, so it
+     * passes through this advice before it reaches {@code ExceptionTranslationFilter} — and
+     * {@link #handleGeneric}, matching on {@code Exception}, was catching it and answering
+     * <b>500 "Internal server error"</b>. Rethrowing lets the filter do its job: 403 for a
+     * signed-in caller without the role, 401 for an anonymous one, which is a distinction this
+     * class has no way to make.
+     *
+     * <p>Found by {@code AdminMethodSecurityTest}, which is the only test in the suite where a
+     * {@code @PreAuthorize} denial is not also covered by the {@code /api/admin/**} URL rule.
+     * Behind that rule the filter chain refuses the request before any handler runs, so every
+     * other admin test was green while this path answered 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public void rethrowAccessDenied(AccessDeniedException ex) {
+        throw ex;
+    }
+
+    /** Missing static resource (e.g. an avatar/media file under /uploads/**) → 404, not 500. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND.value(), "Resource not found"));
+    }
+
+    /** Catch-all: log the real cause server-side, return an opaque 500. */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal server error"));
+    }
+}

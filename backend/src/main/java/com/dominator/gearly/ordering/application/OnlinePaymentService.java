@@ -1,16 +1,15 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderRepository;
-import com.dominator.gearly.service.user.MomoService;
+import com.dominator.gearly.payments.domain.GatewaySettlement;
+import com.dominator.gearly.payments.domain.PaymentGateway;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
 
 /**
  * The two halves of paying for an order through an external gateway: sending the customer
@@ -24,9 +23,12 @@ import java.math.BigDecimal;
  * different bean whose method is, and so a slow or unreachable third party can never hold a
  * database transaction open.
  *
- * <p>S13 puts the gateway behind a {@code PaymentGateway} port; until then this class names
- * {@code MomoService} directly, which is the one place in Ordering that knows a specific
- * provider exists.
+ * <h2>S13: the provider is behind a port</h2>
+ * This class named {@code MomoService} directly and knew three MoMo facts along with it — that
+ * the gateway speaks {@code BigDecimal}, that it prefixes our order ids with {@code Gearly-},
+ * and that {@code resultCode == 0} means the money moved. All three are the adapter's now. What
+ * is left here is the ordering use case: place, then send the customer to pay; hear back, then
+ * record it on the aggregate.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,37 +36,36 @@ public class OnlinePaymentService {
 
     private final PlaceOrderService placeOrderService;
     private final OrderRepository orderRepository;
-    private final MomoService momoService;
+    private final PaymentGateway paymentGateway;
 
     /** Places the order, then returns the URL the customer is redirected to in order to pay. */
     public Checkout startCheckout(UserId userId, PlaceOrderCommand command) {
         Order order = placeOrderService.place(userId, command);
 
-        // The gateway client is generic and still speaks BigDecimal; the S13 port takes Money.
-        BigDecimal amountUsd = order.getTotalAmount().amount();
-        String paymentUrl = momoService.createPaymentUrl(amountUsd, order.getId());
+        String paymentUrl = paymentGateway.startCheckout(order.getTotalAmount(), order.getId());
 
         return new Checkout(order.getId(), paymentUrl);
     }
 
     /**
-     * The gateway's IPN callback.
+     * Applies a settlement the gateway has already been shown to have signed.
      *
      * <p>Recording the transaction and moving the status are one operation on the aggregate,
      * so this path can no longer land an order in a status the transition table would refuse.
      * A failed checkout returning the order to {@code PENDING} is a declared edge of that
      * table rather than the unchecked assignment it used to be.
+     *
+     * <p>Takes a {@link GatewaySettlement} rather than the gateway's own fields: authentication
+     * and translation happen at the adapter, so by the time this runs there is nothing left to
+     * decide about whether the notification is genuine.
      */
     @Transactional
-    public void recordGatewayResult(String gatewayOrderId,
-                                    String gatewayTransactionId,
-                                    int resultCode,
-                                    String rawResponse) {
-        String ourOrderId = gatewayOrderId.replaceFirst("^Gearly-", "");
-        Order order = orderRepository.findById(OrderId.of(ourOrderId))
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    public void recordSettlement(GatewaySettlement settlement) {
+        Order order = orderRepository.findById(OrderId.of(settlement.orderReference()))
+                .orElseThrow(() -> new OrderNotFoundException());
 
-        order.recordGatewayResult(gatewayTransactionId, resultCode == 0, rawResponse);
+        order.recordGatewayResult(
+                settlement.transactionId(), settlement.successful(), settlement.rawNotification());
 
         orderRepository.save(order);
     }

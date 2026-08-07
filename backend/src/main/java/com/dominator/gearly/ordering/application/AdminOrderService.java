@@ -1,6 +1,6 @@
 package com.dominator.gearly.ordering.application;
 
-import com.dominator.gearly.exception.ResourceNotFoundException;
+import com.dominator.gearly.ordering.domain.OrderNotFoundException;
 import com.dominator.gearly.ordering.domain.IllegalOrderTransitionException;
 import com.dominator.gearly.ordering.domain.Order;
 import com.dominator.gearly.ordering.domain.OrderRepository;
@@ -106,6 +106,6 @@ public class AdminOrderService {
 
     private Order findOrThrow(String id) {
         return orderRepository.findById(OrderId.of(id))
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException());
     }
 }

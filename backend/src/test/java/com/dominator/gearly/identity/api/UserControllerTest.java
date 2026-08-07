@@ -1,7 +1,8 @@
 package com.dominator.gearly.identity.api;
 
-import com.dominator.gearly.config.CorsConfig;
-import com.dominator.gearly.exception.UnauthorizedException;
+import com.dominator.gearly.identity.domain.SignInRefusedException;
+import com.dominator.gearly.platform.config.CorsConfig;
+
 import com.dominator.gearly.identity.application.AuthService;
 import com.dominator.gearly.identity.application.UserProfileService;
 import com.dominator.gearly.identity.application.VerificationTokenService;
@@ -65,7 +66,7 @@ class UserControllerTest {
 
     @Test
     void login_badCredentials_returns401() throws Exception {
-        when(authService.login(any(), any())).thenThrow(new UnauthorizedException("Invalid credentials"));
+        when(authService.login(any(), any())).thenThrow(SignInRefusedException.invalidCredentials());
 
         mvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)

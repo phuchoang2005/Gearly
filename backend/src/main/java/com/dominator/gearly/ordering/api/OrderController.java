@@ -1,6 +1,6 @@
 package com.dominator.gearly.ordering.api;
 
-import com.dominator.gearly.dto.MessageResponse;
+import com.dominator.gearly.shared.api.MessageResponse;
 import com.dominator.gearly.ordering.application.CancelOrderCommand;
 import com.dominator.gearly.ordering.application.CancelOrderService;
 import com.dominator.gearly.ordering.application.OnlinePaymentService;

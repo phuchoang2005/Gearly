@@ -24,17 +24,6 @@ public class CategoryQueryService {
                 .toList();
     }
 
-    /** The ids of every category whose name contains {@code name}. */
-    public List<CategoryId> idsMatching(String name) {
-        if (name == null || name.isBlank()) {
-            return List.of();
-        }
-        return categories.findByNameContaining(name).stream()
-                .map(Category::getId)
-                .map(CategoryId::of)
-                .toList();
-    }
-
     private static CategoryProductCountDTO toDto(CategoryProductCount count) {
         return new CategoryProductCountDTO(count.id(), count.name(), count.productCount());
     }

@@ -120,6 +120,10 @@ graph TD
 | **S12** | Reviews & Identity/Access | ~4 d | Med | Review lifecycle, `User` aggregate, security out of the domain, 4 security fixes |
 | **S13** | Supporting contexts & closeout | ~4 d | Low–Med | Payment/FX/email/storage ports, analytics as query side, ArchUnit repo-wide |
 
+**All six sprints are shipped.** Each has an outcome section below recording what actually
+landed, what running it caught that the plan did not anticipate, and where the result
+deviates from what is written here. **51 tests at the start of S1; 541 at the end of S13.**
+
 **Dependency order is strict: S8 → S9 → S10 → S11 → S12 → S13.**
 S8 must land first — S10–S12 rewrite three services that have **zero test coverage today**, and the characterization suite is the only thing that makes that safe.
 
@@ -796,19 +800,183 @@ rather than self-skipping.
 **Goal:** Every external system behind a port, the query side made explicit, ArchUnit tightened repo-wide.
 
 **Backlog**
-- [ ] **`payments/`:** `PaymentGateway` port + `MomoPaymentGateway` adapter. Inject `RestClient` as a bean instead of `new RestTemplate()` (`MomoService.java:24`, untestable as a `new`'d field). **De-duplicate the HMAC-SHA256 helper**, currently copy-pasted verbatim in `MomoService.java:95-108` and `PaymentController.java:109-122`. Move IPN signature verification out of the controller into the adapter and use a **constant-time compare** (`PaymentController.java:105-107` uses `.equals`). Guard the unchecked `Integer.parseInt` at `:70`.
-- [ ] **`ExchangeRateProvider` port** + adapter — `FxService.java:27` currently swallows every exception into a silent, hard-coded 23000 VND rate.
-- [ ] **`notification/`:** `NotificationSender` port + `SmtpNotificationSender`. Move the 120-line inline HTML into a template. **Base URLs from config** — `EmailService.java:17,31` hardcodes `http://localhost:8080` and `UserController.java:85-91` hardcodes `:5173`.
-- [ ] **`storage/`:** one `FileStorage` port with a `LocalFileStorage` adapter, unifying `AvatarStorageService` and the raw `Files.createDirectories`/`Files.copy` sitting **inline in `MediaController.java:26-37` with no service layer at all**. Add content-type and size validation (avatars are currently saved as `{userId}.jpg` regardless of actual type).
-- [ ] **`analytics/`:** make the CQRS split explicit — the **only** package permitted to use `MongoTemplate` (currently injected into `OrderAnalyticsService.java:40` and `AdminDashboardGetProductService.java:35`). Reads documents, returns DTOs, never touches domain objects. Fold away the pass-through `AdminDashboardService` (38 L of pure delegation).
-- [ ] **`content/`** (BlogPost, StaticPage), **`geo/`** (Country/State/City — `AddressService.java:32-48` returns `null` via `.orElse(null)` into `int` fields, risking NPE; fix), **`assistant/`** (existing `ai/` + `websocket/` behind an `AiAssistant` port; log `ChatMemoryService`'s JVM-local `ConcurrentHashMap` as a scale-out follow-up, don't fix here).
-- [ ] **Dead code:** delete `TransactionRepository` (injected nowhere), `ProductRepository.title(String)` at `:20` (a stray method with no Spring Data prefix that would fail parsing if called), and the duplicate `AdminCategoryController` / `CategoryController` pair (byte-identical endpoints on the same service call).
-- [ ] **ArchUnit final tightening:** every rule now applies **repo-wide with no scoping**. This is what makes the result *strict* rather than aspirational.
-- [ ] **Docs:** rewrite the `backend/README.md` architecture table for the context map; finalize this document; `package-info.java` per context.
+- [x] **`payments/`:** `PaymentGateway` port + `MomoPaymentGateway` adapter. Inject `RestClient` as a bean instead of `new RestTemplate()` (`MomoService.java:24`, untestable as a `new`'d field). **De-duplicate the HMAC-SHA256 helper**, currently copy-pasted verbatim in `MomoService.java:95-108` and `PaymentController.java:109-122`. Move IPN signature verification out of the controller into the adapter and use a **constant-time compare** (`PaymentController.java:105-107` uses `.equals`). Guard the unchecked `Integer.parseInt` at `:70`.
+- [x] **`ExchangeRateProvider` port** + adapter — `FxService.java:27` currently swallows every exception into a silent, hard-coded 23000 VND rate.
+- [x] **`notification/`:** `NotificationSender` port + `SmtpNotificationSender`. Move the 120-line inline HTML into a template. **Base URLs from config** — `EmailService.java:17,31` hardcodes `http://localhost:8080` and `UserController.java:85-91` hardcodes `:5173`.
+- [x] **`storage/`:** one `FileStorage` port with a `LocalFileStorage` adapter, unifying `AvatarStorageService` and the raw `Files.createDirectories`/`Files.copy` sitting **inline in `MediaController.java:26-37` with no service layer at all**. Add content-type and size validation (avatars are currently saved as `{userId}.jpg` regardless of actual type).
+- [x] **`analytics/`:** make the CQRS split explicit — the **only** package permitted to use `MongoTemplate` (currently injected into `OrderAnalyticsService.java:40` and `AdminDashboardGetProductService.java:35`). Reads documents, returns DTOs, never touches domain objects. Fold away the pass-through `AdminDashboardService` (38 L of pure delegation).
+- [x] **`content/`** (BlogPost, StaticPage), **`geo/`** (Country/State/City — `AddressService.java:32-48` returns `null` via `.orElse(null)` into `int` fields, risking NPE; fix), **`assistant/`** (existing `ai/` + `websocket/` behind an `AiAssistant` port; log `ChatMemoryService`'s JVM-local `ConcurrentHashMap` as a scale-out follow-up, don't fix here).
+- [x] **Dead code:** delete `TransactionRepository` (injected nowhere), `ProductRepository.title(String)` at `:20` (a stray method with no Spring Data prefix that would fail parsing if called), and the duplicate `AdminCategoryController` / `CategoryController` pair (byte-identical endpoints on the same service call).
+- [x] **ArchUnit final tightening:** every rule now applies **repo-wide with no scoping**. This is what makes the result *strict* rather than aspirational.
+- [x] **Docs:** rewrite the `backend/README.md` architecture table for the context map; finalize this document; `package-info.java` per context.
 
 **Verify:** `grep -rn "MongoTemplate" backend/src/main | grep -v analytics` is empty; `grep -rn "new RestTemplate()" backend/src/main` is empty; ArchUnit repo-wide green.
 
 **Risks:** Low–Med, mostly mechanical moves — but the MoMo IPN relocation touches money. Verify against the MoMo sandbox before merging.
+
+### S13 outcome — shipped
+
+Branch `ddd/s13-supporting-contexts`, eight commits. **541 tests green** (435 before the
+sprint, 51 before the program).
+
+| Item | Landed as |
+|---|---|
+| `payments/` | `PaymentGateway` + `ExchangeRateProvider` ports; `MomoPaymentGateway`, `OpenErApiExchangeRateProvider`; one `HmacSha256` with a constant-time compare |
+| `notification/` | `NotificationSender` port, `SmtpNotificationSender`, `NotificationType` as the message catalogue, the layout as a classpath resource |
+| `storage/` | one `FileStorage` port, `LocalFileStorage`, content-type allow-list and size limit, two areas configured the same way |
+| `analytics/` | `analytics/{api,application}`; the pass-through `AdminDashboardService` deleted; no aggregate named from the read side |
+| `content/`, `geo/`, `assistant/` | all three moved behind ports; `AiAssistant` replaces a pipeline that lived half in the websocket controller |
+| Dead code | the three the plan lists (two already gone), plus a six-link chain the assistant's port left behind |
+| ArchUnit | **repo-wide, nothing scoped**; 16 rules; the published-language rule now derives from the ports themselves |
+| Legacy packages | all eleven deleted — `ai`, `config`, `controller`, `dto`, `exception`, `mapper`, `model`, `repository`, `service`, `websocket`, and `security` before them |
+
+**Verification actually performed**, not just asserted:
+
+- **The repo-wide claim was falsified in the one way that could prove it.** Planting a
+  violation in an existing context would have shown nothing — those packages were inside
+  the old scope. The probe was a **new top-level package** the old `NEW_PACKAGES` list
+  would have skipped entirely, carrying a `@Document` outside a domain package, a
+  `MongoTemplate` field and a controller binding that document from a request body.
+  Exactly three rules fired, one each. Under the old scoping, none would have.
+- **The MoMo signature check was falsified** by making `HmacSha256.matches` return `true`
+  unconditionally. One test failed — the tampered-amount one — and, usefully, the
+  missing-signature test did *not*, because a different guard (the null check) catches
+  that. Each mechanism has its own falsifying test rather than one test covering for both.
+- **Both money paths got their first coverage ever.** `MomoService` and `FxService` each
+  built their HTTP client in a field initialiser (`new RestTemplate()`), so there was
+  nothing a test could replace and neither `createPaymentUrl` nor `getUsdToVndRate` was
+  reachable. Injected now, with `MockRestServiceServer` standing in for the gateway.
+- **"No URL changed" is asserted through the real dispatcher**, not by inspection.
+  `AnalyticsRoutesUnchangedTest` drives all eight moved and unmoved admin read endpoints
+  plus every `TimeFrame` value. It matters most for `AdminSalesController`, which is
+  deliberately mapped at the *same* `/api/admin/orders` base as `AdminOrderController` —
+  legal only while no full path collides, and a collision is an ambiguous-mapping failure
+  at startup.
+- The email assertions read the body back off the `MimeMessage` after `saveChanges()`, so
+  what is asserted is what would be sent rather than an intermediate string.
+
+**What running it for real caught that the plan did not anticipate:**
+
+1. **The context rule made ports unusable.** The first S13 port to carry a value failed
+   `contexts_touch_each_other_only_through_published_types`: it accepted
+   `PaymentGateway` (an interface in a `domain` package) but rejected `GatewaySettlement`,
+   its return type, and the exception it throws. So `ordering` was allowed to *hold* the
+   port and not to *call* it. That is incoherent — a contract whose terms the caller cannot
+   name is not a contract — and it was the rule's fault, not the design's. The published set
+   is now **derived structurally from the ports' own signatures**, which is the same
+   correction S11 made when it stopped recognising events by an `…Event` suffix. A port may
+   only publish its *own* context's types, so it cannot launder another context's internals;
+   falsified with a payments adapter type on an ordering service.
+2. **Moving `config/` under `platform` broke a rule, correctly.** The guest-cart TTL index
+   injects a `MongoTemplate`, and under `platform` it failed
+   `mongo_template_is_reserved_for_analytics_and_adapters`. The tempting fix is an
+   exemption. The honest one is that an index is a statement about how one context's
+   collection is stored, so it belongs to `cart/infrastructure` — the context that owns the
+   `carts` collection owns its indexes.
+3. **The email layout substituted its own documentation.** The HTML comment explaining the
+   placeholder syntax contained the placeholders, so rendering replaced them — and shipped
+   the comment to recipients. Caught by the test pinning that `width="100%"` survives the
+   move out of a Java text block.
+4. **Maven's incremental compile hides deleted classes.** `mvn test-compile` reported
+   success against a test referencing a class that had been deleted; `mvn clean` failed it.
+   Every check in this sprint was run with `clean`.
+5. **`ProductQueryService.findByCategoryName` had never been called** — dead before the
+   sprint began, not dead because of it. Removing it and `findByTitle` made four more
+   methods dead down the chain, each verified unreferenced before deleting.
+
+**Deviations from the plan as written, and why:**
+
+1. **The MoMo canonical signature strings are reproduced byte-for-byte, oddity included.**
+   An absent field concatenates as the literal `"null"` while `payType` alone coalesces to
+   `""` — almost certainly not what MoMo does. It is preserved anyway: validating a change
+   needs the sandbox and real credentials, which this refactor does not have, and the
+   failure mode of guessing wrong is that live payments stop verifying. **This is the one
+   S13 item whose verify step was not performed** — the plan says "verify against the MoMo
+   sandbox before merging", and that still stands for anyone who changes it. Both renderings
+   are pinned as tests so the behaviour is described rather than merely inherited.
+2. **The IPN endpoint lives in `ordering/api`, not `payments/`.** Its effect is to move an
+   order and append to its payment ledger — an ordering use case reached over HTTP. It is
+   also the only direction that satisfies the context rule: a controller in `payments.api`
+   would have to call `ordering.application.OnlinePaymentService`, and an application
+   service is not published language. The plan's own target architecture gives `payments/`
+   a `domain` and an `infrastructure` and no `api`, for exactly this reason.
+3. **The low-stock endpoint moved to `catalog`, not `analytics`.** It reached
+   `catalog.application.ProductQueryService` through three hops. "Which products are running
+   low" is the catalog's question — it owns stock, and since S11 it owns the threshold that
+   defines *low*. It only appeared in analytics because the panel that shows it is on the
+   dashboard. URL unchanged.
+4. **`ProductBrief` is separate from `CatalogSnapshot`.** The assistant needs a rating;
+   a snapshot's fields get copied onto stored order lines, and a rating has no business
+   there. Two published values rather than one wider one.
+5. **The whole `ApiException` hierarchy was deleted, not moved.** The plan's item is
+   `exception/` becoming `platform/exception`, but `contexts_do_not_depend_on_the_platform`
+   would then fail every context that threw a `BadRequestException`. Twenty-eight throw
+   sites became named domain exceptions in the context that owns the rule, and
+   `AuthenticationFailedException` joined the shared kernel as the fifth base — without it,
+   every sign-in refusal would have fallen to the `Exception.class` catch-all and answered
+   **500**, which is the exact bug S12 found twice.
+6. **`MessageResponse` went to a new `shared/api` package.** Three contexts answer with it,
+   so it belongs to none of them; it cannot go in `platform`, because every controller
+   returning one would then break the platform rule.
+
+**Fixes that were not on the S13 backlog, found while doing it:**
+
+- **Registration answered 500 for an address the dataset did not have — or for no address
+  at all.** `AddressService` returned `.orElse(null)` from three lookups and
+  `AuthService.resolveAddress` assigned each to an `int`. Country, state and city are not
+  `@NotBlank` on the registration DTO, so a request the API accepts was a guaranteed
+  `NullPointerException`. The plan flags the `.orElse(null)` as an NPE risk; it was not a
+  risk, it was reachable from the public registration endpoint.
+- **Uploads had no validation of any kind.** Everything written by either uploader lands
+  under `uploads/`, served statically from the application's own origin, so any
+  authenticated customer could upload an `.html` or `.svg` avatar and get back a same-origin
+  URL serving markup they wrote. There is an allow-list now.
+- **The upload filename was a path-traversal vector.** `MediaController` took the extension
+  from `getOriginalFilename()` by cutting at the last dot — attacker-controlled text
+  appended to a path, and it need not look like an extension: `"a./../../evil"` yields
+  `"./../../evil"`, which `Path.resolve` reads as a path. The extension comes from the
+  validated content type now, so the vector does not exist rather than being filtered.
+- **A signature comparison leaked timing.** `PaymentController.verifySignature` compared
+  digests with `String.equals`, which returns at the first differing character.
+- **The recipient's name was substituted raw into HTML email.** Registering as
+  `<a href=…>` put an attacker's link inside a message from Gearly.
+- **A non-numeric MoMo `resultCode` answered 500**, which the gateway reads as a delivery
+  failure and retries — so a payload that could never be parsed was re-delivered on a
+  schedule.
+- **The FX fallback was silent and years stale.** `catch (Exception ignored)` around a
+  hard-coded 23000 VND/USD meant a permanently broken lookup was indistinguishable from a
+  working one, while the real rate has drifted past 26000 — every fallback undercharged by
+  roughly 12%.
+
+**Deliberate behaviour changes:**
+
+- **An unrecognised place name at registration is a 400, not a 500**, and a *missing* one is
+  no longer an error at all — the address fields are optional in the DTO and now genuinely
+  are.
+- **A non-image or oversized upload is a 400** where it used to be a stored file.
+- **An avatar's extension follows its content type** rather than always being `.jpg`. The
+  previous file is removed, so a customer changing format does not leave an orphan.
+- **A malformed or unparseable payment notification is a 400**, not a 500.
+- **A failed intent classification is logged.** It used to be swallowed into the same reply
+  the model returns for a genuinely off-topic question, so an outage and normal operation
+  were indistinguishable.
+
+**No frontend task.** Every URL, request body and response shape is unchanged, including the
+STOMP destinations and the `{content, uiAction}` chat message. The one contract that shrank —
+the storage config — is server-side only.
+
+**Carried past the program, logged rather than fixed:**
+
+- **The MoMo canonicalisation quirk** above, which needs sandbox credentials.
+- **`ChatMemoryService` is a `ConcurrentHashMap` in process memory**: it does not survive a
+  restart, a second instance behind a load balancer has its own, and nothing evicts a
+  session id. The plan asks for this to be logged rather than fixed, and putting it behind
+  `ConversationalModel` is what makes it replaceable without touching the assistant.
+- **A deactivated account keeps its token** until the JWT expires (carried from S12).
+- **`ProductReviewsDTO.sortBy` reaches `Sort.by` unvalidated** (carried from S12).
+- **No retry on optimistic-lock conflict**, so two simultaneous checkouts of the same
+  product turn one away even when stock covers both (carried from S11).
+- **`User.favorites` is an unbounded array** inside the user aggregate (carried from S11).
 
 ---
 

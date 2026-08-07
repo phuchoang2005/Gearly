@@ -1,8 +1,8 @@
 package com.dominator.gearly.catalog.api;
 
+import com.dominator.gearly.catalog.domain.InvalidProductSearchException;
 import com.dominator.gearly.catalog.domain.ProductQuery;
 import com.dominator.gearly.catalog.domain.ProductSort;
-import com.dominator.gearly.exception.BadRequestException;
 import com.dominator.gearly.shared.domain.CategoryId;
 import com.dominator.gearly.shared.domain.ProductCondition;
 import org.springframework.stereotype.Component;
@@ -45,7 +45,7 @@ public class ProductSearchMapper {
         try {
             return ProductCondition.fromWireValue(condition);
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new InvalidProductSearchException(e.getMessage());
         }
     }
 
@@ -61,7 +61,7 @@ public class ProductSearchMapper {
         try {
             return genres.stream().map(CategoryId::of).toList();
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid category id in 'genres': " + e.getMessage());
+            throw new InvalidProductSearchException("Invalid category id in 'genres': " + e.getMessage());
         }
     }
 }

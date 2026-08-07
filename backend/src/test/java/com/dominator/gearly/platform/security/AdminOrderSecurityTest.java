@@ -1,13 +1,12 @@
 package com.dominator.gearly.platform.security;
 
-import com.dominator.gearly.config.CorsConfig;
+import com.dominator.gearly.platform.config.CorsConfig;
 import com.dominator.gearly.platform.security.SecurityConfig;
 import com.dominator.gearly.ordering.api.AdminOrderController;
 import com.dominator.gearly.ordering.api.OrderResponseMapper;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.ordering.application.AdminOrderService;
-import com.dominator.gearly.service.admin.OrderAnalyticsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -38,8 +37,6 @@ class AdminOrderSecurityTest {
 
     @MockBean
     private AdminOrderService orderService;
-    @MockBean
-    private OrderAnalyticsService orderAnalyticsService;
     @MockBean
     private OrderResponseMapper orderResponseMapper;
 

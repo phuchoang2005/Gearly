@@ -1,8 +1,8 @@
 package com.dominator.gearly.reviews.application;
 
+import com.dominator.gearly.reviews.domain.RatingOutOfRangeException;
+import com.dominator.gearly.reviews.domain.ReviewSubjectNotFoundException;
 import com.dominator.gearly.catalog.domain.ProductSnapshotPort;
-import com.dominator.gearly.exception.BadRequestException;
-import com.dominator.gearly.exception.ResourceNotFoundException;
 import com.dominator.gearly.ordering.domain.ReviewEligibility;
 import com.dominator.gearly.ordering.domain.ReviewableOrders;
 import com.dominator.gearly.reviews.domain.OrderNotReviewableException;
@@ -76,8 +76,7 @@ public class SubmitReviewService {
         ReviewEligibility eligibility = orders.eligibilityOf(orderId, caller);
         switch (eligibility) {
             case ELIGIBLE -> { }
-            case NO_SUCH_ORDER -> throw new ResourceNotFoundException(
-                    "Order not found, you cannot create review on this.");
+            case NO_SUCH_ORDER -> throw ReviewSubjectNotFoundException.noSuchOrder();
             case NOT_THE_BUYERS -> throw new ReviewNotYoursException();
             default -> throw new OrderNotReviewableException(eligibility);
         }
@@ -99,8 +98,7 @@ public class SubmitReviewService {
                 .collect(Collectors.toSet());
 
         if (!known.containsAll(wanted)) {
-            throw new ResourceNotFoundException(
-                    "Product not found, you cannot create review for this product.");
+            throw ReviewSubjectNotFoundException.noSuchProduct();
         }
     }
 
@@ -117,7 +115,7 @@ public class SubmitReviewService {
         try {
             return Rating.of(value);
         } catch (IllegalArgumentException outOfRange) {
-            throw new BadRequestException(outOfRange.getMessage());
+            throw new RatingOutOfRangeException(outOfRange.getMessage());
         }
     }
 }

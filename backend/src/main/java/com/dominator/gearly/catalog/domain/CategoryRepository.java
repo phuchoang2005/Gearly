@@ -15,8 +15,6 @@ public interface CategoryRepository {
     /** Missing ids are absent from the result rather than an error. */
     List<Category> findAllById(List<CategoryId> ids);
 
-    List<Category> findByNameContaining(String name);
-
     /** Every category with the number of products filed under it, name-ordered. */
     List<CategoryProductCount> countProductsPerCategory();
 }

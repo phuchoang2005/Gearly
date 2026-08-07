@@ -24,5 +24,4 @@ interface SpringDataCategoryRepository extends MongoRepository<Category, String>
     })
     List<CategoryProductCount> findCategoryWithProductCount();
 
-    List<Category> findByNameContainingIgnoreCase(String name);
 }

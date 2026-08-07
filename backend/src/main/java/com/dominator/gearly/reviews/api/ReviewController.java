@@ -1,6 +1,6 @@
 package com.dominator.gearly.reviews.api;
 
-import com.dominator.gearly.dto.MessageResponse;
+import com.dominator.gearly.shared.api.MessageResponse;
 import com.dominator.gearly.platform.security.AuthenticatedUser;
 import com.dominator.gearly.reviews.application.ReviewQueryService;
 import com.dominator.gearly.reviews.application.SubmitReviewService;

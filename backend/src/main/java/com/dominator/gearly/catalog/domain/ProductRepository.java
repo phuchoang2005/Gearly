@@ -40,8 +40,6 @@ public interface ProductRepository {
 
     List<Product> findByTitleContaining(String title);
 
-    List<Product> findByAnyCategory(List<CategoryId> categoryIds);
-
     /** Everything with fewer than {@code threshold} units left. */
     List<Product> findLowStock(Quantity threshold);
 

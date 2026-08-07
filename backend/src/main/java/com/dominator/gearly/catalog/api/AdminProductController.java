@@ -1,8 +1,9 @@
 package com.dominator.gearly.catalog.api;
 
 import com.dominator.gearly.catalog.application.AdminProductService;
+import com.dominator.gearly.catalog.domain.ProductNotFoundException;
+import com.dominator.gearly.shared.domain.ProductId;
 import com.dominator.gearly.catalog.application.ProductQueryService;
-import com.dominator.gearly.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -94,7 +95,7 @@ public class AdminProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
         if (!adminProductService.deleteProduct(id)) {
-            throw new ResourceNotFoundException("Product not found");
+            throw new ProductNotFoundException(ProductId.of(id));
         }
         return ResponseEntity.noContent().build();
     }

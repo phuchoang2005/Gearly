@@ -33,11 +33,6 @@ public class MongoCategoryRepository implements CategoryRepository {
     }
 
     @Override
-    public List<Category> findByNameContaining(String name) {
-        return categories.findByNameContainingIgnoreCase(name);
-    }
-
-    @Override
     public List<CategoryProductCount> countProductsPerCategory() {
         return categories.findCategoryWithProductCount();
     }

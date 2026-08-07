@@ -1,6 +1,6 @@
 package com.dominator.gearly.shared.infrastructure;
 
-import com.dominator.gearly.dto.BestSellerDTO;
+import com.dominator.gearly.analytics.api.BestSellerDTO;
 import com.dominator.gearly.cart.domain.Cart;
 import com.dominator.gearly.cart.domain.CartFixture;
 import com.dominator.gearly.catalog.domain.Category;

@@ -1,8 +1,8 @@
 package com.dominator.gearly.platform.security;
 
-import com.dominator.gearly.config.CorsConfig;
+import com.dominator.gearly.platform.config.CorsConfig;
 import com.dominator.gearly.platform.security.SecurityConfig;
-import com.dominator.gearly.controller.admin.MediaController;
+import com.dominator.gearly.catalog.api.MediaController;
 import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -35,6 +35,10 @@ class UploadsSecurityTest {
     private AccessTokens accessTokens;
     @MockBean
     private UserRepository userRepository;
+    // MediaController's collaborator. Mocked because this test is about the filter chain:
+    // no request here ever reaches the handler.
+    @MockBean
+    private com.dominator.gearly.storage.domain.FileStorage fileStorage;
 
     @Test
     void uploadedAsset_isPublic() throws Exception {
