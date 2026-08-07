@@ -1,5 +1,6 @@
 package com.dominator.gearly.identity.infrastructure;
 
+import com.dominator.gearly.identity.domain.VerificationLinks;
 import com.dominator.gearly.identity.domain.VerificationTokenTtl;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -17,5 +18,10 @@ public class IdentityConfiguration {
     @Bean
     public VerificationTokenTtl verificationTokenTtl(IdentityProperties properties) {
         return new VerificationTokenTtl(properties.getVerificationTokenTtl());
+    }
+
+    @Bean
+    public VerificationLinks verificationLinks(IdentityProperties properties) {
+        return new VerificationLinks(properties.getPublicBaseUrl());
     }
 }
