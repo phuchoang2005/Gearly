@@ -11,69 +11,96 @@ WebSocket · springdoc/OpenAPI · langchain4j (GitHub Models).
 
 ## Architecture
 
-Mid-migration from a conventional layered app to bounded contexts (see
-`DDD_REFACTORING_PLAN.md`). **`ordering/` is the first context fully moved across**; the
-other contexts' packages exist with a `package-info.java` each and fill up in S11–S13.
+The backend is organised as **bounded contexts with rich aggregates**, the result of
+Sprints 8–13 of [`DDD_REFACTORING_PLAN.md`](../DDD_REFACTORING_PLAN.md). There is no
+`controller/`, `service/`, `model/` or `repository/` package: every class belongs to a
+context, and the layer rules are enforced by `ArchitectureFitnessTest` rather than by
+convention.
 
-A migrated context has four packages, and `ArchitectureFitnessTest` enforces what may
-depend on what:
+### The contexts
 
-| Package | Responsibility |
-|---|---|
-| `<context>/domain/` | Aggregates, value objects, domain services, events and the repository/external-system **ports**. Plain Java — no web, security, HTTP or Spring Data repository types. |
-| `<context>/application/` | Use cases. Take a command record plus a typed id, never a Spring Security principal. One aggregate per transaction. |
-| `<context>/infrastructure/` | Adapters implementing the domain's ports. The only layer that may name `MongoTemplate` or a Spring Data repository. |
-| `<context>/api/` | Controllers and their DTOs. Unwraps the authenticated principal into a typed id before calling in. |
-| `shared/domain/` | The shared kernel: `Money`, `Quantity`, `Rating`, typed ids, `AggregateRoot`, `DomainEvent`. Depends on no context. |
+| Context | Role | What it owns |
+|---|---|---|
+| `ordering/` | **Core** | The `Order` aggregate and its state machine, `PricingPolicy`, the payment ledger. An order cannot be put into an illegal state. |
+| `catalog/` | **Core** | `Product`, `Category`, the one stock rule, and the `CatalogSnapshot` ACL other contexts capture prices through. |
+| `cart/` | Supporting | The `Cart` aggregate: add, merge, reconcile with the catalog. A line is constructible only from a snapshot. |
+| `reviews/` | Supporting | The review lifecycle and the `ReviewApproved` / `ReviewRejected` events that drive a product's rating. |
+| `identity/` | Supporting | The `User` aggregate, verification tokens, the access boundary. |
+| `content/` | Supporting | Blog posts and standing pages. Read-only. |
+| `payments/` | Generic (ACL) | `PaymentGateway` and `ExchangeRateProvider` ports; the MoMo and FX adapters. Nothing else knows a provider exists. |
+| `notification/` | Generic | `NotificationSender` port, SMTP adapter, message catalogue and layout. |
+| `storage/` | Generic | `FileStorage` port and the local-disk adapter, with content-type and size validation. |
+| `geo/` | Generic | The country/state/city reference dataset behind `PlaceDirectory`. |
+| `assistant/` | Generic | The chat assistant behind `AiAssistant`; the language model is an adapter. |
+| `analytics/` | Query side | Dashboard and sales read models. Reads documents, returns DTOs, never names an aggregate. |
 
-The pre-refactor packages below still hold everything not yet migrated:
-
-| Package | Responsibility |
-|---|---|
-| `controller/` (`admin/`, `user/`) | Thin HTTP layer — returns typed `ResponseEntity<DTO>`, never entities. |
-| `service/` (`admin/`, `user/`) | Business logic; one responsibility per service. |
-| `mapper/` | Hand-written `@Component` entity ↔ DTO mappers. |
-| `repository/` (`custom/`) | Spring Data Mongo repositories + custom aggregation impls. |
-| `model/` | MongoDB documents (`products`, `orders`, `carts`, `users`, …). |
-| `dto/` | Request/response payloads. |
-| `exception/` | `ApiException` hierarchy + `GlobalExceptionHandler` (uniform `ErrorResponse`). |
-| `security/` | JWT filter/util, `SecurityConfig`; `/api/admin/**` requires `ROLE_ADMIN`, uploaded assets under `/uploads/**` are public. |
-| `ai/` | Intent routing + GitHub Models client for the shopping assistant. |
-| `websocket/` | Chat WebSocket endpoint (`/ws-chat/**`). |
-| `config/` | CORS, OpenAPI, Mongo config. |
-
-Error handling is centralized: services throw typed exceptions
-(`ResourceNotFoundException`, `BadRequestException`, `ConflictException`, …) and
-`GlobalExceptionHandler` renders them as a uniform JSON body
-(`{ timestamp, status, error, fieldErrors? }`).
-
-### Migration in progress: bounded contexts
-
-The layered packages above are being restructured into **bounded contexts with rich
-aggregates** over Sprints 8–13 — see
-[`DDD_REFACTORING_PLAN.md`](../DDD_REFACTORING_PLAN.md). The target packages already
-exist alongside the current ones, each with a `package-info.java` stating its
-responsibility and its relationships on the context map:
+Two packages are deliberately **not** contexts:
 
 | Package | Role |
 |---|---|
-| `shared/` | Shared kernel — value objects, typed ids, `AggregateRoot`, the Mongo/Jackson converters. |
-| `ordering/`, `catalog/` | Core domain. |
-| `cart/`, `reviews/`, `identity/`, `content/` | Supporting contexts. |
-| `payments/`, `notification/`, `storage/`, `geo/`, `assistant/` | Generic subdomains, each behind a port. |
-| `analytics/` | The query side — the only package permitted `MongoTemplate`. |
-| `platform/` | Cross-cutting: config, security, exception handling. Not a context. |
+| `shared/domain/` | The shared kernel: `Money`, `Quantity`, `Rating`, `EmailAddress`, typed ids, `AggregateRoot`, `DomainEvent`, and the five domain-exception bases. Depends on no context. |
+| `shared/api/` | The handful of response shapes more than one context answers with. Kept very small. |
+| `platform/` | Cross-cutting wiring: `config`, `security`, `exception`. Knows about the contexts; they do not know about it. |
 
-Each context is layered `domain / application / infrastructure / api`. **The rules are
-enforced, not documented:** `ArchitectureFitnessTest` (ArchUnit) fails the build on a
-domain package importing web/security/HTTP types, a `@Document` outside a domain
-package, a public setter on an aggregate, `MongoTemplate` outside `analytics`, or one
-context reaching into another other than through a port, a `*Event` or a published
-`*Snapshot`/`*Id`. The rules are currently **scoped to the new packages** (marked
-`SCOPE:` in the test) so the untouched legacy packages don't fail them; those scopes
-come off in S13.
+### The layers inside a context
 
----
+| Package | Responsibility |
+|---|---|
+| `<context>/domain/` | Aggregates, value objects, domain services, events and the repository/external-system **ports**. Plain Java — no web, security, HTTP or Spring Data repository types, so every one of them is constructible in a test with no Spring context. |
+| `<context>/application/` | Use cases. Take a command record plus a typed id, never a Spring Security principal. One aggregate per transaction. |
+| `<context>/infrastructure/` | Adapters implementing the domain's ports. The only layer that may name `MongoTemplate` or a Spring Data repository. |
+| `<context>/api/` | Controllers and their DTOs. Unwraps the authenticated principal into a typed id before calling in. |
+
+Not every context has all four. `payments/`, `notification/` and `storage/` are generic
+subdomains with a `domain` (the port) and an `infrastructure` (the adapter) and no inbound
+HTTP edge of their own — the MoMo callback is an `ordering/` endpoint, because its effect is
+to move an order.
+
+### How contexts reach each other
+
+Only through another context's **published language**: a port (an interface in its `domain`
+package), a domain event, or a published value such as a `*Snapshot` or a typed `*Id`.
+An application service, a repository adapter or a controller of another context is never a
+legal target — that is the distributed-monolith failure mode the structure exists to prevent.
+
+```
+catalog  --CatalogSnapshot / ProductSearchPort-->  ordering, cart, assistant
+cart     --OrderPlaced-------------------------->  ordering
+ordering --OrderPlaced / OrderCancelled--------->  catalog, cart
+ordering --PaymentGateway----------------------->  payments
+reviews  --ReviewApproved / ReviewRejected------>  catalog
+identity --UserRegistered----------------------->  notification
+identity --PlaceDirectory / FileStorage--------->  geo, storage
+```
+
+### Error handling
+
+Contexts throw **named domain exceptions** extending one of the shared kernel's five bases;
+`platform/exception/GlobalExceptionHandler` maps each base to a status and renders a uniform
+`{ timestamp, status, error, fieldErrors? }` body. The domain never names
+`org.springframework.http`, so the rule and the status code stay separate concerns.
+
+| Base (in `shared/domain/`) | Status |
+|---|---|
+| `DomainRuleViolationException` | 400 |
+| `AuthenticationFailedException` | 401 |
+| `AccessDeniedDomainException` | 403 |
+| `DomainNotFoundException` | 404 |
+| `DomainConflictException` | 409 |
+
+### The rules are enforced, not documented
+
+`ArchitectureFitnessTest` (ArchUnit) fails the build on: a domain package importing
+web/security/HTTP or Spring Data repository types; a `@Document` outside a domain package; a
+public setter on an aggregate; `MongoTemplate` outside `analytics` or an adapter; a
+`@RequestBody` bound to a stored document; a domain event carrying a publisher-internal type;
+an admin route without `@PreAuthorize`; or one context reaching into another other than
+through its published language.
+
+**As of S13 every rule applies repo-wide with no scoping.** Sprints 8–12 scoped three of them
+to the packages already migrated, because the legacy tree failed them by construction; those
+scopes are gone, along with the packages. Each rule has been verified by planting a deliberate
+violation and confirming that it — and only it — fails.
 
 ## Transactions
 
@@ -215,7 +242,7 @@ make test        # mvn test, pinned to JDK 21
 The suite is safe to run **offline**: unit tests (services, mappers), the ArchUnit
 fitness functions, and `@WebMvcTest` slices (security + `GlobalExceptionHandler`) need
 no infrastructure. The context-load test (`GearlyApplicationTests`), the analytics
-aggregation test (`OrderAnalyticsServiceIntegrationTest`), the order-repository adapter
+aggregation test (`SalesAnalyticsQueryIntegrationTest`), the order-repository adapter
 test (`MongoOrderRepositoryIntegrationTest`) and the transaction / optimistic-locking
 test (`OrderPlacementTransactionIntegrationTest`) spin up a
 throwaway MongoDB via **Testcontainers** and are **Docker-gated**
@@ -223,15 +250,16 @@ throwaway MongoDB via **Testcontainers** and are **Docker-gated**
 daemon is reachable, and run for real when Docker/Colima is up (`Skipped: 0` then).
 Ryuk is disabled in the Surefire config (it can't bind-mount Colima's socket).
 
-Two suites are load-bearing for the ongoing refactor and must stay green:
+Two suites are load-bearing and must stay green:
 
 - **The characterization suites** — `CartServiceTest`, `ReviewServiceTest`, and the four
   suites S10 split `CustomerOrderServiceTest` into (`PlaceOrderServiceTest`,
   `CancelOrderServiceTest`, `OrderQueryServiceTest`, `OnlinePaymentServiceTest`, plus
-  `OrderPlacedListenerTest`). These lock the *current* behavior of the services S10–S12
-  rewrite, **bugs included**; the pinned bugs are labelled `KNOWN BUG` with the sprint
-  expected to change them. A deliberate behavior change means editing the assertion **in
-  the same commit**, with the rationale in the commit message.
+  `OrderPlacedListenerTest`). These locked the *current* behavior of the three fat,
+  untested services S10–S12 rewrote, **bugs included** — the safety net the whole
+  program depended on. A deliberate behavior change means editing the assertion **in
+  the same commit**, with the rationale in the commit message; every one that happened
+  is listed in the sprint's outcome section.
 - **`ResponseDtoWireCompatTest`** — pins the JSON wire format byte-for-byte against the
   document shape. Both frontends depend on it.
 
