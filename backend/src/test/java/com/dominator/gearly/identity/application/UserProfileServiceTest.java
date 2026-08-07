@@ -6,7 +6,9 @@ import com.dominator.gearly.identity.domain.UserFixture;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
 import com.dominator.gearly.identity.domain.UserRepository;
 import com.dominator.gearly.identity.domain.UserStatus;
-import com.dominator.gearly.service.user.AvatarStorageService;
+import com.dominator.gearly.storage.domain.FileStorage;
+import com.dominator.gearly.storage.domain.StorageArea;
+import com.dominator.gearly.storage.domain.UploadedFile;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import com.dominator.gearly.shared.domain.PhoneNumber;
 import com.dominator.gearly.shared.domain.UserId;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +45,7 @@ class UserProfileServiceTest {
 
     @Mock private UserRepository users;
     @Mock private AccessTokens accessTokens;
-    @Mock private AvatarStorageService avatarStorage;
+    @Mock private FileStorage fileStorage;
 
     private UserProfileService userProfileService;
 
@@ -50,7 +53,7 @@ class UserProfileServiceTest {
 
     @BeforeEach
     void setUp() {
-        userProfileService = new UserProfileService(users, accessTokens, avatarStorage);
+        userProfileService = new UserProfileService(users, accessTokens, fileStorage);
     }
 
     private User existingUser() {
@@ -88,16 +91,22 @@ class UserProfileServiceTest {
         verify(accessTokens).issueFor(EmailAddress.of("moved@b.com"));
     }
 
+    /**
+     * S13: the collaborator is the {@link FileStorage} port and the argument is an
+     * {@link UploadedFile}, not a {@code MultipartFile}. The service stores under the account's
+     * own id in the avatars area, which is what makes an avatar one-per-account.
+     */
     @Test
-    void uploadAvatar_storesFile_setsPublicPathAndSaves() throws IOException {
+    void uploadAvatar_storesFile_setsPublicPathAndSaves() {
         User user = existingUser();
-        MultipartFile file = mock(MultipartFile.class);
+        UploadedFile file = new UploadedFile("image/png", 1234, () -> InputStream.nullInputStream());
         when(users.findById(CALLER)).thenReturn(Optional.of(user));
-        when(avatarStorage.store("u1", file)).thenReturn("/uploads/avatars/u1.jpg");
+        when(fileStorage.storeAs(StorageArea.AVATARS, "u1", file))
+                .thenReturn("/uploads/avatars/u1.png");
 
         userProfileService.uploadAvatar(CALLER, file);
 
-        assertThat(user.getProfileAvatar()).isEqualTo("/uploads/avatars/u1.jpg");
+        assertThat(user.getProfileAvatar()).isEqualTo("/uploads/avatars/u1.png");
         verify(users).save(user);
     }
 

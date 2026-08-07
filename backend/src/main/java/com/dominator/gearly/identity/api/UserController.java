@@ -8,6 +8,7 @@ import com.dominator.gearly.identity.application.VerificationTokenService;
 import com.dominator.gearly.identity.domain.VerificationToken;
 import com.dominator.gearly.platform.security.AuthenticatedUser;
 import com.dominator.gearly.shared.domain.UserId;
+import com.dominator.gearly.storage.domain.UploadedFile;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,8 @@ public class UserController {
      * <p>Configuration rather than {@code "http://localhost:5173"} spelled into three redirects.
      * The hard-coded value made the verification mail unusable anywhere but a developer's
      * laptop: a link sent from a deployed backend redirected the recipient to their own machine.
-     * S13 does the same for {@code EmailService}'s two hard-coded backend URLs.
+     * S13 did the same for the backend URLs the mail itself carried — see
+     * {@code identity.domain.VerificationLinks} and {@code gearly.identity.public-base-url}.
      */
     @Value("${gearly.frontend.base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -66,12 +68,18 @@ public class UserController {
                                 request.getAddress()))));
     }
 
+    /**
+     * The multipart request is adapted to the storage port's {@code UploadedFile} here, at the
+     * edge — {@code MultipartFile} is a web type and has no business in a use case.
+     */
     @PostMapping("/upload-avatar")
     public ResponseEntity<MessageResponse> uploadAvatar(
             @AuthenticationPrincipal AuthenticatedUser authUser,
             @RequestParam("avatar") MultipartFile file
-    ) throws IOException {
-        userProfileService.uploadAvatar(callerId(authUser), file);
+    ) {
+        userProfileService.uploadAvatar(
+                callerId(authUser),
+                new UploadedFile(file.getContentType(), file.getSize(), file::getInputStream));
         return ResponseEntity.ok(new MessageResponse("Avatar uploaded successfully."));
     }
 

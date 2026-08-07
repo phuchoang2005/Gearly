@@ -5,17 +5,16 @@ import com.dominator.gearly.identity.domain.AccessTokens;
 import com.dominator.gearly.identity.domain.User;
 import com.dominator.gearly.identity.domain.UserNotFoundException;
 import com.dominator.gearly.identity.domain.UserRepository;
-import com.dominator.gearly.service.user.AvatarStorageService;
 import com.dominator.gearly.shared.domain.Address;
 import com.dominator.gearly.shared.domain.EmailAddress;
 import com.dominator.gearly.shared.domain.PersonName;
 import com.dominator.gearly.shared.domain.PhoneNumber;
 import com.dominator.gearly.shared.domain.UserId;
+import com.dominator.gearly.storage.domain.FileStorage;
+import com.dominator.gearly.storage.domain.StorageArea;
+import com.dominator.gearly.storage.domain.UploadedFile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 /**
  * The customer's own account: profile edits, avatar, closing it.
@@ -27,8 +26,10 @@ import java.io.IOException;
  * write correct: the principal is built once per request by the filter, so a long request that
  * saved it twice was writing a stale copy the second time.
  *
- * <p>File storage is still {@code AvatarStorageService}. S13 replaces it with a
- * {@code FileStorage} port and adds the content-type and size validation it does not have.
+ * <p>S13: avatars go through the {@link FileStorage} port, which is what validates them. The
+ * signature takes an {@link UploadedFile} rather than Spring's {@code MultipartFile} for the
+ * same reason every other method here takes a {@link UserId} — a use case that can only be
+ * called with a live HTTP request is a use case that cannot be tested or reused.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,7 @@ public class UserProfileService {
 
     private final UserRepository users;
     private final AccessTokens accessTokens;
-    private final AvatarStorageService avatarStorage;
+    private final FileStorage fileStorage;
 
     /**
      * Save the profile and hand back a fresh token.
@@ -57,9 +58,16 @@ public class UserProfileService {
         return new SignedIn(accessTokens.issueFor(user.getEmail()), user);
     }
 
-    public void uploadAvatar(UserId caller, MultipartFile file) throws IOException {
+    /**
+     * Replaces the caller's avatar.
+     *
+     * <p>Stored under the account's own id, so a customer has exactly one — and the extension
+     * follows the uploaded type rather than always being {@code .jpg}, which is what
+     * {@code AvatarStorageService} did regardless of what the file actually was.
+     */
+    public void uploadAvatar(UserId caller, UploadedFile file) {
         User user = require(caller);
-        user.changeAvatar(avatarStorage.store(user.getId(), file));
+        user.changeAvatar(fileStorage.storeAs(StorageArea.AVATARS, user.getId(), file));
         users.save(user);
     }
 
