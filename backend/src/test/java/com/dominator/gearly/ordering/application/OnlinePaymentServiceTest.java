@@ -7,7 +7,8 @@ import com.dominator.gearly.ordering.domain.OrderStatus;
 import com.dominator.gearly.ordering.domain.PaymentTransaction;
 import com.dominator.gearly.ordering.domain.ShippingInformation;
 import com.dominator.gearly.ordering.domain.TransactionStatus;
-import com.dominator.gearly.service.user.MomoService;
+import com.dominator.gearly.payments.domain.GatewaySettlement;
+import com.dominator.gearly.payments.domain.PaymentGateway;
 import com.dominator.gearly.shared.domain.Money;
 import com.dominator.gearly.shared.domain.OrderId;
 import com.dominator.gearly.shared.domain.UserId;
@@ -44,7 +45,7 @@ class OnlinePaymentServiceTest {
 
     @Mock private PlaceOrderService placeOrderService;
     @Mock private OrderRepository orderRepository;
-    @Mock private MomoService momoService;
+    @Mock private PaymentGateway paymentGateway;
 
     private OnlinePaymentService service;
 
@@ -52,7 +53,7 @@ class OnlinePaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OnlinePaymentService(placeOrderService, orderRepository, momoService);
+        service = new OnlinePaymentService(placeOrderService, orderRepository, paymentGateway);
     }
 
     /**
@@ -84,10 +85,10 @@ class OnlinePaymentServiceTest {
         Order placed = pendingOrder(null);
         ReflectionTestUtils.setField(placed, "id", "order-9");
         when(placeOrderService.place(USER_ID, command)).thenReturn(placed);
-        // Money always carries scale 2, so the gateway sees 36.60 where it once saw 36.6.
-        // MomoService scales to whole VND before signing, so the amount charged is unchanged;
-        // only the BigDecimal's scale, which equals() is sensitive to, differs.
-        when(momoService.createPaymentUrl(new BigDecimal("36.60"), "order-9"))
+        // S13: the port takes Money, not a BigDecimal. The conversion to the gateway's own
+        // currency and scale moved into the adapter, which is the only thing that knows the
+        // gateway settles in VND.
+        when(paymentGateway.startCheckout(Money.of("36.60"), "order-9"))
                 .thenReturn("https://momo.test/pay/order-9");
 
         OnlinePaymentService.Checkout checkout = service.startCheckout(USER_ID, command);
@@ -109,22 +110,33 @@ class OnlinePaymentServiceTest {
         // two were the same method; before S10 they were the same bean, reached through an
         // ObjectProvider self-reference.
         verify(placeOrderService).place(USER_ID, command);
-        verify(momoService).createPaymentUrl(new BigDecimal("36.60"), "order-9");
+        verify(paymentGateway).startCheckout(Money.of("36.60"), "order-9");
     }
 
     // ---- the IPN callback --------------------------------------------------
 
+    /**
+     * <p>S13 note: these cases used to pass the gateway's own vocabulary — a {@code Gearly-}
+     * prefixed order id and a numeric {@code resultCode} — because this service did the
+     * translating. It takes an already-authenticated, already-translated
+     * {@link GatewaySettlement} now, so the assertions moved down a layer: that
+     * {@code Gearly-} comes off exactly one leading occurrence, and that {@code 0} is what
+     * success means, are pinned in {@code MomoPaymentGatewayTest}, beside the code that knows
+     * them. The behaviour asserted here — what a settlement does to the aggregate — is
+     * unchanged.
+     */
     @Nested
-    @DisplayName("recordGatewayResult")
+    @DisplayName("recordSettlement")
     class GatewayCallback {
 
         @Test
-        @DisplayName("resultCode 0 records a SUCCESSFUL transaction and moves the order to PROCESSING")
+        @DisplayName("a successful settlement records a SUCCESSFUL transaction and moves the order to PROCESSING")
         void success_movesToProcessing() {
             Order order = pendingOrder("order-1");
             when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
-            service.recordGatewayResult("Gearly-order-1", "momo-tx-1", 0, "{\"ok\":true}");
+            service.recordSettlement(
+                    new GatewaySettlement("order-1", "momo-tx-1", true, "{\"ok\":true}"));
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
             assertThat(order.getPayment().getTransactions()).hasSize(2).last().satisfies(tx -> {
@@ -137,7 +149,7 @@ class OnlinePaymentServiceTest {
         }
 
         @Test
-        @DisplayName("a non-zero resultCode records a FAILED transaction and leaves the order PENDING")
+        @DisplayName("an unsuccessful settlement records a FAILED transaction and leaves the order PENDING")
         void failure_staysPending() {
             // Starts at PROCESSING on purpose: it proves the callback *forces* PENDING rather
             // than merely leaving an order that was already there. That reversal is now a
@@ -152,23 +164,13 @@ class OnlinePaymentServiceTest {
                     .build();
             when(orderRepository.findById(OrderId.of("order-1"))).thenReturn(Optional.of(order));
 
-            service.recordGatewayResult("Gearly-order-1", "momo-tx-2", 1006, "{\"ok\":false}");
+            service.recordSettlement(
+                    new GatewaySettlement("order-1", "momo-tx-2", false, "{\"ok\":false}"));
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
             assertThat(order.getPayment().getTransactions()).last()
                     .extracting(PaymentTransaction::getStatus)
                     .isEqualTo(TransactionStatus.FAILED);
-        }
-
-        @Test
-        @DisplayName("only a leading Gearly- prefix is stripped from the gateway's order id")
-        void stripsOnlyTheLeadingPrefix() {
-            Order order = pendingOrder("order-Gearly-1");
-            when(orderRepository.findById(OrderId.of("order-Gearly-1"))).thenReturn(Optional.of(order));
-
-            service.recordGatewayResult("Gearly-order-Gearly-1", "momo-tx-3", 0, "{}");
-
-            verify(orderRepository).save(order);
         }
     }
 }

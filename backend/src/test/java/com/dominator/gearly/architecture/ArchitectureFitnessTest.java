@@ -361,13 +361,36 @@ class ArchitectureFitnessTest {
      *
      * <p>{@code shared} and {@code platform} are not contexts and are skipped — every
      * context may use {@code shared}, and {@code platform} may use everything.
+     *
+     * <h2>S13: a port's own vocabulary counts as published</h2>
+     * The first S13 port to carry a value made this rule fail for a reason that was the rule's
+     * fault rather than the design's. {@code PaymentGateway.verifyNotification} returns a
+     * {@code GatewaySettlement} and throws a {@code GatewayNotificationRejectedException}; the
+     * rule accepted the interface and rejected both, so {@code ordering} was allowed to
+     * <em>hold</em> the port but not to <em>call</em> it.
+     *
+     * <p>That is incoherent. A port is a contract, and a contract a caller cannot name the terms
+     * of is not usable. The published set now includes, structurally:
+     * <ul>
+     *   <li>every type appearing in a port's method signatures — parameters, return types and
+     *       their type arguments — because those are exactly what a caller must name;</li>
+     *   <li>domain exceptions, i.e. types in {@code ..domain..} extending one of the shared
+     *       kernel's four bases, because an unchecked exception a port raises is part of what it
+     *       promises and the alternative is catching {@code RuntimeException}.</li>
+     * </ul>
+     *
+     * <p>This is derived from the ports themselves rather than from a naming convention, which
+     * is the same correction S11 made when it stopped recognizing events by an {@code …Event}
+     * suffix. It cannot be borrowed: a type becomes published by being in a port's signature,
+     * so publishing something is a deliberate edit to an interface, visible in review, and
+     * withdrawing it from the port withdraws it here.
      */
     @ArchTest
     static void contexts_touch_each_other_only_through_published_types(JavaClasses classes) {
         // Phrased positively on purpose. `noClasses().should(customCondition)` inverts the
         // condition's events, which would silently make this rule inert.
         classes().that().resideInAnyPackage(CONTEXT_PACKAGES)
-                .should(onlyTouchOtherContextsThroughPublishedTypes())
+                .should(onlyTouchOtherContextsThroughPublishedTypes(typesNamedByPorts(classes)))
                 .because("cross-context coupling goes through a port, an event, or a published value")
                 .allowEmptyShould(true)
                 .check(classes);
@@ -660,7 +683,54 @@ class ArchitectureFitnessTest {
         into.add(erasure.isArray() ? erasure.getBaseComponentType() : erasure);
     }
 
-    private static ArchCondition<JavaClass> onlyTouchOtherContextsThroughPublishedTypes() {
+    /**
+     * Every type named in the signature of a port — an interface in some context's
+     * {@code domain} package — including the type arguments of a generic one.
+     *
+     * <p>This is what makes a port callable across a context boundary rather than merely
+     * holdable. See the S13 note on
+     * {@link #contexts_touch_each_other_only_through_published_types}.
+     *
+     * <p><b>A port may only publish its own context's types.</b> Without that restriction the
+     * clause would be a laundering channel: a port in {@code catalog} that returned an
+     * {@code ordering} internal would make that internal nameable by <em>every</em> context,
+     * and the leak would be reported nowhere. Restricted this way, such a port is still a
+     * violation — reported against the port, which is where the mistake is.
+     */
+    private static java.util.Set<String> typesNamedByPorts(JavaClasses classes) {
+        java.util.Set<String> published = new java.util.HashSet<>();
+        for (JavaClass port : classes) {
+            String portContext = contextOf(port);
+            if (!port.isInterface()
+                    || portContext == null
+                    || !port.getPackageName().contains(".domain")) {
+                continue;
+            }
+            for (JavaMethod method : port.getMethods()) {
+                Stream.concat(Stream.of(method.getReturnType()), method.getParameterTypes().stream())
+                        .flatMap(signatureType -> typesCarriedBy(signatureType).stream())
+                        .filter(carried -> portContext.equals(contextOf(carried)))
+                        .filter(carried -> carried.getPackageName().contains(".domain"))
+                        .forEach(carried -> published.add(carried.getFullName()));
+            }
+        }
+        return published;
+    }
+
+    /** The shared kernel's exception vocabulary. A context's specializations of these are published. */
+    private static final List<String> DOMAIN_EXCEPTION_BASES = List.of(
+            ROOT + ".shared.domain.DomainRuleViolationException",
+            ROOT + ".shared.domain.DomainNotFoundException",
+            ROOT + ".shared.domain.DomainConflictException",
+            ROOT + ".shared.domain.AccessDeniedDomainException");
+
+    private static boolean isAPublishedDomainException(JavaClass target) {
+        return target.getPackageName().contains(".domain")
+                && DOMAIN_EXCEPTION_BASES.stream().anyMatch(target::isAssignableTo);
+    }
+
+    private static ArchCondition<JavaClass> onlyTouchOtherContextsThroughPublishedTypes(
+            java.util.Set<String> typesNamedByPorts) {
         return new ArchCondition<>(
                 "touch other bounded contexts only through a port, a domain event or a published value") {
             @Override
@@ -675,7 +745,9 @@ class ArchitectureFitnessTest {
                     if (targetContext == null || targetContext.equals(originContext)) {
                         continue;
                     }
-                    if (isPublishedLanguage(target)) {
+                    if (isPublishedLanguage(target)
+                            || isAPublishedDomainException(target)
+                            || typesNamedByPorts.contains(target.getFullName())) {
                         continue;
                     }
                     events.add(SimpleConditionEvent.violated(origin, String.format(
